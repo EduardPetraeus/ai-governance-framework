@@ -1,5 +1,7 @@
-# CLAUDE.md
+# CLAUDE.md — Small Team (3-5 developers)
 
+## project_context
+# CUSTOMIZE: Replace with your project details
 project_name: "[Your Project Name]"
 description: "[What this project does in one sentence]"
 stack: "[Languages, frameworks, databases]"
@@ -7,9 +9,8 @@ owner: "[Team name]"
 repository: "[https://github.com/org/repo]"
 current_phase: "[Phase N: Name]"
 
----
-
 ## conventions
+# KEEP: These are enforced by CI — changing them requires updating the governance check.
 
 naming:
   files: snake_case
@@ -25,20 +26,14 @@ file_structure:
   docs: docs/
   scripts: scripts/
 
-pr_workflow:
-  - All changes go through feature branches and PRs. No direct commits to main.
-  - Every PR must update CHANGELOG.md. Governance check enforces this in CI.
-  - CLAUDE.md changes require a second reviewer.
-
----
-
-## mandatory_session_protocol
+## session_protocol
+# KEEP: Identical to solo, plus mid-session checkpoints for team visibility.
 
 on_session_start:
   1. Read PROJECT_PLAN.md, ARCHITECTURE.md (if exists), CHANGELOG.md (last 5 entries)
   2. Read MEMORY.md if it exists
   3. Present: current sprint/phase, what was done last session, top 3 recommended tasks
-  4. State which model you are and which model this session should use
+  4. State which model you are and which tasks are optimal for that model
   5. Confirm scope — NO CODE before scope is confirmed
 
 during_session:
@@ -51,7 +46,7 @@ during_session:
 on_session_end:
   1. Present full session summary (tasks, files, decisions, discovered tasks)
   2. Update CHANGELOG.md (new session entry)
-  3. Update PROJECT_PLAN.md (mark completed tasks, add discovered tasks)
+  3. Update PROJECT_PLAN.md (mark completed, add discovered tasks)
   4. Commit: "docs: update project state after session [NNN]"
   5. Recommend model for next session
 
@@ -59,20 +54,25 @@ on_user_forgets_protocol:
   - Run end-session protocol anyway if user ends without /end-session
   - Ask for scope confirmation if user tries to skip it
 
----
-
 ## governance_sync
+# KEEP: Prevents team members from stepping on each other.
+# Critical at team scale — multiple people modify the same repo concurrently.
 
 on_session_start drift_detection:
-  - Compare intended work against PROJECT_PLAN.md current sprint
-  - Flag if: working outside current phase, architectural change not in ARCHITECTURE.md,
-    new dependency not documented
-  - If drift detected: "I notice we're working outside the current sprint scope.
-    [Observation]. This was planned for [phase]. Continue anyway, or return to plan?"
+  - Flag if working outside current sprint phase
+  - Flag if architectural change not reflected in ARCHITECTURE.md
+  - Flag if new external dependency not discussed with team
+  - If drift detected: surface it and ask before proceeding
 
----
+on_architectural_change:
+  - Before implementing: "This changes the architecture. Should I update
+    ARCHITECTURE.md first?"
+  - If the change contradicts an existing decision in DECISIONS.md:
+    surface the contradiction and ask before proceeding
 
 ## model_routing
+# OPTIONAL: Remove if not cost-sensitive. Useful at Level 2+ when team spend matters.
+# CUSTOMIZE: Adjust task-to-model mapping based on your AI provider and pricing.
 
 routing_table:
   architecture_decisions: opus      # High-stakes, cross-system reasoning
@@ -84,17 +84,49 @@ routing_table:
 
 self_routing_rule: |
   At session start: "Running as [model]. Optimal for: [task types]."
-  If a task needs a different model: say so and recommend starting a new session.
-  At session end: recommend the right model for the next session's planned work.
+  If a task needs a different model tier: say so and recommend starting
+  a new session with the appropriate model.
+  At session end: recommend the right model for the next session.
 
----
+## pr_workflow
+# KEEP: Non-negotiable for team repos. Agents must follow this — no shortcuts.
+
+rules:
+  - All changes through feature branches and PRs. No direct commits to main.
+  - Direct commits to main are blocked by branch protection.
+  - Every PR must update CHANGELOG.md (enforced by CI governance check).
+  - One human reviewer required after AI review passes.
+  - CLAUDE.md changes require a second reviewer.
+
+## mandatory_task_reporting
+# KEEP: Prevents the yes-man anti-pattern where agents silently complete
+# tasks without confirming scope, relevance, or correctness.
+
+after_every_task:
+  1. Files changed (with paths)
+  2. Goal impact (which sprint task this advances, progress %)
+  3. Running session total (tasks done / planned)
+  4. Next step — ask to continue or adjust
+
+format: |
+  ┌────────────────────────────────────────────┐
+  │ Task completed: [name]                     │
+  ├────────────────────────────────────────────┤
+  │ Changed: [file1], [file2]                  │
+  │ Impact:  [sprint task] — [N]% complete     │
+  │ Session: [N] / [M] tasks                   │
+  │ Next:    [task] — Continue? [Y/adjust]     │
+  └────────────────────────────────────────────┘
+
+cannot_be_disabled: true
 
 ## security
+# KEEP: Same as solo, plus scan triggers for systematic checking.
 
 never_commit:
   - API keys, tokens, secrets of any kind
   - Passwords or credentials
-  - PII: names, emails, phone numbers, national IDs, health data
+  - PII: names, emails, phone numbers, national IDs
   - Hardcoded production paths or database connection strings
   - Real data samples from any environment
 
@@ -110,30 +142,23 @@ incident_response:
     4. Clean git history if committed
     5. Document in DECISIONS.md
 
----
-
-## mandatory_task_reporting
-
-After every completed task, present:
-  1. Files created/modified (with paths)
-  2. Goal impact: which phase/task this advances, progress update
-  3. Cumulative session status: tasks done / total scope
-  4. Next steps: what comes next, ask "Continue, or adjust?"
-
-This cannot be disabled. Even if user says "just continue", show the status block.
-
----
-
 ## verification
-
 before_claiming_done:
-  - Run the code or test
-  - Check imports resolve
+  - Run the code or test it
+  - Check that imports resolve
   - Verify file was actually written
   - Confirm config is valid syntax
 
 never_assume:
-  - That a file exists (check first)
+  - That a file exists — check first
   - That previous session's changes are present
-  - That the user knows what changed (always show it)
   - That "it should work" equals "it does work"
+
+# ─── Upgrade path ────────────────────────────────────────────────────────────
+# Add at Level 3 (Enterprise):
+#   compliance          — EU AI Act, GDPR, audit trail requirements
+#   definition_of_done  — mandatory 8-item checklist before marking tasks complete
+#   change_control      — ADR + PR + two reviewers for CLAUDE.md changes
+#   escalation_model    — formal incident escalation with contacts
+#   review_cadence      — scheduled reviews of CLAUDE.md, ADRs, security policy
+#   expanded routing    — 14 task types with auto-review triggers

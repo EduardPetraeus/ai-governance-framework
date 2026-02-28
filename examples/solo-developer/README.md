@@ -1,100 +1,82 @@
-# Solo Developer Example
+# Solo Developer Configuration
 
-This is the minimal governance setup for a single developer working on a personal or
-small project. It takes 10 minutes to set up and adds almost zero overhead to your workflow.
+The minimal governance setup for a single developer. 10 minutes to set up. Near-zero ongoing overhead. Solves the three problems that hurt solo developers most.
 
-## Who this is for
+## The Solo Problem
 
-- One developer (you)
-- Personal project, side project, or early-stage startup
-- You want to use AI agents without losing track of what's been built
-- Speed matters more than process right now
+Working alone with AI agents creates three specific failure modes that governance prevents:
 
-## What's included
+**1. Lost context between sessions.** Without a session protocol and CHANGELOG.md, every session starts from zero. The agent does not know what you built yesterday, which approaches you already tried and rejected, or which decisions are settled. You spend the first 10 minutes of every session re-explaining your project. Over a month, that is hours of wasted time repeating yourself.
 
-### CLAUDE.md (40 lines)
+**2. Architectural drift with no second pair of eyes.** When you are the only reviewer, bad patterns compound silently. An agent introduces a second way to handle errors. Next session, a different pattern for configuration. Six weeks later, you have three error-handling strategies, two config approaches, and a codebase that fights itself. The session protocol forces the agent to read the project plan and existing patterns before writing new code.
 
-The core constitution. Even at this minimal level, it prevents the most common problem:
-agents that have no idea what happened in previous sessions and start re-implementing
-things you already built.
+**3. Security accidents with no reviewer.** An agent hardcodes an API key "temporarily." It gets committed. No reviewer catches it. It gets pushed. The key is now in your git history permanently. The never-commit list in CLAUDE.md makes the agent check every file before moving on. It is cheaper than rotating credentials.
 
-**Why even solo developers need this:**
-Without CLAUDE.md and CHANGELOG.md, every session starts blank. The agent has no context
-from yesterday's work. It may suggest approaches you already tried and rejected. It will
-not know which decisions are settled.
+## What Each Section Provides
 
-With them, each session starts with: "Here's what we built, here's where we left off,
-here's what I recommend we do today." That alone is worth the 10 minutes of setup.
+| Section | What it prevents | Concrete benefit |
+|---|---|---|
+| `project_context` | Agent does not know what you are building | Agent understands the project from the first message |
+| `conventions` | Inconsistent naming, commit messages, branch structure | Every file, branch, and commit follows the same pattern |
+| `session_protocol` | Blank-slate sessions, forgotten progress | Each session starts with context and ends with documentation |
+| `security` | Committed secrets, leaked PII | Agent self-checks every file against the never-commit list |
+| `verification` | "It should work" without actually running it | Agent runs the code before claiming a task is complete |
 
-### PROJECT_PLAN.md
-
-Where you track what needs to be built. Agents read this at session start and use it
-to recommend the next task. Without it, agents ask "what do you want to work on?" and
-you lose time reconstructing your own priorities.
-
-### CHANGELOG.md
-
-Session-level history. Every session adds one entry: what was done, what decisions were made,
-what was discovered. This is the agent's cross-session memory. Also useful for you: two weeks
-from now, you'll want to know why you made a certain decision.
-
-## What's deliberately left out
+## What Is Left Out and When to Add It
 
 ### Model routing
+**What it does:** Routes different task types to different AI models (opus for architecture, sonnet for code, haiku for simple reads) to optimize cost and quality.
 
-At this level, you probably use one model for everything. Model routing adds cognitive
-overhead (which model for which task?) that is only worth it when you're managing costs
-across a team or doing enough sessions per week to notice the price difference.
+**When to add it:** When your monthly AI spend exceeds $50. Below that threshold, the mental overhead of choosing models costs more than the money you save. The moment you notice your bill and think "that is a lot," add model routing.
 
-**When to add it:** When you're running 5+ sessions per week or when a single session
-costs more than $0.50.
+### Governance sync (drift detection)
+**What it does:** At session start, compares your planned work against the project plan and flags scope drift before you start coding.
 
-### Agents
+**When to add it:** When you are working on the project more than 3 sessions per week. At that frequency, it becomes easy to lose track of the plan and spend sessions on tangents. Below 3 sessions/week, you naturally remember what you were doing.
 
-Specialized agents (security reviewer, code reviewer, test writer) are valuable but add
-setup and context-switching overhead. For solo work, you can invoke the security reviewer
-ad hoc when you're about to merge something sensitive.
+### Mandatory task reporting
+**What it does:** After every completed task, the agent presents a structured status block showing files changed, goal impact, session progress, and next steps.
 
-**When to add it:** When you're shipping to production or onboarding a second developer.
+**When to add it:** When you have lost track of a session mid-way through. The first time you reach the end of a session and cannot remember what you did in the first half, add task reporting. It forces a checkpoint that prevents the agent from silently drifting.
 
 ### CI/CD enforcement
+**What it does:** Pre-commit hooks and GitHub Actions that enforce conventions automatically — commit message format, CHANGELOG updates, security scans.
 
-Pre-commit hooks and GitHub Actions add friction to the commit/PR flow. For solo work on
-a non-production project, that friction costs more than it saves.
+**When to add it:** When you have more than 100 commits, or when you add a collaborator. At 100+ commits, manual convention enforcement starts slipping. With a second person, you need automated enforcement because verbal agreements do not scale.
 
-**When to add it:** When you have a second person who needs to follow the same rules,
-or when you're building something that touches real user data.
+## Setup: 10 Minutes
 
-### Compliance sections
+```bash
+# 1. Copy the three core files to your project root
+cp examples/solo-developer/CLAUDE.md .
+cp templates/PROJECT_PLAN.md .
+cp templates/CHANGELOG.md .
 
-EU AI Act, audit trails, change control for CLAUDE.md — these are enterprise concerns.
-Skip them until you have a compliance requirement.
+# 2. Edit CLAUDE.md — fill in your project details (2 minutes)
+#    Replace: project_name, description, stack, owner
 
-## Time to set up: 10 minutes
+# 3. Edit PROJECT_PLAN.md — replace example phases with your actual tasks (5 minutes)
+#    Even 3 tasks per phase is enough to start
 
-1. Copy the three files:
-   ```bash
-   cp examples/solo-developer/CLAUDE.md .
-   cp templates/PROJECT_PLAN.md .
-   cp templates/CHANGELOG.md .
-   ```
+# 4. CHANGELOG.md needs no editing — the first session entry is added
+#    automatically when you run /end-session
 
-2. Edit `CLAUDE.md` — fill in `project_name`, `description`, `stack`, `owner`. (2 minutes)
+# 5. Add .session_log to .gitignore
+echo ".session_log" >> .gitignore
 
-3. Edit `PROJECT_PLAN.md` — replace the example phases with your actual project phases.
-   Even 3 tasks per phase is enough to start. (5 minutes)
+# 6. Start your first governed session
+#    Say: "Read CLAUDE.md and PROJECT_PLAN.md and tell me what we should work on."
+```
 
-4. Leave `CHANGELOG.md` as-is — the first session entry will be added automatically when
-   you run /end-session.
+That is it. You now have cross-session memory, consistent conventions, and security guardrails.
 
-5. In your first Claude Code session, type `/plan-session` (if you've installed the commands)
-   or just say "read CLAUDE.md and PROJECT_PLAN.md and tell me what we should work on today."
+## Moving to Small Team (Level 2)
 
-That's it. You now have a governed AI development setup.
+When you add a second developer, or when you are working on the project frequently enough that decisions start getting lost, add the team governance sections:
 
-## How to move to Level 2 (Small Team)
+1. Copy `examples/small-team/CLAUDE.md` and merge the additional sections into yours
+2. Add the template files: `MEMORY.md`, `DECISIONS.md`, `ARCHITECTURE.md`
+3. Enable the `governance_sync` and `model_routing` sections
+4. Set up branch protection on main
 
-When you add a second developer, or when the project has been running for a few months and
-you're losing track of decisions, copy `templates/MEMORY.md` and `templates/DECISIONS.md`
-to your project root. Then update `CLAUDE.md` using `examples/small-team/CLAUDE.md` as
-the reference — add the governance sync section and model routing.
+The transition takes 30 minutes. Everything you have already set up carries forward unchanged.

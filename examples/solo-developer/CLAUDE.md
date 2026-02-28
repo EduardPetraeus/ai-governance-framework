@@ -1,57 +1,63 @@
-# CLAUDE.md
+# CLAUDE.md — Solo Developer
 
-project_name: "[Your Project Name]"
-description: "[What this project does in one sentence]"
-stack: "[Python / TypeScript / etc.]"
+## project_context
+# CUSTOMIZE: Replace with your project details
+project_name: "[Your project]"
+description: "[One sentence describing what this project does]"
+stack: "[Your stack — e.g., Python, FastAPI, PostgreSQL]"
 owner: "[Your name]"
 
----
-
 ## conventions
-
 naming:
   files: snake_case
   branches: "feature/ | fix/ | docs/"
   commits: "type: description (feat, fix, docs, refactor, test, chore)"
-
-language: English for all code, comments, variable names.
-
----
+language: English for all code, comments, docstrings, and variable names.
 
 ## session_protocol
+# KEEP: This is the core value of the framework. Without it, every session starts blind.
 
 on_session_start:
-  1. Read PROJECT_PLAN.md (current status, last session)
-  2. Read CHANGELOG.md (last 3 entries)
-  3. Present: what was done last session, top 3 recommended tasks
-  4. Confirm scope — do not write code before scope is confirmed
+  1. Read PROJECT_PLAN.md — current phase and top 3 tasks
+  2. Read CHANGELOG.md — what was done last session
+  3. Confirm what you will work on before writing any code
 
 on_session_end:
-  1. Present session summary (tasks done, files changed)
-  2. Update CHANGELOG.md with new session entry
-  3. Update PROJECT_PLAN.md (mark completed tasks)
-  4. Commit: "docs: update project state after session [NNN]"
-
----
+  1. Update CHANGELOG.md with what was done (files changed, decisions made)
+  2. Update PROJECT_PLAN.md (mark completed tasks, add discovered tasks)
+  3. Commit: "docs: update project state after session"
 
 ## security
+# KEEP: These rules apply at every level. No exceptions.
 
 never_commit:
   - API keys, tokens, or secrets of any kind
   - Passwords or credentials
-  - PII: names, emails, phone numbers, IDs
-  - Hardcoded production paths or connection strings
-  - Real data from any system
+  - Personal data (names, emails, phone numbers)
+  - Production database connection strings
+  - Private keys or certificates
+  - Real data samples from any environment
 
-If you find a secret in a file: stop, remove it, check if it was committed, rotate if necessary.
-
----
+if_secret_found: Stop. Remove it. Check if it was committed. Rotate if necessary.
 
 ## verification
+# KEEP: Prevents the most common AI agent failure — claiming something works without checking.
 
-Before claiming a task is done:
-  - Run the code or test it
-  - Verify the file was actually written
-  - Check that imports resolve
+before_claiming_done:
+  - Run the code — do not assume it works
+  - Verify files were actually written to disk
+  - Check that imports resolve and dependencies exist
+  - Never assume a file exists — check first
 
-Never assume a file exists — check first.
+# ─── Upgrade path ────────────────────────────────────────────────────────────
+# Add at Level 2 (Small Team):
+#   model_routing       — when AI spend exceeds $50/month
+#   governance_sync     — when working >3 sessions/week on this project
+#   mandatory_task_reporting — when you lose track of session progress
+#   pr_workflow         — when you add a collaborator
+#
+# Add at Level 3 (Enterprise):
+#   compliance          — when subject to GDPR, EU AI Act, or SOC2
+#   definition_of_done  — when "done" needs a formal checklist
+#   change_control      — when CLAUDE.md changes affect multiple teams
+#   escalation_model    — when you need formal incident response

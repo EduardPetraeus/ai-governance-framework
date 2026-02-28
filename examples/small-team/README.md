@@ -1,118 +1,112 @@
-# Small Team Example
+# Small Team Configuration
 
-This configuration is for 3-5 developers working on a shared codebase. It adds the
-governance mechanisms that matter when multiple people (and multiple AI agents) are
-touching the same code.
+For 3-5 developers sharing a codebase. Everything from the solo configuration, plus the governance mechanisms that prevent the specific failure modes that emerge when multiple people and multiple AI agents work on the same code concurrently.
 
-## What's added vs. solo developer
+## What Is Added vs. Solo
 
 ### Full session protocol with mid-session checkpoints
 
-The solo config has start/end only. The team config adds checkpoints during the session:
-after every task, after every third task, and scope confirmation before any code.
+**Solo has:** Start and end protocol only.
+**Team adds:** Checkpoints during the session — after every task, after every third task, and scope confirmation before any code is written.
 
-**Why this matters for teams:** In a solo setup, you always know what the agent has done
-because you were there. On a team, a colleague might review a PR where an agent did 40
-things in one session. Without mid-session checkpoints, those 40 things happen without
-explicit approval. With them, each task was explicitly approved before the next started.
+**Failure mode this prevents:** A colleague reviews a PR where an agent completed 15 tasks in one session. Without mid-session checkpoints, those 15 tasks happened without explicit approval. Task 3 introduced a pattern change. Tasks 4-15 built on that pattern. The reviewer now has to evaluate whether the pattern decision in task 3 was correct — but by the time they see it, 12 more tasks depend on it. With checkpoints, each task was explicitly approved before the next started.
 
 ### Governance sync (drift detection)
 
-At session start, the agent compares intended work against the sprint plan and flags drift:
-"We're working outside the current sprint scope. This was planned for Phase 3."
+**Solo has:** Nothing — you are the plan.
+**Team adds:** At session start, the agent compares intended work against the sprint plan and flags drift before any code is written.
 
-**Why this matters for teams:** Individual developers make good local decisions that create
-bad global outcomes. One developer's "small improvement" becomes three hours of unplanned
-scope that pushes the sprint. Drift detection makes scope creep visible before it compounds.
+**Failure mode this prevents:** Developer A starts a session planning to build the payment module (sprint task). The agent suggests "while we are here, let us also refactor the user model." Developer A agrees — it is a good idea locally. But Developer B is working on the user model right now. The refactor creates a merge conflict that wastes both developers' time. Drift detection surfaces this: "Refactoring the user model is not in the current sprint. Developer B's branch touches user_model.py. Proceed, or return to the payment module?"
 
-### Model routing (5 task types)
+### Model routing (6 task types)
 
-Teams spend enough on AI sessions to care about routing. This config defines 5 routing rules:
-opus for architecture and security, sonnet for code and docs, haiku for simple edits.
+**Solo has:** Not included.
+**Team adds:** Routing table mapping task types to optimal model tiers — opus for architecture and security, sonnet for code and docs, haiku for simple edits.
 
-**Why this matters for teams:** If 4 developers each use opus for everything, you're spending
-$0.40-$1.00 per session on tasks that cost $0.01 on haiku. At 50 sessions/week, that's $1,000+/month
-in unnecessary spend. Model routing pays for itself immediately.
+**Failure mode this prevents:** Four developers each use opus for everything because it is the default. At $0.15-0.60 per session, that is fine individually. At 40 sessions per week across the team, you are spending $200-1,000/month when $50-150 would produce the same results. Model routing makes cost optimization a team default rather than an individual discipline.
 
 ### PR workflow requirements
 
-The solo config has no PR rules. The team config adds:
-- No direct commits to main
-- Every PR must update CHANGELOG.md (enforced by CI governance check)
-- CLAUDE.md changes require a second reviewer
+**Solo has:** Not included.
+**Team adds:** No direct commits to main. Every PR updates CHANGELOG.md (CI enforces this). CLAUDE.md changes require a second reviewer.
 
-**Why this matters for teams:** Without PR workflow rules in CLAUDE.md, some agents will commit
-directly to main (it's faster). The PR requirement in the constitution means every agent knows
-the rule, not just the humans.
+**Failure mode this prevents:** An agent commits directly to main because it is faster and the developer did not object. The commit breaks the build. The team does not know who made the change or why. Another agent, running in a different developer's session, reads the broken code and builds on top of it. The PR requirement in the constitution means every agent knows the rule, not just the humans.
 
-### Agents reference
+### Mandatory task reporting
 
-The team config does not force agents on you, but it notes which ones the team uses. This
-matters because: when a PR comes in for review, the team should be using the code-reviewer
-agent before requesting human review. Documenting this in CLAUDE.md means agents know to
-suggest it.
+**Solo has:** Not included.
+**Team adds:** After every completed task, the agent presents a structured status block showing files changed, goal impact, session progress, and next steps. This cannot be disabled during a session.
 
-## What's still left out
+**Failure mode this prevents:** The yes-man anti-pattern. An agent completes 20 tasks in rapid succession, each one drifting slightly from the original scope. The developer says "keep going" without reviewing intermediate results. By task 20, the session has built an elaborate solution to a problem that was not in the sprint. Task reporting forces a pause point where the developer sees exactly what changed and can course-correct.
 
-### Full CI/CD
+## What Is Still Left Out
 
-governance-check.yml and ai-pr-review.yml are available in `../../ci-cd/` but not required
-at this level. Add them when you want enforcement rather than convention.
+### Compliance sections (EU AI Act, GDPR)
 
-**When to add:** When someone has merged a PR without updating CHANGELOG.md and it caused
-a problem. (This will happen. Then you'll want the CI gate.)
+For regulated industries or large organizations. Maintaining compliance documentation costs real time — reviewing EU AI Act applicability, documenting data processing legal bases, maintaining audit trails to the standard required by regulators. If you are not subject to these regulations today, the documentation overhead is pure cost with no benefit.
 
-### Compliance sections
+**When to add:** When a compliance officer, legal counsel, or customer security questionnaire asks about your AI governance practices. Not before.
 
-EU AI Act, GDPR audit requirements, audit trails — these are for regulated industries or
-large organizations. Add the enterprise CLAUDE.md sections when you have a compliance officer
-asking about AI governance.
+### Definition of done (mandatory checklist)
 
-### Definition of done
+The enterprise configuration defines an 8-item checklist that agents must confirm before marking any task complete: code runs, tests pass, docstrings written, CHANGELOG updated, architecture docs updated, decisions documented, security scan passed, naming conventions verified.
 
-The full definition of done (mandatory checklist before marking any task complete) is in
-the enterprise config. For small teams, this is usually overkill — you know each other and
-can have the "is this actually done?" conversation directly.
+**When to add:** When your team grows beyond 5 people, or when you discover that "done" means different things to different team members. At 3-5 people, you can align on "done" through conversation. Beyond that, you need a checklist.
 
-## Time to set up: 30 minutes
+### Change control for CLAUDE.md
 
-1. Copy files:
-   ```bash
-   cp examples/small-team/CLAUDE.md .
-   cp templates/PROJECT_PLAN.md .
-   cp templates/CHANGELOG.md .
-   cp templates/MEMORY.md .
-   cp templates/DECISIONS.md .
-   cp templates/ARCHITECTURE.md .
-   ```
+The enterprise configuration requires an ADR + PR + two human reviewers to change CLAUDE.md.
 
-2. Edit `CLAUDE.md` — fill in project details. (5 minutes)
+**When to add:** When a CLAUDE.md change has caused a problem — an agent behaved unexpectedly because someone changed the constitution without the team knowing. On a team of four, this can be handled with a Slack message. On a team of twenty, it cannot.
 
-3. Edit `PROJECT_PLAN.md` — add your actual phases and tasks. (10 minutes)
+### Escalation model
 
-4. Edit `ARCHITECTURE.md` — fill in your actual architecture. Even a rough diagram is better
-   than none. (10 minutes)
+Formal escalation contacts and procedures for security incidents, architectural disputes, and governance changes.
 
-5. Install the slash commands:
-   ```bash
-   mkdir -p .claude/commands
-   cp ../../commands/plan-session.md .claude/commands/
-   cp ../../commands/end-session.md .claude/commands/
-   cp ../../commands/status.md .claude/commands/
-   ```
+**When to add:** When the team is large enough that the right person to escalate to is not obvious, or when you operate in an environment where security incidents have formal reporting requirements.
 
-6. Set up the pre-commit hooks if you want local enforcement:
-   ```bash
-   cp ../../ci-cd/pre-commit/.pre-commit-config.yaml .
-   pip install pre-commit
-   pre-commit install
-   ```
+## Setup: 30 Minutes
 
-That's 30 minutes and you have a governed, team-ready AI development setup.
+```bash
+# 1. Copy all required files
+cp examples/small-team/CLAUDE.md .
+cp templates/PROJECT_PLAN.md .
+cp templates/CHANGELOG.md .
+cp templates/MEMORY.md .
+cp templates/DECISIONS.md .
+cp templates/ARCHITECTURE.md .
 
-## How to move to Enterprise
+# 2. Edit CLAUDE.md — fill in project details (5 minutes)
+#    Replace: project_name, description, stack, owner, repository, current_phase
 
-When you hit compliance requirements or scale beyond 5 developers, copy
-`examples/enterprise/CLAUDE.md` and update your CLAUDE.md with the additional sections:
-compliance, full model routing, definition of done, escalation model, and change control.
-Then set up all three CI/CD components.
+# 3. Edit PROJECT_PLAN.md — add your actual phases and tasks (10 minutes)
+
+# 4. Edit ARCHITECTURE.md — document your system architecture (10 minutes)
+#    Even a rough component diagram is better than nothing
+
+# 5. Install slash commands
+mkdir -p .claude/commands
+cp commands/*.md .claude/commands/
+
+# 6. (Optional) Set up pre-commit hooks for local enforcement
+cp ci-cd/pre-commit/.pre-commit-config.yaml .
+pip install pre-commit && pre-commit install
+
+# 7. Configure branch protection on main
+#    - Require PR reviews (1 minimum, 2 for CLAUDE.md changes)
+#    - Require CI status checks to pass before merge
+#    - Block direct pushes to main
+```
+
+## Moving to Enterprise (Level 3)
+
+When you hit compliance requirements, scale beyond 5 developers, or experience the failure modes that enterprise governance prevents (security incidents without a response protocol, architectural decisions made without review, "done" meaning different things to different teams), add the enterprise sections:
+
+1. Copy `examples/enterprise/CLAUDE.md` and merge the additional sections
+2. Add: `compliance`, `definition_of_done`, `change_control`, `escalation_model`, `review_cadence`
+3. Expand `model_routing` from 6 to 14 task types
+4. Expand `security` to Level 3 with data classification
+5. Set up all three CI/CD components
+6. Add COST_LOG.md and SPRINT_LOG.md templates
+
+The transition takes about 2 hours. Everything from Level 2 carries forward unchanged.

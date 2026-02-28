@@ -1,70 +1,76 @@
-# Examples
+# Example Configurations
 
-Three reference configurations for different team sizes and governance needs. Each is a
-complete, working setup — not a skeleton. Pick the one that fits your situation and
-customize from there.
+Three production-ready configurations for governing AI agents at different scales. Each is a complete, working setup. Pick the one that matches your situation today and customize it.
 
-## The three personas
+## The Three Personas
 
-### Solo developer
-One person. Personal project or side project. Speed matters more than process.
-The goal is to not lose context between sessions, not to govern a team.
+### Solo Developer
+One person. Personal project, side project, or early-stage product. No team coordination needed. The governance goal is not process for its own sake — it is preserving context between sessions and preventing the mistakes that happen when no one is reviewing your work.
 
-**What's included:** CLAUDE.md (40 lines), minimal session protocol, essential security rules.
-**What's left out:** Model routing, agents, team governance, compliance, CI/CD.
-**Time to set up:** 10 minutes.
+**Use case:** You are building a SaaS product alone. You work on it three evenings a week. Each session, the AI agent needs to know what you built last time, what decisions you made, and what the plan is — without you re-explaining it every time.
 
-### Small team (3-5 developers)
-A team where everyone knows each other. You can talk through decisions, but you need
-consistency because multiple people (and multiple AI agents) are touching the same code.
-The goal is consistent agent behavior and clear conventions without bureaucracy.
+### Small Team (3-5 developers)
+A product team or startup where everyone knows each other. You can talk through decisions, but you need consistency because multiple people and multiple AI agents are modifying the same codebase concurrently. The governance goal is preventing agents from stepping on each other and enforcing shared conventions automatically.
 
-**What's included:** Everything in solo, plus governance sync, basic model routing, PR workflow,
-shared conventions enforcement.
-**What's left out:** Full CI/CD, compliance sections, enterprise change control.
-**Time to set up:** 30 minutes.
+**Use case:** Your team of four shares a monorepo. Two developers run AI sessions simultaneously. Without governance, one agent refactors a module while another adds a feature to it. The PR conflicts are the symptom. The root cause is that agents had no shared awareness of what is in progress.
 
 ### Enterprise (20+ developers)
-Multiple teams. Compliance requirements. Managers who need visibility. The goal is
-that any agent in any team session follows the same rules, and violations are caught
-automatically — not by humans after the fact.
+Multiple teams, compliance requirements, and managers who need visibility. The governance goal is that any agent in any session across any team follows the same rules, and violations are caught by automation rather than by humans discovering problems after the fact.
 
-**What's included:** Everything in small team, plus full model routing, EU AI Act reference,
-security maturity requirements, audit trail requirements, change control, definition of done,
-escalation model.
-**What's left out:** Nothing — this is the full framework.
-**Time to set up:** 2 hours (including CI/CD setup).
+**Use case:** Your engineering organization has 30 developers across four teams. You are subject to GDPR and are evaluating EU AI Act implications. When an auditor asks "how do you govern AI-assisted development?", you need a concrete answer with documentation, not a verbal description.
 
 ---
 
-## Quick comparison
+## Feature Comparison
 
 | Feature | Solo | Small Team | Enterprise |
-|---------|------|-----------|-----------|
-| CLAUDE.md | Minimal (40 lines) | Standard (80 lines) | Full (150+ lines) |
-| Session protocol | Start/end only | Full with mid-session checks | Full + audit trail |
-| Model routing | No | Basic (5 task types) | Full (11 task types) |
-| Security rules | Never-commit list | Never-commit + scan triggers | Full security maturity |
-| Agents | No | Optional | Required |
-| CI/CD enforcement | No | governance-check.yml | All three components |
-| Compliance | No | No | EU AI Act reference |
-| Change control | No | PR review for CLAUDE.md | Full change control process |
-| Definition of done | No | No | Mandatory checklist |
-| Cost tracking | No | Optional | Required |
-| Audit trail | No | CHANGELOG only | Full session + decision log |
+|---|---|---|---|
+| Session protocol | Start + end only | Start + mid-session checkpoints + end | Full protocol + audit trail logging |
+| Model routing | Not included | 6 task types | 14 task types + auto-review triggers |
+| Governance sync (drift detection) | Not included | Sprint scope checking | Sprint + architecture + ADR checking |
+| Mandatory task reporting | Not included | After every task, non-disableable | Box-drawing status block, non-disableable |
+| PR workflow | Not included | Feature branches, 1 reviewer | Feature branches, 2 reviewers for governance files |
+| Security maturity level | Level 1 (never-commit list) | Level 2 (+ scan triggers) | Level 3 (+ incident response + data classification) |
+| Compliance section | Not included | Not included | EU AI Act + GDPR + audit trail |
+| Audit trail | CHANGELOG.md only | CHANGELOG.md + DECISIONS.md | Full session logging + cost tracking |
+| Change control | Not included | PR review for CLAUDE.md | ADR + PR + two reviewers for CLAUDE.md |
+| Definition of done | Basic verification | Basic verification | Mandatory 8-item checklist with consequences |
 
 ---
 
-## How to pick
+## Start Here
 
-Start with what matches your current situation, not what you aspire to. A solo developer
-running the enterprise config will spend more time on governance than building. A team of
-20 running the solo config will have agents that diverge immediately.
+**Even if you are on a team, start with the solo configuration.** Set it up in 10 minutes, run two or three sessions with it, and confirm that the session protocol feels natural. Then upgrade one section at a time.
 
-**Upgrade path:** Solo → Small Team → Enterprise is a natural progression. Each level adds
-files, not replaces them. When you're ready to move up, copy the additional templates
-from `../templates/` and enable the additional CI/CD components from `../ci-cd/`.
+The reason: the solo configuration contains the foundation that every other level builds on. If the session start/end protocol does not work for your project, adding governance sync and model routing on top will not fix it — it will amplify the friction.
 
-**Never downgrade:** Once you have CHANGELOG.md and your agents have cross-session memory,
-removing it means the next session starts blind. If governance overhead is too high,
-slim the config rather than removing core files.
+## The Upgrade Path
+
+Each level is a strict superset of the one below it:
+
+1. **Solo to Small Team:** Add `governance_sync`, `model_routing`, `pr_workflow`, `mandatory_task_reporting`. Add MEMORY.md, DECISIONS.md, and ARCHITECTURE.md template files.
+2. **Small Team to Enterprise:** Add `compliance`, `definition_of_done`, `change_control`, `escalation_model`, `review_cadence`. Expand `model_routing` from 6 to 14 task types. Expand `security` to Level 3 with incident response and data classification. Set up all three CI/CD components.
+
+No section is ever removed or replaced. You only add.
+
+## What Is Deliberately Left Out at Each Level
+
+### Solo: what is missing and why
+
+- **Model routing:** You are one person using one model. The cognitive overhead of deciding "should this be opus or sonnet?" is not worth the cost savings until you are spending more than $50/month on AI. Before that threshold, the routing decision costs you more time than it saves you money.
+- **Governance sync:** Drift detection compares your work against a sprint plan. Solo projects rarely have formal sprint plans — you work on whatever matters most today. Adding drift detection before you have a stable plan means constant false positives.
+- **Mandatory task reporting:** The status block after every task is designed for team visibility. When you are the only person reading it, it is overhead with no audience. Add it when you start losing track of what happened mid-session.
+- **PR workflow:** You are committing to your own repo. Branch protection and review requirements add friction that only pays off when a second person needs to verify your work.
+
+### Small Team: what is missing and why
+
+- **Compliance section:** EU AI Act and GDPR documentation is regulatory overhead. If you are not subject to these regulations, maintaining the documentation costs time and adds no protection. Add it when a compliance officer or legal counsel asks about your AI governance.
+- **Definition of done:** Small teams can have the "is this actually done?" conversation directly. The formal 8-item checklist is for situations where that conversation cannot happen — because the team is too large, too distributed, or too busy for every task to get a verbal sign-off.
+- **Change control:** On a team of four, a CLAUDE.md change can be discussed in a 5-minute standup. The full ADR + PR + two reviewers process is for organizations where the person changing CLAUDE.md and the people affected by the change do not talk daily.
+- **Escalation model:** Small teams escalate naturally — you walk over and say "this looks wrong." The formal escalation contacts and procedures are for organizations where the right person to escalate to is not obvious.
+
+---
+
+## One Rule
+
+Never downgrade. Once your agents have cross-session memory through CHANGELOG.md and DECISIONS.md, removing those files means the next session starts blind. If the governance overhead feels too heavy, slim the configuration rather than deleting core files.
