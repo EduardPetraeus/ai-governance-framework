@@ -317,3 +317,80 @@ when_uncertain:
     with [assumption]?"
   - Prefer one confirmed step over three assumed steps
   - If verification fails: report clearly what failed and why. Do not silently retry.
+
+---
+
+## confidence_scoring
+# OPTIONAL: Add at Level 3+.
+# WHY: Agents are confident about everything. Without explicit confidence scoring,
+# you have no signal for when to apply extra human scrutiny.
+# High-confidence outputs get light review. Low-confidence outputs get mandatory review.
+
+report_after_every_task:
+  confidence: "[0-100]%"
+  reason: "[why this confidence level — what you know well vs. what was uncertain]"
+  low_confidence_areas: "[specific aspects requiring human focus]"
+  recommended_review_depth: "light | focused | thorough"
+
+thresholds:
+  below_70: mandatory human review before proceeding
+  below_50: recommend switching to stronger model for this task type
+  above_90: light review sufficient (spot-check, not line-by-line)
+
+---
+
+## output_contracts
+# OPTIONAL: Add at Level 4+.
+# WHY: Without a contract, "success" is whatever the agent produces.
+# Contracts shift quality from subjective ("looks right") to objective ("matches contract").
+# Define the contract BEFORE starting the task. Review verifies the contract, not the output.
+
+# Place output contracts in PROJECT_PLAN.md alongside each task, or in SPRINT_CONTRACTS.md.
+# Format per task:
+#
+# output_contract:
+#   name: "[contract name matching task name]"
+#   files_created: []
+#   files_modified: []
+#   files_not_touched: []
+#   must_include: []
+#   must_not_include: []
+#   automated_checks:
+#     tests_pass: true
+#     security_scan: clean
+#     lint: clean
+#   verification_steps: []
+
+contract_enforcement:
+  - Before starting a task: confirm the output contract with the user
+  - After completing a task: self-verify against the contract before reporting done
+  - If contract not met: report what is missing, ask to continue or adjust scope
+
+---
+
+## agent_orchestration
+# OPTIONAL: Add at Level 5.
+# WHY: Independent agents with no coordination produce redundant work and conflicting feedback.
+# The master agent coordinates specialists, validates outputs, and escalates when needed.
+# See docs/agent-orchestration.md for the full architecture.
+
+master_agent_triggers:
+  - Tasks spanning more than 2 agents
+  - Architecture changes requiring multiple reviews
+  - Multi-step features with dependencies between agents
+  - Session end reporting across multiple sub-agents
+
+spawn_rules:
+  always_active: security-reviewer
+  on_pr_or_merge: [code-reviewer, quality-gate-agent]
+  on_architecture_change: [master-agent, documentation-writer]
+  on_new_feature: [test-writer, code-reviewer]
+  on_session_end: documentation-writer
+  on_demand: [research-agent, onboarding-agent]
+
+escalation_to_human:
+  - Sub-agent confidence < 70%
+  - Sub-agent outputs conflict
+  - Task would reverse an Accepted ADR
+  - Security risk flagged by security-reviewer
+  - Blast radius would exceed session limits

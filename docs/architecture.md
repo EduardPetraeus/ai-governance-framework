@@ -497,3 +497,32 @@ Evolution **observes all other layers.** It needs data from Observability (Layer
 - **Treating governance as finished.** The framework that works for a 3-month project will not be right for an 18-month mature product. Build in the review cadence from day one.
 - **Agents merging their own CLAUDE.md changes.** An agent that modifies its own rules is not governed — it is autonomous. Constitutional changes always require human authorization.
 - **Adding rules faster than removing them.** Every incident produces a rule. Dead rules are never pruned. After a year, CLAUDE.md is 600 lines and nobody reads it. Prune aggressively and regularly.
+
+---
+
+## Beyond the 7 Layers: Agent Orchestration
+
+The 7-layer stack is a governance architecture. It defines what rules exist (Layer 1), how work flows (Layer 2), how rules are enforced (Layer 3), what is observed (Layer 4), what is remembered (Layer 5), how teams coordinate (Layer 6), and how the system improves (Layer 7).
+
+Agent orchestration is the operational pattern that runs on top of this architecture. Where the layers define the structure, orchestration defines how multiple agents collaborate within that structure.
+
+### Why Orchestration Is Not a Layer
+
+A new "Layer 8" is tempting but incorrect. Agent orchestration is not a new governance concern — it is the implementation of concerns that already exist in the stack:
+
+- The master agent reads from Layer 1 (Constitution), executes within Layer 2 (Orchestration), and feeds Layer 4 (Observability)
+- The quality gate agent enforces Layer 3 standards
+- The drift detector agent supports Layer 7 (Evolution) by identifying where governance has lapsed
+- Sub-agent coordination is a form of Layer 6 (Team Governance) for agents specifically
+
+### The Relationship to Maturity Levels
+
+Agent orchestration becomes relevant at Level 4 (Measured), where multi-agent specialization is introduced. The master agent pattern at Level 4 reads governance files across all agents, detects architectural drift, and routes tasks to optimal models. At Level 5 (Self-optimizing), the research agent and drift detector are active, and the framework treats its own governance as a subject of continuous improvement.
+
+Levels 1-3 operate with independent agents. Orchestration is additive, not a replacement for foundational governance.
+
+### Implementation Reference
+
+See [docs/agent-orchestration.md](agent-orchestration.md) for the complete master agent pattern, sub-agent communication protocol, spawn rules, anti-patterns, and implementation levels.
+
+See [docs/quality-control-patterns.md](quality-control-patterns.md) for the 7 quality control patterns that agent orchestration relies on for output validation.

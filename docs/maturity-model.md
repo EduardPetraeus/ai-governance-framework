@@ -296,10 +296,11 @@ project-root/
 ### How to Upgrade to Level 5
 
 1. Create org-level `CLAUDE.md` at `~/.claude/CLAUDE.md` for cross-repo rules
-2. Implement cross-repo governance: master agent reading governance files across repositories
-3. Build compliance audit trail: every AI decision with documented human approval
-4. Define role-based agent access: capabilities governed by developer role
-5. Move governance dashboard from periodic Markdown to real-time view
+2. Define output contracts for your 3 most common task types — see [patterns/output-contracts.md](../patterns/output-contracts.md)
+3. Implement cross-repo governance: master agent reading governance files across repositories
+4. Activate the research pipeline: configure research-agent and schedule weekly scans
+5. Build compliance audit trail: every AI decision with documented human approval
+6. Define role-based agent access: capabilities governed by developer role
 
 ### Time Estimate
 
@@ -326,6 +327,9 @@ After each sprint, a meta-agent analyzes session patterns and proposes specific 
 - Complete compliance audit trail: every AI decision, every human approval, structured for external audit
 - Role-based agent access: capabilities governed by developer role and seniority
 - Automated retrospectives: meta-agent analyzes patterns and proposes improvements
+- Research pipeline: automated scanning of AI governance sources for new patterns, weekly findings report
+- Output contracts: defined for all major task types, validated by quality gate agent on every session
+- Self-updating: /upgrade command checks for framework updates quarterly; CLAUDE.md changes always require human review
 - Real-time governance dashboard: progress, cost attribution, quality trends, compliance status
 - Full cost attribution: per developer, per team, per project, per sprint
 
@@ -345,8 +349,16 @@ org-governance-repo/
 │   └── compliance-trail.md
 ├── agents/
 │   └── master-agent-org.md        # Cross-repo master agent
-└── dashboards/
-    └── governance-dashboard.md
+├── dashboards/
+│   └── governance-dashboard.md
+├── patterns/                          # Quality control patterns
+│   ├── dual-model-validation.md
+│   ├── output-contracts.md
+│   └── [other patterns]
+└── automation/
+    ├── framework-updater.py
+    ├── best-practice-scanner.py
+    └── health-score-calculator.py
 ```
 
 ### What You Can Measure

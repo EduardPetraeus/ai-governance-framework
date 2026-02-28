@@ -82,12 +82,54 @@ See [docs/maturity-model.md](docs/maturity-model.md) for the full model with upg
 | Directory | Contents |
 |-----------|----------|
 | [`templates/`](templates/) | Core governance file templates: `CLAUDE.md`, `PROJECT_PLAN.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, ADR template |
-| [`agents/`](agents/) | Specialized agent definitions: code, review, security, docs, cost, master agent |
-| [`commands/`](commands/) | Slash command definitions: `/plan-session`, `/end-session`, `/sprint-status`, `/review`, `/security-review` |
+| [`agents/`](agents/) | Specialized agent definitions: code, review, security, docs, cost, master agent, quality gate, research, drift detector, onboarding |
+| [`commands/`](commands/) | Slash command definitions: `/plan-session`, `/end-session`, `/sprint-status`, `/review`, `/security-review`, `/validate`, `/research`, `/upgrade`, `/health-check` |
 | [`ci-cd/`](ci-cd/) | GitHub Actions workflows: AI PR review, naming validation, security scanning, governance file check |
 | [`scripts/`](scripts/) | Utility scripts: naming convention validator, governance compliance checker, cost log parser |
 | [`docs/`](docs/) | Framework documentation: [architecture](docs/architecture.md), [session protocol](docs/session-protocol.md), [maturity model](docs/maturity-model.md), [getting started](docs/getting-started.md) |
+| [`patterns/`](patterns/) | Pattern library: dual-model validation, output contracts, progressive trust, semantic verification, blast radius control, context boundaries, human-in-the-loop |
+| [`automation/`](automation/) | Automation scripts: framework updater, best-practice scanner, governance health calculator |
 | [`examples/`](examples/) | Worked examples from the HealthReporting case study (anonymized) |
+
+## Agent Orchestration
+
+Independent agents are not enough. An agent that "runs security review" and another that "runs code review" produce redundant work, conflicting feedback, and no shared context. The master agent pattern solves this:
+
+- **Master agent** coordinates all other agents: decomposes tasks, routes to specialists, validates outputs, escalates when agents disagree
+- **Quality gate agent** runs after every session: checks output contracts, architecture alignment, test coverage, and naming conventions — produces a score (0-100) and recommendation
+- **Onboarding agent** handles new user setup: assesses current state, recommends maturity level, generates configured governance files, walks through first session
+
+See [docs/agent-orchestration.md](docs/agent-orchestration.md) for the full architecture.
+
+## Quality Control
+
+AI agents are confident about everything. A wrong answer and a right answer look identical. The burden of verification is 100% on the human — unless you build a system that helps.
+
+Seven patterns for verifying AI output:
+
+| Pattern | What it solves |
+|---------|---------------|
+| [Dual-model validation](patterns/dual-model-validation.md) | Same model reviewing its own work catches nothing. Use Sonnet to write, Opus to review. |
+| [Output contracts](patterns/output-contracts.md) | Define expected output BEFORE the agent works. Review verifies the contract, not the output in isolation. |
+| [Progressive trust](patterns/progressive-trust.md) | Start at maximum oversight. Reduce based on evidence. Reset when quality drops. |
+| [Semantic verification](patterns/semantic-verification.md) | Tests verify that code runs. Semantic verification checks that it does the RIGHT thing. |
+| [Blast radius control](patterns/blast-radius-control.md) | Limit how much damage one session can do. Maximum 15 files, 200 lines per file by default. |
+| [Context boundaries](patterns/context-boundaries.md) | Agents given access to everything use everything. Define what they should and shouldn't see. |
+| [Human-in-the-loop](patterns/human-in-the-loop.md) | Specify exactly when human judgment is required. Everything else can proceed without approval. |
+
+See [docs/quality-control-patterns.md](docs/quality-control-patterns.md) for the complete guide.
+
+## Self-Updating Framework
+
+AI capabilities change monthly. A governance framework that requires manual maintenance will drift from current best practices within weeks. This framework includes three mechanisms to stay current:
+
+**Version-based updates**: The `/upgrade` command checks the upstream repository for new releases. It shows what changed, explains why, and applies non-breaking updates (new agents, new docs, new commands) with confirmation. Breaking changes (CLAUDE.md restructuring) always require human review.
+
+**Research pipeline**: The `/research [topic]` command activates the research agent, which scans configured sources (Anthropic docs, engineering blogs, GitHub trending, community forums), filters for actionable, evidence-based insights, and proposes specific framework changes.
+
+**Health assessment**: The `/health-check` command runs the drift detector agent, calculates a governance health score (0-100), identifies gaps, and recommends improvements ranked by impact.
+
+See [docs/self-updating-framework.md](docs/self-updating-framework.md) and [docs/research-pipeline.md](docs/research-pipeline.md) for implementation details.
 
 ## Real Results
 
