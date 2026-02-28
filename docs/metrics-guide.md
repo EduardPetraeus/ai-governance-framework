@@ -316,7 +316,72 @@ For organizations with enterprise-level metrics. Reviewed with leadership as par
 
 ---
 
-## 7. Collection Methods
+## 7. Dashboard Generation
+
+Manually prepared dashboards decay. The human who maintained them leaves, the schedule slips, and the dashboard sits at last quarter's numbers while the team makes decisions based on stale data. Automated generation eliminates this failure mode.
+
+### governance_dashboard.py
+
+Generates `DASHBOARD.md` — a full governance dashboard from local governance files. No external dependencies, no API calls. Readable in any Markdown viewer, renderable in CI artifacts.
+
+```bash
+python3 automation/governance_dashboard.py --repo-path .
+```
+
+**What it generates:**
+
+| Section | Source Data | Key Signals |
+|---------|-------------|-------------|
+| Health Score | `CLAUDE.md`, all governance files | Score/100, maturity level, missing checks |
+| Session Velocity | `CHANGELOG.md` | Tasks/session trend, sparkline, avg |
+| Cost Trend | `COST_LOG.md` | Cost per session, sparkline, model distribution |
+| Knowledge Health | `MEMORY.md` | Last updated, freshness rating, placeholder count |
+| ADR Coverage | `docs/adr/` | ADR count, list of recorded decisions |
+| Sprint Progress | `PROJECT_PLAN.md` | Phase completion %, sprint goal |
+| Governance Maturity | All governance files | Current level, evidence, upgrade path |
+
+**Recommended cadence:** Run weekly via CI or manually at the start of each sprint planning session.
+
+```yaml
+# Add to .github/workflows/governance-health.yml
+- name: Generate governance dashboard
+  run: python3 automation/governance_dashboard.py --repo-path .
+- name: Commit dashboard
+  run: |
+    git add DASHBOARD.md
+    git commit -m "chore: update governance dashboard" || echo "No changes"
+```
+
+### cost_dashboard.py
+
+Generates `COST_DASHBOARD.md` — a focused cost analysis from `COST_LOG.md`.
+
+```bash
+python3 automation/cost_dashboard.py --repo-path .
+```
+
+**What it generates:**
+
+| Section | Key Signals |
+|---------|-------------|
+| Summary | Total cost, avg/session, cost/task, trend |
+| Cost by Model | Per-model breakdown with bar charts |
+| Cost by Session Type | Feature vs. security vs. architecture vs. docs |
+| Cost by Time Period | Monthly trend with bar charts |
+| Model Routing Efficiency | Actual vs. optimal cost, efficiency ratio, misrouted sessions |
+| Recommendations | Where to switch to Haiku; where Opus is required |
+
+**Model routing efficiency score:** Compares actual spend to estimated optimal spend given your task mix. A score of 1.0x is perfect. Scores above 1.3x indicate significant misrouting — typically Opus used for documentation or feature work that Sonnet handles equally well.
+
+**Recommended cadence:** Run monthly before the cost review meeting. Review misrouted sessions as a team to calibrate routing decisions.
+
+### Dashboard Template
+
+`templates/DASHBOARD.md` provides a reference format for teams that prefer manual dashboards or want to customize the generated output. It shows all section headings, ASCII chart format, and table structures with placeholder data.
+
+---
+
+## 8. Collection Methods
 
 ### Git Log Analysis
 
