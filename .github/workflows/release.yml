@@ -1,0 +1,103 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Extract release notes from CHANGELOG
+        id: release_notes
+        run: |
+          # Extract the most recent session block from CHANGELOG.md if it exists
+          # Falls back to git log between tags
+          if [ -f "CHANGELOG.md" ]; then
+            python3 - <<'EOF'
+          import re, sys
+
+          with open("CHANGELOG.md") as f:
+              content = f.read()
+
+          # Find the first ## block (most recent entry)
+          blocks = re.split(r'\n(?=## )', content)
+          if len(blocks) >= 2:
+              notes = blocks[1].strip()
+          else:
+              notes = "See CHANGELOG.md for details."
+
+          with open("/tmp/release_notes.md", "w") as f:
+              f.write(notes)
+          EOF
+          else
+            git log $(git describe --tags --abbrev=0 HEAD^)..HEAD \
+              --pretty=format:"- %s" > /tmp/release_notes.md || \
+            echo "Initial release" > /tmp/release_notes.md
+          fi
+
+      - name: Package templates
+        run: |
+          zip -r ai-governance-templates-${{ steps.version.outputs.VERSION }}.zip \
+            templates/ \
+            -x "*.DS_Store"
+
+      - name: Package full framework
+        run: |
+          zip -r ai-governance-framework-${{ steps.version.outputs.VERSION }}.zip \
+            templates/ \
+            agents/ \
+            commands/ \
+            examples/ \
+            docs/ \
+            ci-cd/ \
+            scripts/ \
+            README.md \
+            CONTRIBUTING.md \
+            CLAUDE.md \
+            LICENSE \
+            -x "*.DS_Store" -x ".git/*"
+
+      - name: Package starter kit (Level 1 only)
+        run: |
+          mkdir -p starter-kit
+          cp templates/CLAUDE.md starter-kit/
+          cp templates/PROJECT_PLAN.md starter-kit/
+          cp templates/CHANGELOG.md starter-kit/
+          cp templates/MEMORY.md starter-kit/
+          cat > starter-kit/README.md << 'EOF'
+          # AI Governance Framework — Starter Kit
+
+          This is the Level 1 starter kit. Copy these files into your project root to get started.
+
+          See https://github.com/clauseduardpetraeus/ai-governance-framework for full documentation.
+          EOF
+          zip -r ai-governance-starter-kit-${{ steps.version.outputs.VERSION }}.zip starter-kit/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "${{ steps.version.outputs.VERSION }}"
+          body_path: /tmp/release_notes.md
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.VERSION, '-') }}
+          files: |
+            ai-governance-starter-kit-${{ steps.version.outputs.VERSION }}.zip
+            ai-governance-templates-${{ steps.version.outputs.VERSION }}.zip
+            ai-governance-framework-${{ steps.version.outputs.VERSION }}.zip
+          generate_release_notes: true

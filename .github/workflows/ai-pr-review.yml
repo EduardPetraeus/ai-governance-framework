@@ -1,0 +1,255 @@
+name: AI PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  ai-review:
+    name: Review PR against CLAUDE.md governance rules
+    runs-on: ubuntu-latest
+
+    # Skip if PR is from a bot or dependabot to avoid recursive reviews.
+    if: ${{ github.actor != 'dependabot[bot]' && github.actor != 'github-actions[bot]' }}
+
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get PR diff
+        id: pr-diff
+        run: |
+          git fetch origin ${{ github.base_ref }}
+
+          # Get the diff, truncated to 15000 characters to stay within API limits.
+          # Large PRs get truncated — this is intentional. Review smaller PRs.
+          DIFF=$(git diff origin/${{ github.base_ref }}...HEAD | head -c 15000)
+
+          # Escape for JSON
+          DIFF_ESCAPED=$(echo "$DIFF" | python3 -c "
+          import sys, json
+          content = sys.stdin.read()
+          print(json.dumps(content))
+          ")
+
+          echo "diff=$DIFF_ESCAPED" >> $GITHUB_OUTPUT
+
+          # Count lines for the report header
+          DIFF_LINES=$(git diff origin/${{ github.base_ref }}...HEAD | wc -l)
+          echo "diff_lines=$DIFF_LINES" >> $GITHUB_OUTPUT
+
+          FILES_CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | wc -l)
+          echo "files_changed=$FILES_CHANGED" >> $GITHUB_OUTPUT
+
+      - name: Read CLAUDE.md
+        id: claude-md
+        run: |
+          if [ -f "CLAUDE.md" ]; then
+            # Truncate CLAUDE.md to 5000 chars — the review prompt uses it for context
+            CLAUDE_MD=$(head -c 5000 CLAUDE.md | python3 -c "
+          import sys, json
+          content = sys.stdin.read()
+          print(json.dumps(content))
+          ")
+            echo "claude_md=$CLAUDE_MD" >> $GITHUB_OUTPUT
+            echo "found=true" >> $GITHUB_OUTPUT
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+            echo "CLAUDE.md not found — review will use general best practices."
+          fi
+
+      - name: Send to Claude API for review
+        id: ai-review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          DIFF=${{ steps.pr-diff.outputs.diff }}
+          CLAUDE_MD=${{ steps.claude-md.outputs.claude_md }}
+
+          # Build the review prompt
+          PROMPT=$(python3 -c "
+          import json
+
+          diff = $DIFF
+          claude_md = $CLAUDE_MD if ${{ steps.claude-md.outputs.found }} else 'CLAUDE.md not found. Review against general Python/software engineering best practices.'
+
+          prompt = f'''You are a code reviewer for an AI-assisted software project. Review this pull request.
+
+          ## Project governance rules (from CLAUDE.md)
+          {claude_md}
+
+          ## PR information
+          Title: $PR_TITLE
+          PR number: #$PR_NUMBER
+
+          ## PR diff
+          {diff}
+
+          ## Your review task
+
+          Review the diff against the CLAUDE.md governance rules above. Focus on:
+
+          1. NAMING CONVENTIONS: Do file names, variable names, function names, and commit messages
+             follow the conventions defined in CLAUDE.md?
+
+          2. ARCHITECTURE COMPLIANCE: Are new files in the correct directories? Do changes respect
+             the documented layer boundaries?
+
+          3. SCOPE ASSESSMENT: Does the PR do what its title says? Is there scope creep?
+
+          4. SECURITY: Are there any obvious secrets, PII, hardcoded credentials, or unsafe patterns?
+             (Not a deep security scan — flag obvious issues only)
+
+          5. DOCUMENTATION: Is CHANGELOG.md updated? Do new public functions have docstrings?
+
+          ## Output format
+
+          Start with a verdict line:
+          **Verdict: PASS** or **Verdict: WARN** or **Verdict: FAIL**
+
+          Then produce findings in this format:
+          - [FAIL] `file.py:42` — Description of the violation and which rule it breaks
+          - [WARN] `file.py:88` — Description of the concern
+          - [PASS] Description of what was done correctly
+
+          Then:
+          **Required actions (FAIL items):**
+          1. Numbered list of required changes
+
+          **Recommended actions (WARN items):**
+          1. Numbered list of suggestions
+
+          **What was done well:**
+          - Bullet list of correctly followed patterns
+
+          ## Verdict criteria
+          - FAIL: Any naming convention violation, missing CHANGELOG.md update, obvious security issue,
+            or architectural boundary violation
+          - WARN: Missing docstrings, missing tests, minor style inconsistencies, low-severity concerns
+          - PASS: No documented rule violations found
+
+          Keep the review concise and actionable. Do not pad with praise. Be direct.
+          '''
+
+          print(json.dumps(prompt))
+          ")
+
+          # Call the Anthropic API
+          RESPONSE=$(curl -s \
+            --max-time 60 \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "x-api-key: $ANTHROPIC_API_KEY" \
+            -H "anthropic-version: 2023-06-01" \
+            -d "{
+              \"model\": \"claude-sonnet-4-6\",
+              \"max_tokens\": 2000,
+              \"messages\": [
+                {
+                  \"role\": \"user\",
+                  \"content\": $PROMPT
+                }
+              ]
+            }" \
+            "https://api.anthropic.com/v1/messages")
+
+          # Extract the review text from the response
+          REVIEW_TEXT=$(echo "$RESPONSE" | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          if 'content' in data and data['content']:
+              print(data['content'][0]['text'])
+          elif 'error' in data:
+              print(f'API error: {data[\"error\"][\"message\"]}')
+          else:
+              print('Unexpected API response format.')
+          ")
+
+          # Determine verdict for workflow failure
+          if echo "$REVIEW_TEXT" | grep -q "\*\*Verdict: FAIL\*\*"; then
+            echo "verdict=FAIL" >> $GITHUB_OUTPUT
+          elif echo "$REVIEW_TEXT" | grep -q "\*\*Verdict: WARN\*\*"; then
+            echo "verdict=WARN" >> $GITHUB_OUTPUT
+          else
+            echo "verdict=PASS" >> $GITHUB_OUTPUT
+          fi
+
+          # Save review text to file for the comment step
+          echo "$REVIEW_TEXT" > /tmp/review_output.txt
+          echo "Review generated successfully."
+
+      - name: Post review as PR comment
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          REVIEW_TEXT=$(cat /tmp/review_output.txt)
+          FILES_CHANGED="${{ steps.pr-diff.outputs.files_changed }}"
+          DIFF_LINES="${{ steps.pr-diff.outputs.diff_lines }}"
+          VERDICT="${{ steps.ai-review.outputs.verdict }}"
+
+          # Choose a header emoji based on verdict
+          if [ "$VERDICT" = "FAIL" ]; then
+            VERDICT_EMOJI="FAIL"
+          elif [ "$VERDICT" = "WARN" ]; then
+            VERDICT_EMOJI="WARN"
+          else
+            VERDICT_EMOJI="PASS"
+          fi
+
+          COMMENT_BODY="## AI PR Review — $VERDICT_EMOJI
+
+          > Reviewed by claude-sonnet-4-6 against CLAUDE.md governance rules
+          > Files reviewed: $FILES_CHANGED | Lines in diff: $DIFF_LINES
+
+          $REVIEW_TEXT
+
+          ---
+          *This review was generated automatically. It supplements, not replaces, human review.*
+          *To configure this review, see [ai-pr-review.yml](.github/workflows/ai-pr-review.yml)*"
+
+          # Post the comment via GitHub API
+          python3 -c "
+          import urllib.request, urllib.parse, json, os
+
+          comment_body = '''$COMMENT_BODY'''
+
+          data = json.dumps({'body': comment_body}).encode('utf-8')
+          url = 'https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments'
+          req = urllib.request.Request(url, data=data, method='POST')
+          req.add_header('Authorization', 'token ${{ github.token }}')
+          req.add_header('Content-Type', 'application/json')
+          req.add_header('Accept', 'application/vnd.github.v3+json')
+
+          try:
+              with urllib.request.urlopen(req) as response:
+                  print(f'Comment posted: {response.status}')
+          except Exception as e:
+              print(f'Failed to post comment: {e}')
+          "
+
+      - name: Fail workflow if verdict is FAIL
+        if: steps.ai-review.outputs.verdict == 'FAIL'
+        run: |
+          echo ""
+          echo "╔══════════════════════════════════════════════════════════════════╗"
+          echo "║                    AI PR REVIEW: FAIL                           ║"
+          echo "╠══════════════════════════════════════════════════════════════════╣"
+          echo "║                                                                  ║"
+          echo "║  The AI code review found governance violations that must be     ║"
+          echo "║  fixed before this PR can be merged.                            ║"
+          echo "║                                                                  ║"
+          echo "║  See the PR comment for specific violations and required         ║"
+          echo "║  actions.                                                        ║"
+          echo "║                                                                  ║"
+          echo "║  Fix the FAIL items and push new commits — the review will      ║"
+          echo "║  run again automatically.                                        ║"
+          echo "╚══════════════════════════════════════════════════════════════════╝"
+          exit 1
