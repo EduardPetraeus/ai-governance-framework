@@ -1,0 +1,149 @@
+name: Governance Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  changelog-updated:
+    name: CHANGELOG.md must be updated when code changes
+    runs-on: ubuntu-latest
+
+    # Allow the skip-governance label to bypass this check for urgent hotfixes.
+    # This should be used sparingly — not as a routine workaround.
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-governance') }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          echo "changed_files<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGED" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Check if source code changed
+        id: source-changed
+        run: |
+          CODE_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD \
+            | grep -E '\.(py|sql|ts|js|jsx|tsx|go|java|rb|rs|cs)$' || true)
+
+          if [ -n "$CODE_FILES" ]; then
+            echo "code_changed=true" >> $GITHUB_OUTPUT
+            echo "Source code files changed:"
+            echo "$CODE_FILES"
+          else
+            echo "code_changed=false" >> $GITHUB_OUTPUT
+            echo "No source code files changed — governance check not required."
+          fi
+
+      - name: Check CHANGELOG.md was updated
+        if: steps.source-changed.outputs.code_changed == 'true'
+        run: |
+          CHANGELOG_CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD \
+            | grep "^CHANGELOG\.md$" || true)
+
+          if [ -z "$CHANGELOG_CHANGED" ]; then
+            echo ""
+            echo "╔══════════════════════════════════════════════════════════════════╗"
+            echo "║              GOVERNANCE CHECK FAILED                            ║"
+            echo "╠══════════════════════════════════════════════════════════════════╣"
+            echo "║                                                                  ║"
+            echo "║  Source code files were changed but CHANGELOG.md was not        ║"
+            echo "║  updated in this PR.                                             ║"
+            echo "║                                                                  ║"
+            echo "║  Required: Add a session entry to CHANGELOG.md before merging.  ║"
+            echo "║                                                                  ║"
+            echo "║  Quick fix options:                                              ║"
+            echo "║  1. Run /end-session in Claude Code — it updates CHANGELOG.md   ║"
+            echo "║     automatically and commits the change.                        ║"
+            echo "║  2. Manually add a CHANGELOG.md entry following the format      ║"
+            echo "║     in templates/CHANGELOG.md                                   ║"
+            echo "║                                                                  ║"
+            echo "║  Why this check exists:                                          ║"
+            echo "║  CHANGELOG.md is the AI agent's cross-session memory. Without   ║"
+            echo "║  it, the next session starts without context. The governance     ║"
+            echo "║  framework requires this file to be current at every merge.      ║"
+            echo "║                                                                  ║"
+            echo "║  Emergency bypass: Add the 'skip-governance' label to this PR.  ║"
+            echo "║  Use only for genuine hotfixes. Create a follow-up issue to     ║"
+            echo "║  add the CHANGELOG entry.                                        ║"
+            echo "╚══════════════════════════════════════════════════════════════════╝"
+            echo ""
+            exit 1
+          fi
+
+          echo "CHANGELOG.md updated — governance check passed."
+
+  claude-md-change-requires-review:
+    name: CLAUDE.md changes require a second reviewer
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if CLAUDE.md changed
+        id: claude-md-changed
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          CLAUDE_CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD \
+            | grep "^CLAUDE\.md$" || true)
+
+          if [ -n "$CLAUDE_CHANGED" ]; then
+            echo "claude_md_changed=true" >> $GITHUB_OUTPUT
+            echo "CLAUDE.md was changed in this PR."
+          else
+            echo "claude_md_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Verify second reviewer is required
+        if: steps.claude-md-changed.outputs.claude_md_changed == 'true'
+        run: |
+          # Check if this PR has at least one approving review from someone other
+          # than the PR author. We check the required reviewers via the PR API.
+          PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+          REVIEWERS_JSON=$(curl -s \
+            -H "Authorization: token ${{ github.token }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews")
+
+          APPROVED_BY_OTHERS=$(echo "$REVIEWERS_JSON" \
+            | python3 -c "
+          import json, sys
+          reviews = json.load(sys.stdin)
+          approved = [r for r in reviews
+                      if r.get('state') == 'APPROVED'
+                      and r.get('user', {}).get('login') != '$PR_AUTHOR']
+          print('true' if approved else 'false')
+          ")
+
+          if [ "$APPROVED_BY_OTHERS" = "false" ]; then
+            echo ""
+            echo "╔══════════════════════════════════════════════════════════════════╗"
+            echo "║          CLAUDE.md CHANGE REQUIRES SECOND REVIEWER              ║"
+            echo "╠══════════════════════════════════════════════════════════════════╣"
+            echo "║                                                                  ║"
+            echo "║  CLAUDE.md is the AI agent constitution for this project.       ║"
+            echo "║  Changes to it affect all agent behavior across all sessions.   ║"
+            echo "║                                                                  ║"
+            echo "║  This PR requires approval from a second reviewer (not the PR   ║"
+            echo "║  author) before it can be merged.                               ║"
+            echo "║                                                                  ║"
+            echo "║  This check will pass once another team member approves the PR. ║"
+            echo "╚══════════════════════════════════════════════════════════════════╝"
+            echo ""
+            # This is a warning, not a hard fail — branch protection handles enforcement.
+            # The CI job informs reviewers of the requirement.
+            echo "Warning: CLAUDE.md changed. Ensure a second reviewer approves before merging."
+          else
+            echo "CLAUDE.md change has been approved by a second reviewer."
+          fi
