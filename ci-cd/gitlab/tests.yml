@@ -1,0 +1,50 @@
+# AI Governance Framework — GitLab CI Test Suite
+# Runs the Python test suite across multiple Python versions.
+# Equivalent to .github/workflows/tests.yml.
+#
+# Include in your .gitlab-ci.yml:
+#
+#   include:
+#     - local: 'ci-cd/gitlab/tests.yml'
+#
+# Or copy the job definitions into your existing pipeline.
+#
+# Requirements:
+#   - pytest and test dependencies in requirements-dev.txt
+#   - pytest.ini or pyproject.toml at the project root
+
+stages:
+  - test
+
+.python-test-base: &python-test-base
+  stage: test
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  before_script:
+    - python --version
+    - pip install --upgrade pip
+    - pip install -r requirements-dev.txt
+  script:
+    - python -m pytest tests/ --cov=automation --cov=scripts --cov-fail-under=80 -v
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+    paths:
+      - coverage.xml
+    expire_in: 7 days
+  coverage: '/TOTAL.*\s+(\d+%)$/'
+
+test-python-3-10:
+  <<: *python-test-base
+  image: python:3.10-slim
+
+test-python-3-11:
+  <<: *python-test-base
+  image: python:3.11-slim
+
+test-python-3-12:
+  <<: *python-test-base
+  image: python:3.12-slim

@@ -1,0 +1,140 @@
+# AI Governance Framework — GitLab AI MR Review (standalone)
+# Use this file if you want to include only the AI review job
+# in an existing GitLab CI pipeline.
+#
+# Include in your .gitlab-ci.yml:
+#
+#   include:
+#     - project: 'your-org/ai-governance-framework'
+#       file: 'ci-cd/gitlab/ai-review.yml'
+#
+# Or copy the job definition into your existing .gitlab-ci.yml.
+#
+# Requirements:
+#   - ANTHROPIC_API_KEY set as a masked, protected CI/CD variable
+#   - CLAUDE.md present in the repository root
+#   - GITLAB_TOKEN or CI_JOB_TOKEN with api scope for posting MR notes
+
+.ai-review-job: &ai-review-job
+  image: python:3.12-slim
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq git
+  script:
+    - |
+      git fetch origin $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+
+      DIFF=$(git diff origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME...HEAD | head -c 15000)
+      DIFF_LINES=$(git diff origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME...HEAD | wc -l)
+      FILES_CHANGED=$(git diff --name-only origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME...HEAD | wc -l)
+
+      if [ -f "CLAUDE.md" ]; then
+        CLAUDE_MD=$(head -c 5000 CLAUDE.md)
+      else
+        CLAUDE_MD="No CLAUDE.md found. Review against general best practices."
+      fi
+
+      export DIFF="$DIFF"
+      export CLAUDE_MD="$CLAUDE_MD"
+      export FILES_CHANGED="$FILES_CHANGED"
+      export DIFF_LINES="$DIFF_LINES"
+
+      python3 << 'PYEOF'
+      import urllib.request, json, os, sys
+
+      api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+      if not api_key:
+          print("ANTHROPIC_API_KEY not set — skipping AI review.")
+          sys.exit(0)
+
+      diff = os.environ.get("DIFF", "")
+      claude_md = os.environ.get("CLAUDE_MD", "")
+      mr_title = os.environ.get("CI_MERGE_REQUEST_TITLE", "")
+      mr_iid = os.environ.get("CI_MERGE_REQUEST_IID", "")
+      project_id = os.environ.get("CI_PROJECT_ID", "")
+      gitlab_token = os.environ.get("GITLAB_TOKEN", os.environ.get("CI_JOB_TOKEN", ""))
+      gitlab_url = os.environ.get("CI_API_V4_URL", "https://gitlab.com/api/v4")
+      files_changed = os.environ.get("FILES_CHANGED", "?")
+      diff_lines = os.environ.get("DIFF_LINES", "?")
+
+      prompt = f"""You are a code reviewer for an AI-assisted software project.
+
+      ## Project governance rules (from CLAUDE.md)
+      {claude_md}
+
+      ## MR: {mr_title} (!{mr_iid})
+
+      ## Diff
+      {diff}
+
+      Review for: naming conventions, architecture compliance, scope, security, documentation.
+
+      Format:
+      **Verdict: PASS** or **Verdict: WARN** or **Verdict: FAIL**
+
+      - [FAIL/WARN/PASS] `file:line` — description
+
+      **Required actions (FAIL items):**
+      1. ...
+
+      Be concise and direct."""
+
+      payload = {
+          "model": "claude-sonnet-4-6",
+          "max_tokens": 1500,
+          "messages": [{"role": "user", "content": prompt}]
+      }
+
+      req = urllib.request.Request(
+          "https://api.anthropic.com/v1/messages",
+          data=json.dumps(payload).encode("utf-8"),
+          method="POST"
+      )
+      req.add_header("Content-Type", "application/json")
+      req.add_header("x-api-key", api_key)
+      req.add_header("anthropic-version", "2023-06-01")
+
+      try:
+          with urllib.request.urlopen(req, timeout=60) as resp:
+              data = json.load(resp)
+              review_text = data["content"][0]["text"]
+      except Exception as e:
+          print(f"API error: {e}")
+          sys.exit(0)
+
+      verdict = "FAIL" if "**Verdict: FAIL**" in review_text else \
+                "WARN" if "**Verdict: WARN**" in review_text else "PASS"
+
+      comment_body = f"""## AI MR Review — {verdict}
+
+      > claude-sonnet-4-6 | Files: {files_changed} | Lines: {diff_lines}
+
+      {review_text}
+
+      ---
+      *Automated review. Supplements, not replaces, human review.*"""
+
+      if mr_iid and project_id:
+          url = f"{gitlab_url}/projects/{project_id}/merge_requests/{mr_iid}/notes"
+          note_req = urllib.request.Request(
+              url,
+              data=json.dumps({"body": comment_body}).encode("utf-8"),
+              method="POST"
+          )
+          note_req.add_header("Content-Type", "application/json")
+          note_req.add_header("PRIVATE-TOKEN", gitlab_token)
+          try:
+              with urllib.request.urlopen(note_req) as r:
+                  print(f"Review posted: HTTP {r.status}")
+          except Exception as e:
+              print(f"Failed to post note: {e}")
+
+      if verdict == "FAIL":
+          sys.exit(1)
+      PYEOF
+
+ai-governance-review:
+  <<: *ai-review-job
+  stage: review
+  allow_failure: true

@@ -1,0 +1,248 @@
+# AI Governance Framework — GitLab CI
+# Governance enforcement pipeline for GitLab repositories.
+#
+# Equivalent to ci-cd/github-actions/governance-check.yml.
+# Add this file to your project root as .gitlab-ci.yml
+# or include it from an existing pipeline.
+#
+# Setup:
+#   1. Copy this file to your repository root as .gitlab-ci.yml
+#   2. Add ANTHROPIC_API_KEY as a GitLab CI/CD variable (Settings → CI/CD → Variables)
+#      for the ai-pr-review job. Mark it as masked and protected.
+#   3. For CHANGELOG enforcement only (no AI key needed), use the governance-check job.
+
+stages:
+  - governance
+  - review
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Governance check — CHANGELOG must be updated when source code changes
+# No secrets required. Runs on every merge request.
+# ──────────────────────────────────────────────────────────────────────────────
+
+governance-check:
+  stage: governance
+  image: alpine:3.19
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  before_script:
+    - apk add --no-cache git
+  script:
+    - |
+      git fetch origin $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+
+      CHANGED=$(git diff --name-only origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME...HEAD)
+
+      CODE_FILES=$(echo "$CHANGED" | grep -E '\.(py|sql|ts|js|jsx|tsx|go|java|rb|rs|cs)$' || true)
+
+      if [ -z "$CODE_FILES" ]; then
+        echo "No source code files changed — governance check not required."
+        exit 0
+      fi
+
+      echo "Source code files changed:"
+      echo "$CODE_FILES"
+
+      CHANGELOG_CHANGED=$(echo "$CHANGED" | grep "^CHANGELOG\.md$" || true)
+
+      if [ -z "$CHANGELOG_CHANGED" ]; then
+        echo ""
+        echo "╔══════════════════════════════════════════════════════════════════╗"
+        echo "║              GOVERNANCE CHECK FAILED                            ║"
+        echo "╠══════════════════════════════════════════════════════════════════╣"
+        echo "║                                                                  ║"
+        echo "║  Source code files were changed but CHANGELOG.md was not        ║"
+        echo "║  updated in this merge request.                                  ║"
+        echo "║                                                                  ║"
+        echo "║  Required: Add a session entry to CHANGELOG.md before merging.  ║"
+        echo "║                                                                  ║"
+        echo "║  Quick fix options:                                              ║"
+        echo "║  1. Run /end-session in Claude Code — it updates CHANGELOG.md   ║"
+        echo "║     automatically.                                               ║"
+        echo "║  2. Manually add a CHANGELOG.md entry using the format          ║"
+        echo "║     defined in templates/CHANGELOG.md                            ║"
+        echo "║                                                                  ║"
+        echo "║  Why this check exists:                                          ║"
+        echo "║  CHANGELOG.md is the AI agent cross-session memory. Without     ║"
+        echo "║  it, the next session starts without context.                    ║"
+        echo "║                                                                  ║"
+        echo "║  Emergency bypass: add the skip-governance label to this MR.    ║"
+        echo "║  Use only for genuine hotfixes.                                  ║"
+        echo "╚══════════════════════════════════════════════════════════════════╝"
+        echo ""
+        exit 1
+      fi
+
+      echo "CHANGELOG.md updated — governance check passed."
+
+# Bypass for emergency hotfixes
+# To skip: add a label named 'skip-governance' to the merge request
+governance-check-bypass:
+  stage: governance
+  image: alpine:3.19
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_LABELS =~ /skip-governance/
+  script:
+    - |
+      echo "⚠ Governance check bypassed via skip-governance label."
+      echo "Create a follow-up issue to add the missing CHANGELOG entry."
+
+# ──────────────────────────────────────────────────────────────────────────────
+# AI PR review — Claude API reviews MR against CLAUDE.md governance rules
+# Requires: ANTHROPIC_API_KEY CI/CD variable (masked, protected)
+# ──────────────────────────────────────────────────────────────────────────────
+
+ai-mr-review:
+  stage: review
+  image: python:3.12-slim
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      exists:
+        - CLAUDE.md
+  before_script:
+    - pip install --quiet urllib3
+    - apt-get update -qq && apt-get install -y -qq git curl
+  script:
+    - |
+      git fetch origin $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+
+      # Get diff, truncated to 15000 characters
+      DIFF=$(git diff origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME...HEAD | head -c 15000)
+      DIFF_LINES=$(git diff origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME...HEAD | wc -l)
+      FILES_CHANGED=$(git diff --name-only origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME...HEAD | wc -l)
+
+      # Read CLAUDE.md if present, truncated to 5000 chars
+      if [ -f "CLAUDE.md" ]; then
+        CLAUDE_MD=$(head -c 5000 CLAUDE.md)
+      else
+        CLAUDE_MD="CLAUDE.md not found. Review against general software engineering best practices."
+      fi
+
+      # Call Claude API and post review as MR note
+      python3 << 'PYEOF'
+      import urllib.request
+      import json
+      import os
+      import sys
+
+      api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+      if not api_key:
+          print("ANTHROPIC_API_KEY not set — skipping AI review.")
+          sys.exit(0)
+
+      diff = os.environ.get("DIFF", "")
+      claude_md = os.environ.get("CLAUDE_MD", "")
+      mr_title = os.environ.get("CI_MERGE_REQUEST_TITLE", "")
+      mr_iid = os.environ.get("CI_MERGE_REQUEST_IID", "")
+      project_id = os.environ.get("CI_PROJECT_ID", "")
+      gitlab_token = os.environ.get("GITLAB_TOKEN", os.environ.get("CI_JOB_TOKEN", ""))
+      gitlab_url = os.environ.get("CI_API_V4_URL", "https://gitlab.com/api/v4")
+      files_changed = os.environ.get("FILES_CHANGED", "?")
+      diff_lines = os.environ.get("DIFF_LINES", "?")
+
+      prompt = f"""You are a code reviewer for an AI-assisted software project. Review this merge request.
+
+      ## Project governance rules (from CLAUDE.md)
+      {claude_md}
+
+      ## MR information
+      Title: {mr_title}
+      MR number: !{mr_iid}
+
+      ## MR diff
+      {diff}
+
+      ## Your review task
+
+      Review the diff against the CLAUDE.md governance rules. Focus on:
+      1. NAMING CONVENTIONS: file names, variable names, commit messages
+      2. ARCHITECTURE COMPLIANCE: correct directories, layer boundaries
+      3. SCOPE ASSESSMENT: does the MR match its title?
+      4. SECURITY: obvious secrets, PII, unsafe patterns
+      5. DOCUMENTATION: CHANGELOG.md updated, docstrings on public functions
+
+      ## Output format
+
+      Start with: **Verdict: PASS** or **Verdict: WARN** or **Verdict: FAIL**
+
+      Then findings:
+      - [FAIL] `file.py:42` — violation description
+      - [WARN] `file.py:88` — concern description
+      - [PASS] what was done correctly
+
+      Then:
+      **Required actions (FAIL items):**
+      1. numbered list
+
+      **Recommended actions (WARN items):**
+      1. numbered list
+
+      Keep the review concise and actionable. Be direct."""
+
+      # Call Anthropic API
+      payload = {
+          "model": "claude-sonnet-4-6",
+          "max_tokens": 2000,
+          "messages": [{"role": "user", "content": prompt}]
+      }
+
+      req = urllib.request.Request(
+          "https://api.anthropic.com/v1/messages",
+          data=json.dumps(payload).encode("utf-8"),
+          method="POST"
+      )
+      req.add_header("Content-Type", "application/json")
+      req.add_header("x-api-key", api_key)
+      req.add_header("anthropic-version", "2023-06-01")
+
+      try:
+          with urllib.request.urlopen(req, timeout=60) as resp:
+              data = json.load(resp)
+              review_text = data["content"][0]["text"]
+      except Exception as e:
+          print(f"API call failed: {e}")
+          sys.exit(0)
+
+      # Determine verdict
+      if "**Verdict: FAIL**" in review_text:
+          verdict = "FAIL"
+      elif "**Verdict: WARN**" in review_text:
+          verdict = "WARN"
+      else:
+          verdict = "PASS"
+
+      # Post as MR note
+      comment_body = f"""## AI MR Review — {verdict}
+
+      > Reviewed by claude-sonnet-4-6 against CLAUDE.md governance rules
+      > Files reviewed: {files_changed} | Lines in diff: {diff_lines}
+
+      {review_text}
+
+      ---
+      *This review was generated automatically. It supplements, not replaces, human review.*"""
+
+      if mr_iid and project_id:
+          note_url = f"{gitlab_url}/projects/{project_id}/merge_requests/{mr_iid}/notes"
+          note_data = json.dumps({"body": comment_body}).encode("utf-8")
+          note_req = urllib.request.Request(note_url, data=note_data, method="POST")
+          note_req.add_header("Content-Type", "application/json")
+          note_req.add_header("PRIVATE-TOKEN", gitlab_token)
+          try:
+              with urllib.request.urlopen(note_req) as resp:
+                  print(f"Review comment posted: {resp.status}")
+          except Exception as e:
+              print(f"Failed to post MR note: {e}")
+
+      # Fail the job if verdict is FAIL
+      if verdict == "FAIL":
+          print("\nAI MR Review verdict: FAIL")
+          print("Fix the FAIL items and push new commits — the review will run again.")
+          sys.exit(1)
+
+      print(f"\nAI MR Review verdict: {verdict}")
+      PYEOF
+  variables:
+    DIFF: "${CI_COMMIT_SHA}"
+  environment:
+    name: review
