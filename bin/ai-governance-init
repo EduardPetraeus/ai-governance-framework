@@ -222,14 +222,35 @@ async function gatherAnswers(rl, targetDir) {
     { label: 'Enterprise (20+)', desc: 'full compliance, org inheritance',  key: 'enterprise' },
   ]);
 
+  head('CI/CD platform');
+  const ciChoice = await choose(rl, 'Which CI/CD platform do you use?', [
+    { label: 'GitHub Actions',     desc: 'governance-check + AI PR review + release workflow', key: 'github' },
+    { label: 'GitLab CI',          desc: '.gitlab-ci.yml with governance check and AI MR review', key: 'gitlab' },
+    { label: 'CircleCI',           desc: '.circleci/config.yml with governance and tests',       key: 'circleci' },
+    { label: 'Bitbucket Pipelines',desc: 'bitbucket-pipelines.yml',                              key: 'bitbucket' },
+    { label: 'Azure DevOps',       desc: 'azure-pipelines.yml with 3-stage pipeline',            key: 'azure' },
+  ]);
+
+  head('AI IDE');
+  const ideChoice = await choose(rl, 'Which AI coding IDE do you primarily use?', [
+    { label: 'Claude Code', desc: 'full governance — CLAUDE.md, slash commands, session protocol', key: 'claude' },
+    { label: 'Cursor',      desc: '.cursorrules — naming conventions and security guidance',        key: 'cursor' },
+    { label: 'Windsurf',    desc: '.windsurfrules — conventions and Cascade flow guidance',         key: 'windsurf' },
+    { label: 'Copilot',     desc: '.github/copilot-instructions.md — naming and security hints',    key: 'copilot' },
+    { label: 'Aider',       desc: 'CONVENTIONS.md — per-command naming and security rules',         key: 'aider' },
+  ]);
+
   head('Tech stack extras');
-  const wantCI = await confirm(rl, 'Add GitHub Actions workflows?');
-  const wantGitLab = (teamChoice.key !== 'solo')
-    ? await confirm(rl, 'Also add GitLab CI equivalents?', false)
-    : false;
+  const wantCI = (ciChoice.key === 'github');
+  const wantGitLab = (ciChoice.key === 'gitlab');
+  const wantCircleCI = (ciChoice.key === 'circleci');
+  const wantBitbucket = (ciChoice.key === 'bitbucket');
+  const wantAzure = (ciChoice.key === 'azure');
   const wantPreCommit = await confirm(rl, 'Add .pre-commit-config.yaml?');
   const wantADR       = await confirm(rl, 'Create docs/adr/ directory with ADR template?');
-  const wantCommands  = await confirm(rl, 'Copy slash commands to .claude/commands/?');
+  const wantCommands  = (ideChoice.key === 'claude')
+    ? await confirm(rl, 'Copy slash commands to .claude/commands/?')
+    : false;
 
   head('Optional files');
   const wantArch = await confirm(rl, 'Create ARCHITECTURE.md?', teamChoice.key !== 'solo');
@@ -242,8 +263,13 @@ async function gatherAnswers(rl, targetDir) {
     owner,
     repository,
     teamSize: teamChoice.key,
+    ciPlatform: ciChoice.key,
+    idePlatform: ideChoice.key,
     wantCI,
     wantGitLab,
+    wantCircleCI,
+    wantBitbucket,
+    wantAzure,
     wantPreCommit,
     wantADR,
     wantCommands,
@@ -298,11 +324,11 @@ function scaffoldCI(answers, targetDir) {
   if (!answers.wantCI) return;
   head('Scaffolding GitHub Actions workflows');
 
-  const workflowSrc = frameworkFile('ci-cd');
+  const workflowSrc  = frameworkFile('ci-cd', 'github-actions');
   const workflowDest = path.join(targetDir, '.github', 'workflows');
 
   if (!fs.existsSync(workflowSrc)) {
-    warn('ci-cd/ directory not found in framework — skipping workflows');
+    warn('ci-cd/github-actions/ not found in framework — skipping workflows');
     return;
   }
 
@@ -312,6 +338,116 @@ function scaffoldCI(answers, targetDir) {
     const src  = path.join(workflowSrc, file);
     const dest = path.join(workflowDest, file);
     copyFile(src, dest, false);
+  }
+}
+
+function scaffoldGitLabCI(answers, targetDir) {
+  if (!answers.wantGitLab) return;
+  head('Scaffolding GitLab CI');
+
+  const src  = frameworkFile('ci-cd', 'gitlab', '.gitlab-ci.yml');
+  const dest = path.join(targetDir, '.gitlab-ci.yml');
+  if (fs.existsSync(src)) {
+    copyFile(src, dest, false);
+    info('Add ANTHROPIC_API_KEY and GITLAB_TOKEN in Settings → CI/CD → Variables');
+  } else {
+    warn('ci-cd/gitlab/.gitlab-ci.yml not found — skipping');
+  }
+}
+
+function scaffoldCircleCI(answers, targetDir) {
+  if (!answers.wantCircleCI) return;
+  head('Scaffolding CircleCI');
+
+  const src  = frameworkFile('ci-cd', 'circleci', '.circleci', 'config.yml');
+  const dest = path.join(targetDir, '.circleci', 'config.yml');
+  if (fs.existsSync(src)) {
+    copyFile(src, dest, false);
+    info('Add ANTHROPIC_API_KEY and GITHUB_TOKEN in Project Settings → Environment Variables');
+  } else {
+    warn('ci-cd/circleci/.circleci/config.yml not found — skipping');
+  }
+}
+
+function scaffoldBitbucket(answers, targetDir) {
+  if (!answers.wantBitbucket) return;
+  head('Scaffolding Bitbucket Pipelines');
+
+  const src  = frameworkFile('ci-cd', 'bitbucket', 'bitbucket-pipelines.yml');
+  const dest = path.join(targetDir, 'bitbucket-pipelines.yml');
+  if (fs.existsSync(src)) {
+    copyFile(src, dest, false);
+    info('Add ANTHROPIC_API_KEY and BB_TOKEN in Settings → Pipelines → Repository variables');
+  } else {
+    warn('ci-cd/bitbucket/bitbucket-pipelines.yml not found — skipping');
+  }
+}
+
+function scaffoldAzureDevOps(answers, targetDir) {
+  if (!answers.wantAzure) return;
+  head('Scaffolding Azure DevOps');
+
+  const src  = frameworkFile('ci-cd', 'azure-devops', 'azure-pipelines.yml');
+  const dest = path.join(targetDir, 'azure-pipelines.yml');
+  if (fs.existsSync(src)) {
+    copyFile(src, dest, false);
+    info('Create variable group "governance-secrets" in Pipelines → Library');
+    info('Add ANTHROPIC_API_KEY and AZURE_DEVOPS_TOKEN (see ci-cd/azure-devops/README.md)');
+  } else {
+    warn('ci-cd/azure-devops/azure-pipelines.yml not found — skipping');
+  }
+}
+
+function scaffoldIDE(answers, targetDir) {
+  const ide = answers.idePlatform;
+  if (ide === 'claude') return; // CLAUDE.md already scaffolded in Level 1
+
+  if (ide === 'cursor') {
+    head('Scaffolding Cursor rules');
+    const src  = frameworkFile('templates', 'cursor-rules.md');
+    const dest = path.join(targetDir, '.cursorrules');
+    if (fs.existsSync(src)) {
+      copyFile(src, dest, false);
+      info('Edit .cursorrules: update project_context and conventions sections');
+    } else {
+      warn('templates/cursor-rules.md not found — skipping');
+    }
+  }
+
+  if (ide === 'windsurf') {
+    head('Scaffolding Windsurf rules');
+    const src  = frameworkFile('templates', 'windsurf-rules.md');
+    const dest = path.join(targetDir, '.windsurfrules');
+    if (fs.existsSync(src)) {
+      copyFile(src, dest, false);
+      info('Edit .windsurfrules: update project_context and conventions sections');
+    } else {
+      warn('templates/windsurf-rules.md not found — skipping');
+    }
+  }
+
+  if (ide === 'copilot') {
+    head('Scaffolding GitHub Copilot instructions');
+    const src  = frameworkFile('templates', 'copilot-instructions.md');
+    const dest = path.join(targetDir, '.github', 'copilot-instructions.md');
+    if (fs.existsSync(src)) {
+      copyFile(src, dest, false);
+      info('Edit .github/copilot-instructions.md: update project context');
+    } else {
+      warn('templates/copilot-instructions.md not found — skipping');
+    }
+  }
+
+  if (ide === 'aider') {
+    head('Scaffolding Aider conventions');
+    const src  = frameworkFile('templates', 'aider-conventions.md');
+    const dest = path.join(targetDir, 'CONVENTIONS.md');
+    if (fs.existsSync(src)) {
+      copyFile(src, dest, false);
+      info('Edit CONVENTIONS.md: update project_context and naming conventions');
+    } else {
+      warn('templates/aider-conventions.md not found — skipping');
+    }
   }
 }
 
@@ -448,10 +584,24 @@ function printNextSteps(answers) {
   console.log(`     ${c.dim}git add CLAUDE.md PROJECT_PLAN.md CHANGELOG.md${c.reset}`);
   console.log(`     ${c.dim}git commit -m "chore: add AI governance framework (Level 1)"${c.reset}`);
 
-  if (answers.wantCommands) {
-    console.log(`  ${c.bold}${step++}.${c.reset} Open Claude Code and run ${c.cyan}/plan-session${c.reset} to start your first governed session.`);
-  } else {
-    console.log(`  ${c.bold}${step++}.${c.reset} Open Claude Code — it reads CLAUDE.md automatically.`);
+  if (answers.idePlatform === 'claude') {
+    if (answers.wantCommands) {
+      console.log(`  ${c.bold}${step++}.${c.reset} Open Claude Code and run ${c.cyan}/plan-session${c.reset} to start your first governed session.`);
+    } else {
+      console.log(`  ${c.bold}${step++}.${c.reset} Open Claude Code — it reads CLAUDE.md automatically.`);
+    }
+  } else if (answers.idePlatform === 'cursor') {
+    console.log(`  ${c.bold}${step++}.${c.reset} Open Cursor — it reads ${c.cyan}.cursorrules${c.reset} automatically.`);
+    console.log(`     ${c.dim}Edit .cursorrules to update project_context with your actual values.${c.reset}`);
+  } else if (answers.idePlatform === 'windsurf') {
+    console.log(`  ${c.bold}${step++}.${c.reset} Open Windsurf — it reads ${c.cyan}.windsurfrules${c.reset} automatically.`);
+    console.log(`     ${c.dim}Edit .windsurfrules to update project_context with your actual values.${c.reset}`);
+  } else if (answers.idePlatform === 'copilot') {
+    console.log(`  ${c.bold}${step++}.${c.reset} GitHub Copilot reads ${c.cyan}.github/copilot-instructions.md${c.reset} automatically.`);
+    console.log(`     ${c.dim}Edit the file to update project_context with your actual values.${c.reset}`);
+  } else if (answers.idePlatform === 'aider') {
+    console.log(`  ${c.bold}${step++}.${c.reset} Aider reads ${c.cyan}CONVENTIONS.md${c.reset} automatically from the repository root.`);
+    console.log(`     ${c.dim}Run: aider --read PROJECT_PLAN.md src/your_file.py${c.reset}`);
   }
 
   if (answers.wantPreCommit) {
@@ -485,7 +635,12 @@ async function main() {
 
     scaffoldLevel1(answers, targetDir, overwrite);
     scaffoldOptionalFiles(answers, targetDir, overwrite);
+    scaffoldIDE(answers, targetDir);
     scaffoldCI(answers, targetDir);
+    scaffoldGitLabCI(answers, targetDir);
+    scaffoldCircleCI(answers, targetDir);
+    scaffoldBitbucket(answers, targetDir);
+    scaffoldAzureDevOps(answers, targetDir);
     scaffoldPreCommit(answers, targetDir);
     scaffoldADR(answers, targetDir);
     scaffoldCommands(answers, targetDir);
