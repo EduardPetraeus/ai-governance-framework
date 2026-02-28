@@ -1,15 +1,26 @@
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Tests](https://github.com/EduardPetraeus/ai-governance-framework/actions/workflows/tests.yml/badge.svg)](https://github.com/EduardPetraeus/ai-governance-framework/actions/workflows/tests.yml) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md) [![Made with Claude Code](https://img.shields.io/badge/Made%20with-Claude%20Code-blueviolet)](https://claude.ai/code)
+
 # AI Governance Framework
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-[![Made with Claude Code](https://img.shields.io/badge/Made%20with-Claude%20Code-blueviolet)](https://claude.ai/code)
-[![Tests](https://github.com/EduardPetraeus/ai-governance-framework/actions/workflows/tests.yml/badge.svg)](https://github.com/EduardPetraeus/ai-governance-framework/actions/workflows/tests.yml)
+_A 7-layer governance system that gives AI coding agents the context, constraints, and continuous oversight needed to build the right thing at 15x speed — not just any thing fast._
 
-> **Your AI agent is 15x faster. But is it building the right thing?**
+## Why This Exists
 
-## Installation
+AI agents are obedient, not wise. Without governance, they produce technical debt at 15x speed: decisions re-opened every session, scope that expands silently, codebases that drift from every deliberate architectural choice. This framework turns agent obedience into a structural advantage by encoding your goals, constraints, and decisions as durable, machine-readable context.
 
-Three ways to get started — all lead to the same governed session in under 15 minutes.
+## What Makes This Different
+
+Most AI governance approaches are static rule documents. This framework is a living system:
+
+- **Self-testing**: A red team agent actively probes for governance gaps ([/audit](commands/audit.md))
+- **Self-updating**: Checks for new best practices and framework updates ([/upgrade](commands/upgrade.md))
+- **Self-aware**: Agents know their own model and flag when a task needs a different one
+- **Anti-fragile**: Production incidents automatically tighten the rules that allowed them
+- **Friction-conscious**: Governance overhead is measured and budgeted — if it's too heavy, we fix it
+- **Enterprise-native**: Constitutional inheritance (org → team → repo) with enforced compliance
+- **Honest about limits**: Explicit automation bias defense — AI validation has a confidence ceiling of 85%
+
+## Quick Start
 
 **Interactive wizard (recommended):**
 
@@ -17,7 +28,7 @@ Three ways to get started — all lead to the same governed session in under 15 
 npx ai-governance-init
 ```
 
-Asks about your project, team size, and CI setup — then scaffolds the right files. Requires Node.js 14+.
+Asks about your project, team size, CI platform, and IDE — then scaffolds the right files. Requires Node.js 14+.
 
 **One-liner (macOS / Linux):**
 
@@ -38,27 +49,7 @@ cp ai-governance-framework/templates/CHANGELOG.md    ./CHANGELOG.md
 
 See [docs/getting-started.md](docs/getting-started.md) for the full walkthrough, including slash command setup and Level 2 upgrade path.
 
-## What Makes This Different
-
-Most AI governance approaches are static rule documents. This framework is a **living system**:
-
-- **Self-testing**: A red team agent actively probes for governance gaps ([/audit](commands/audit.md))
-- **Self-updating**: Checks for new best practices and framework updates ([/upgrade](commands/upgrade.md))
-- **Self-aware**: Agents know their own model and flag when a task needs a different one
-- **Anti-fragile**: Production incidents automatically tighten the rules that allowed them
-- **Friction-conscious**: Governance overhead is measured and budgeted — if it's too heavy, we fix it
-- **Enterprise-native**: Constitutional inheritance (org → team → repo) with enforced compliance
-- **Honest about limits**: Explicit automation bias defense — AI validation has a confidence ceiling of 85%
-
-## The Problem
-
-AI agents are obedient, not wise. They optimize for the nearest instruction, not your organization's actual goals. Without governance, they produce technical debt at 15x speed: divergent implementations across developers, architectural decisions reopened in every session, scope that expands silently, and a codebase that drifts from every deliberate choice ever made.
-
-The cost is not individual errors. The cost is structural incoherence compounding across hundreds of commits until no one — human or agent — can explain why the system is built the way it is.
-
-**Governance is not about slowing agents down. It is about giving them the right context so their obedience produces the right result.**
-
-## The 7-Layer Stack
+## Architecture — The 7-Layer Stack
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -87,20 +78,167 @@ The cost is not individual errors. The cost is structural incoherence compoundin
           ▲ Data flows up          Rules flow down ▼
 ```
 
-Each layer builds on the one below. You cannot enforce rules you have not written. You cannot observe chaos you have not structured. Implement bottom-up.
+Each layer builds on the one below. Implement bottom-up.
 
-## Quick Start
+## vs. Other Approaches
 
-```bash
-# Inside your project directory:
-npx ai-governance-init
+| Feature | This Framework | SuperClaude | Governor | THEOS | GRC Plugin |
+|---|---|---|---|---|---|
+| Governance layers | 7 structured layers | None | Single-layer | Template-based | Policy-file |
+| Self-testing (red team) | Yes | No | No | No | No |
+| Self-updating | Yes | No | No | No | No |
+| Constitutional inheritance | Yes (org → team → repo) | No | No | No | No |
+| CI/CD enforcement | 5 platforms | No | Partial | No | GitHub only |
+| Multi-IDE support | 4 IDEs | No | No | No | No |
+| Automation bias defense | Yes (85% ceiling) | No | No | No | No |
+| Confidence ceiling | 85% (hardcoded) | None | None | None | None |
+| Test suite | 273 tests | None | None | None | None |
+| Zero core dependencies | Yes | No | No | No | No |
+| Maturity model | 6 levels (0-5) | None | None | None | None |
+| Agent count | 11 specialized | None | None | None | None |
+
+SuperClaude = productivity enhancement layer; Governor = policy-file governance; THEOS = template orchestration system; GRC Plugin = compliance tooling for specific IDEs.
+
+## Directory Structure
+
+```
+ai-governance-framework/
+├── agents/            # 11 specialized agent definitions (system prompts for Claude Code)
+├── automation/        # 8 Python scripts for governance data collection
+├── bin/               # CLI installer (ai-governance-init)
+├── ci-cd/             # Workflows for GitHub Actions, GitLab, CircleCI, Bitbucket, Azure DevOps
+│   ├── github-actions/
+│   ├── gitlab/
+│   ├── circleci/
+│   ├── bitbucket/
+│   ├── azure-devops/
+│   └── pre-commit/
+├── commands/          # 10 slash command definitions for Claude Code
+├── docs/              # Framework documentation organized by topic
+│   ├── adr/           # Architecture Decision Records
+│   └── case-studies/  # Real-world implementation case studies
+├── examples/          # Production-ready configurations for 3 team sizes
+│   ├── solo-developer/
+│   ├── small-team/
+│   └── enterprise/
+├── patterns/          # 13 governance patterns with implementation guides
+├── scripts/           # Utility scripts: security review, productivity tracking, git hooks
+├── templates/         # All governance file templates (15 files)
+├── tests/             # 273 tests across 13 files
+├── CLAUDE.md          # This repo's own governance constitution
+├── CONTRIBUTING.md    # How to contribute
+├── install.sh         # One-liner installer
+└── package.json       # CLI wizard package definition
 ```
 
-The wizard asks four questions and scaffolds the right files. Your agent now has a constitution to follow, a session protocol to execute, and a project plan to orient against. Time investment: under five minutes.
+## Complete File Inventory
 
-Prefer manual setup? See the [Installation](#installation) section above.
+### Agents (11)
 
-See [docs/getting-started.md](docs/getting-started.md) for the full walkthrough.
+| File | Description |
+|---|---|
+| [agents/security-reviewer.md](agents/security-reviewer.md) | Scans diffs and code for secrets, PII, injection vulnerabilities |
+| [agents/code-reviewer.md](agents/code-reviewer.md) | Reviews PRs against naming conventions, ADRs, and architecture decisions |
+| [agents/documentation-writer.md](agents/documentation-writer.md) | Writes and maintains technical documentation |
+| [agents/test-writer.md](agents/test-writer.md) | Generates comprehensive test suites from requirements and code |
+| [agents/code-simplifier.md](agents/code-simplifier.md) | Identifies and eliminates unnecessary complexity |
+| [agents/master-agent.md](agents/master-agent.md) | Orchestrates all other agents for multi-step tasks |
+| [agents/quality-gate-agent.md](agents/quality-gate-agent.md) | Scores every session output 0-100 against framework standards |
+| [agents/drift-detector-agent.md](agents/drift-detector-agent.md) | Detects when the codebase diverges from architectural decisions |
+| [agents/red-team-auditor.md](agents/red-team-auditor.md) | Adversarially probes governance gaps and enforcement weaknesses |
+| [agents/research-agent.md](agents/research-agent.md) | Scans sources for new AI governance insights and proposes updates |
+| [agents/onboarding-agent.md](agents/onboarding-agent.md) | Guides new projects through framework setup and first session |
+
+### Commands (10)
+
+| File | Description |
+|---|---|
+| [commands/plan-session.md](commands/plan-session.md) | Start a governed session: read state, confirm scope, set goals |
+| [commands/end-session.md](commands/end-session.md) | Close a session: update CHANGELOG, MEMORY, PROJECT_PLAN |
+| [commands/status.md](commands/status.md) | Report current sprint progress, blockers, and next actions |
+| [commands/prioritize.md](commands/prioritize.md) | Rank the task backlog by impact and urgency |
+| [commands/security-review.md](commands/security-review.md) | Run the security-reviewer agent on staged changes |
+| [commands/audit.md](commands/audit.md) | Run the red-team-auditor against the current governance setup |
+| [commands/health-check.md](commands/health-check.md) | Calculate governance health score and identify gaps |
+| [commands/research.md](commands/research.md) | Activate the research agent to scan for new best practices |
+| [commands/upgrade.md](commands/upgrade.md) | Check for framework updates and apply non-breaking changes |
+| [commands/validate.md](commands/validate.md) | Verify that all governance files are complete and cross-references resolve |
+
+### Patterns (13)
+
+| File | Description |
+|---|---|
+| [patterns/dual-model-validation.md](patterns/dual-model-validation.md) | Use a second model to verify the first model's output |
+| [patterns/output-contracts.md](patterns/output-contracts.md) | Define expected output before the agent works |
+| [patterns/progressive-trust.md](patterns/progressive-trust.md) | Start at maximum oversight, reduce based on evidence |
+| [patterns/semantic-verification.md](patterns/semantic-verification.md) | Verify that code does the right thing, not just that it runs |
+| [patterns/blast-radius-control.md](patterns/blast-radius-control.md) | Limit how much damage one session can cause (max 15 files/session) |
+| [patterns/context-boundaries.md](patterns/context-boundaries.md) | Define what agents should and should not see |
+| [patterns/human-in-the-loop.md](patterns/human-in-the-loop.md) | Specify exactly when human judgment is required |
+| [patterns/automation-bias-defense.md](patterns/automation-bias-defense.md) | Cap AI confidence at 85%, surface what was not verified |
+| [patterns/kill-switch.md](patterns/kill-switch.md) | Emergency halt procedure for any agent at any maturity level |
+| [patterns/session-replay.md](patterns/session-replay.md) | Reconstruct what an agent did and why from session artifacts |
+| [patterns/knowledge-decay.md](patterns/knowledge-decay.md) | Detect and refresh stale context before it misleads agents |
+| [patterns/friction-budget.md](patterns/friction-budget.md) | Measure and limit governance overhead per session |
+| [patterns/constitutional-inheritance.md](patterns/constitutional-inheritance.md) | Cascade org-level rules down to team and repo |
+
+### Templates (15)
+
+| File | Description |
+|---|---|
+| [templates/CLAUDE.md](templates/CLAUDE.md) | Main agent constitution template (copy to repo root) |
+| [templates/CLAUDE.org.md](templates/CLAUDE.org.md) | Organization-level constitution (inherits to all team/repo constitutions) |
+| [templates/CLAUDE.team.md](templates/CLAUDE.team.md) | Team-level constitution (inherits from org, inherited by repos) |
+| [templates/PROJECT_PLAN.md](templates/PROJECT_PLAN.md) | Sprint goals, phases, task backlog |
+| [templates/ARCHITECTURE.md](templates/ARCHITECTURE.md) | Technology choices, component structure, design decisions |
+| [templates/CHANGELOG.md](templates/CHANGELOG.md) | Session-level history of changes |
+| [templates/MEMORY.md](templates/MEMORY.md) | Cross-session knowledge: patterns, anti-patterns, confirmed decisions |
+| [templates/DECISIONS.md](templates/DECISIONS.md) | Permanent log of architectural decisions |
+| [templates/SPRINT_LOG.md](templates/SPRINT_LOG.md) | Sprint velocity, retrospectives, trend data |
+| [templates/COST_LOG.md](templates/COST_LOG.md) | AI cost per session, model routing data |
+| [templates/DASHBOARD.md](templates/DASHBOARD.md) | Auto-generated governance health dashboard |
+| [templates/cursor-rules.md](templates/cursor-rules.md) | Governance rules for Cursor IDE |
+| [templates/copilot-instructions.md](templates/copilot-instructions.md) | Governance rules for GitHub Copilot |
+| [templates/windsurf-rules.md](templates/windsurf-rules.md) | Governance rules for Windsurf IDE |
+| [templates/aider-conventions.md](templates/aider-conventions.md) | Governance conventions for Aider |
+
+### Automation Scripts (8)
+
+| File | Description |
+|---|---|
+| [automation/health_score_calculator.py](automation/health_score_calculator.py) | Scores governance maturity 0-100 across 15 checks |
+| [automation/governance_dashboard.py](automation/governance_dashboard.py) | Generates DASHBOARD.md from project artifacts |
+| [automation/best_practice_scanner.py](automation/best_practice_scanner.py) | Scans sources for new AI governance insights |
+| [automation/framework_updater.py](automation/framework_updater.py) | Checks upstream for new framework releases |
+| [automation/cost_dashboard.py](automation/cost_dashboard.py) | Analyzes AI cost trends from COST_LOG.md |
+| [automation/inherits_from_validator.py](automation/inherits_from_validator.py) | Validates constitutional inheritance chain |
+| [automation/token_counter.py](automation/token_counter.py) | Estimates session token usage from git history |
+| [automation/adr_coverage_checker.py](automation/adr_coverage_checker.py) | Identifies architectural decisions lacking ADRs |
+
+### Scripts (5)
+
+| File | Description |
+|---|---|
+| [scripts/ai_security_review.py](scripts/ai_security_review.py) | Security scanner for git diffs (CRITICAL/HIGH/MEDIUM/LOW) |
+| [scripts/productivity_tracker.py](scripts/productivity_tracker.py) | Git-based productivity metrics calculator |
+| [scripts/deploy_commands.sh](scripts/deploy_commands.sh) | Installs slash commands into .claude/commands/ |
+| [scripts/hooks/pre_commit_guard.sh](scripts/hooks/pre_commit_guard.sh) | Pre-commit hook blocking governance violations |
+| [scripts/hooks/post_commit.sh](scripts/hooks/post_commit.sh) | Post-commit session logging hook |
+
+### CI/CD Workflows (10 files across 5 platforms + pre-commit)
+
+| File | Description |
+|---|---|
+| [ci-cd/github-actions/ai-pr-review.yml](ci-cd/github-actions/ai-pr-review.yml) | AI-powered PR review on every pull request |
+| [ci-cd/github-actions/governance-check.yml](ci-cd/github-actions/governance-check.yml) | Enforces CHANGELOG and governance file updates |
+| [ci-cd/github-actions/release.yml](ci-cd/github-actions/release.yml) | Release automation with semantic versioning gates |
+| [ci-cd/gitlab/.gitlab-ci.yml](ci-cd/gitlab/.gitlab-ci.yml) | GitLab CI pipeline definition |
+| [ci-cd/gitlab/ai-review.yml](ci-cd/gitlab/ai-review.yml) | GitLab AI PR review job |
+| [ci-cd/gitlab/tests.yml](ci-cd/gitlab/tests.yml) | GitLab test runner job |
+| [ci-cd/circleci/.circleci/config.yml](ci-cd/circleci/.circleci/config.yml) | CircleCI governance pipeline |
+| [ci-cd/bitbucket/bitbucket-pipelines.yml](ci-cd/bitbucket/bitbucket-pipelines.yml) | Bitbucket Pipelines governance workflow |
+| [ci-cd/azure-devops/azure-pipelines.yml](ci-cd/azure-devops/azure-pipelines.yml) | Azure DevOps governance pipeline |
+| [ci-cd/pre-commit/.pre-commit-config.yaml](ci-cd/pre-commit/.pre-commit-config.yaml) | Pre-commit hooks for local enforcement |
 
 ## Maturity Model
 
@@ -113,31 +251,17 @@ See [docs/getting-started.md](docs/getting-started.md) for the full walkthrough.
 | **4** | **Measured** | You know your AI productivity number. A master agent detects architectural drift. Cost is tracked per session. Quality metrics drive decisions, not intuition. |
 | **5** | **Self-optimizing** | The framework improves itself. Retrospectives are automated. Org-level governance cascades to every repo. Compliance audit trails are complete. |
 
-See [docs/maturity-model.md](docs/maturity-model.md) for the full model with upgrade paths and self-assessment.
-
-## What Is Included
-
-| Directory | Contents |
-|-----------|----------|
-| [`templates/`](templates/) | Core governance file templates: `CLAUDE.md`, `CLAUDE.org.md`, `CLAUDE.team.md`, `PROJECT_PLAN.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `MEMORY.md`, `SPRINT_LOG.md`, `COST_LOG.md`, `DECISIONS.md`, ADR template |
-| [`agents/`](agents/) | Specialized agent definitions: security reviewer, code reviewer, documentation writer, test writer, code simplifier, master agent, quality gate, drift detector, red team auditor, research agent, onboarding agent |
-| [`commands/`](commands/) | Slash command definitions: `/plan-session`, `/end-session`, `/status`, `/prioritize`, `/security-review`, `/validate`, `/research`, `/upgrade`, `/health-check`, `/audit` |
-| [`ci-cd/`](ci-cd/) | GitHub Actions workflows: AI PR review, governance check, release automation, pre-commit hooks |
-| [`scripts/`](scripts/) | Utility scripts: productivity tracker, pre-commit guard hook, post-commit session logger |
-| [`docs/`](docs/) | Framework documentation: [architecture](docs/architecture.md), [session protocol](docs/session-protocol.md), [maturity model](docs/maturity-model.md), [getting started](docs/getting-started.md) |
-| [`patterns/`](patterns/) | Pattern library: dual-model validation, output contracts, progressive trust, semantic verification, blast radius control, context boundaries, human-in-the-loop, automation bias defense, kill switch, session replay, knowledge decay, friction budget, constitutional inheritance |
-| [`automation/`](automation/) | Automation scripts: framework updater, best-practice scanner, governance health calculator |
-| [`examples/`](examples/) | Complete configurations for three personas: solo developer, small team, enterprise |
+See [docs/maturity-model.md](docs/maturity-model.md) for upgrade paths and self-assessment checklists.
 
 ## Agent Orchestration
 
 Independent agents are not enough. An agent that "runs security review" and another that "runs code review" produce redundant work, conflicting feedback, and no shared context. The master agent pattern solves this:
 
 - **Master agent** coordinates all other agents: decomposes tasks, routes to specialists, validates outputs, escalates when agents disagree
-- **Quality gate agent** runs after every session: checks output contracts, architecture alignment, test coverage, and naming conventions — produces a score (0-100) and recommendation
+- **Quality gate agent** runs after every session: checks output contracts, architecture alignment, test coverage, and naming conventions — produces a score (0-100) and a concrete recommendation
 - **Onboarding agent** handles new user setup: assesses current state, recommends maturity level, generates configured governance files, walks through first session
 
-See [docs/agent-orchestration.md](docs/agent-orchestration.md) for the full architecture.
+See [docs/agent-orchestration.md](docs/agent-orchestration.md) for the full orchestration architecture.
 
 ## Quality Control
 
@@ -145,59 +269,46 @@ AI agents are confident about everything. A wrong answer and a right answer look
 
 Eight patterns for verifying AI output:
 
-| Pattern | What it solves |
-|---------|---------------|
+| Pattern | What It Solves |
+|---|---|
 | [Dual-model validation](patterns/dual-model-validation.md) | Same model reviewing its own work catches nothing. Use Sonnet to write, Opus to review. |
-| [Output contracts](patterns/output-contracts.md) | Define expected output BEFORE the agent works. Review verifies the contract, not the output in isolation. |
+| [Output contracts](patterns/output-contracts.md) | Define expected output before the agent works. Review verifies the contract, not the output in isolation. |
 | [Progressive trust](patterns/progressive-trust.md) | Start at maximum oversight. Reduce based on evidence. Reset when quality drops. |
-| [Semantic verification](patterns/semantic-verification.md) | Tests verify that code runs. Semantic verification checks that it does the RIGHT thing. |
+| [Semantic verification](patterns/semantic-verification.md) | Tests verify that code runs. Semantic verification checks that it does the right thing. |
 | [Blast radius control](patterns/blast-radius-control.md) | Limit how much damage one session can do. Maximum 15 files, 200 lines per file by default. |
-| [Context boundaries](patterns/context-boundaries.md) | Agents given access to everything use everything. Define what they should and shouldn't see. |
-| [Human-in-the-loop](patterns/human-in-the-loop.md) | Specify exactly when human judgment is required. Everything else can proceed without approval. |
-| [Automation bias defense](patterns/automation-bias-defense.md) | More AI validation layers can reduce human scrutiny. Cap AI confidence at 85% and surface what was NOT verified. |
+| [Context boundaries](patterns/context-boundaries.md) | Agents given access to everything use everything. Define what they should and should not see. |
+| [Human-in-the-loop](patterns/human-in-the-loop.md) | Specify exactly when human judgment is required. Everything else proceeds without approval. |
+| [Automation bias defense](patterns/automation-bias-defense.md) | More AI validation layers can reduce human scrutiny. Cap AI confidence at 85% and surface what was not verified. |
 
 See [docs/quality-control-patterns.md](docs/quality-control-patterns.md) for the complete guide.
 
-## Self-Updating Framework
-
-AI capabilities change monthly. A governance framework that requires manual maintenance will drift from current best practices within weeks. This framework includes three mechanisms to stay current:
-
-**Version-based updates**: The `/upgrade` command checks the upstream repository for new releases. It shows what changed, explains why, and applies non-breaking updates (new agents, new docs, new commands) with confirmation. Breaking changes (CLAUDE.md restructuring) always require human review.
-
-**Research pipeline**: The `/research [topic]` command activates the research agent, which scans configured sources (Anthropic docs, engineering blogs, GitHub trending, community forums), filters for actionable, evidence-based insights, and proposes specific framework changes.
-
-**Health assessment**: The `/health-check` command runs the drift detector agent, calculates a governance health score (0-100), identifies gaps, and recommends improvements ranked by impact.
-
-See [docs/self-updating-framework.md](docs/self-updating-framework.md) and [docs/research-pipeline.md](docs/research-pipeline.md) for implementation details.
-
-## Real Results
-
-The framework was built and battle-tested on a real health data platform project — not designed in theory and tested later.
-
-It was used from the first line of code. Every pattern, agent definition, and command in this repository was either extracted from that implementation or created to address a gap discovered during it. The session protocol eliminated context loss between sessions. ADRs stopped re-litigation of closed decisions. CI enforcement made CHANGELOG compliance automatic rather than optional. The case study in [docs/case-studies/health-reporting.md](docs/case-studies/health-reporting.md) documents the full progression, including what did not work and why.
-
-Governance does not slow development down. It redirects a small fraction of velocity into structure so the remainder builds the right thing consistently.
-
 ## Who Is This For
 
-**Solo developers** — You ship fast but lose track of what you have built. You need continuity across sessions without manually re-explaining your project every time. Start at Level 1. One afternoon. Immediate results.
+**Solo developers** — You ship fast but lose track of what you have built. You need continuity across sessions without manually re-explaining your project every time. Start at Level 1. One afternoon. Immediate results. See [examples/solo-developer/CLAUDE.md](examples/solo-developer/CLAUDE.md).
 
-**Teams (5-20 developers)** — Multiple agents are running, each following the nearest instruction instead of the shared plan. PRs land without architectural consistency checks. You want governed AI development without a complex platform. Start at Layers 1-2, add Layer 3 enforcement within a sprint.
+**Teams (5-20 developers)** — Multiple agents are running, each following the nearest instruction instead of the shared plan. PRs land without architectural consistency checks. You want governed AI development without a complex platform. Start at Layers 1-2, add Layer 3 enforcement within a sprint. See [examples/small-team/CLAUDE.md](examples/small-team/CLAUDE.md).
 
-**Enterprise (50+ developers)** — AI adoption is happening whether governance exists or not. You need compliance audit trails, role-based agent access, and cross-repo consistency. You want a framework that integrates with existing processes. Start at Layers 2-3, target Level 5.
+**Enterprise (50+ developers)** — AI adoption is happening whether governance exists or not. You need compliance audit trails, role-based agent access, and cross-repo consistency. You want a framework that integrates with existing processes, CI platforms, and IDEs. Start at Layers 2-3, target Level 5. See [examples/enterprise/CLAUDE.md](examples/enterprise/CLAUDE.md) and [docs/enterprise-playbook.md](docs/enterprise-playbook.md).
+
+## Built With This Framework
+
+This repository is the reference implementation of Layer 1 (Constitution) of the framework it describes. Every file, every cross-reference, and every governance decision in this repo follows the framework's own standards. The CLAUDE.md at the root of this repository governs how AI agents work on this codebase. Governance does not require a separate system. It requires the discipline to apply the same standards everywhere.
 
 ## Roadmap
 
-- [x] CLI installer (`npx ai-governance-init`) — scaffolds templates into an existing project
+- [x] CLI installer (`npx ai-governance-init`)
+- [x] GitLab CI/CD support
+- [x] CircleCI and Bitbucket Pipelines support
+- [x] Azure DevOps support
+- [x] Multi-IDE support (Cursor, Copilot, Windsurf, Aider)
+- [x] 273-test automated test suite
 - [ ] VS Code extension — inline governance compliance hints
-- [ ] GitLab CI/CD equivalents for all GitHub Actions workflows
-- [ ] CircleCI and Bitbucket Pipelines support
-- [ ] Org-level CLAUDE.md inheritance resolver
-- [ ] Cost dashboard (Markdown-based, no external dependencies)
+- [ ] Org-level CLAUDE.md inheritance resolver (UI-driven)
+- [ ] OpenAI / Gemini model routing configuration
 
 ## Contributing
 
-Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to report issues, add agents or commands, and the quality bar required for PRs.
+Contributions are welcome. The framework has a 273-test suite and enforces its own governance standards on every PR — contributions must pass the full test suite and follow the conventions in [CLAUDE.md](CLAUDE.md). See [CONTRIBUTING.md](CONTRIBUTING.md) for how to report issues, add agents or commands, propose new patterns, and the quality bar required for all pull requests.
 
 ## License
 
