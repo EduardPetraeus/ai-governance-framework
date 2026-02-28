@@ -4,6 +4,8 @@ This directory contains scripts that automate recurring governance tasks for the
 
 | Script | Purpose |
 |--------|---------|
+| `governance_dashboard.py` | Generates `DASHBOARD.md` with health score, velocity, cost, ADR coverage, and maturity level |
+| `cost_dashboard.py` | Generates `COST_DASHBOARD.md` with cost breakdown by model, session type, and routing efficiency |
 | `framework_updater.py` | Checks for new framework releases and shows available updates |
 | `best_practice_scanner.py` | Scans configured sources for new AI governance insights |
 | `health_score_calculator.py` | Calculates a governance health score (0-100) for a repository |
@@ -27,6 +29,12 @@ All other scripts use the Python standard library only and have no external depe
 ## Usage
 
 ```bash
+# Generate the full governance dashboard (DASHBOARD.md)
+python3 automation/governance_dashboard.py --repo-path .
+
+# Generate the cost analysis dashboard (COST_DASHBOARD.md)
+python3 automation/cost_dashboard.py --repo-path .
+
 # Check for framework updates
 python3 automation/framework_updater.py --repo-path .
 
@@ -89,6 +97,35 @@ jobs:
 ```
 
 ## Script Reference
+
+### governance_dashboard.py
+
+Generates `DASHBOARD.md` — a full governance dashboard from local governance files. Reads `CHANGELOG.md`, `COST_LOG.md`, `MEMORY.md`, `PROJECT_PLAN.md`, and `docs/adr/`. Calls `health_score_calculator.py` internally for the health score. No external dependencies.
+
+Sections generated: Health Score, Session Velocity, Cost Trend, Knowledge Health, ADR Coverage, Sprint Progress, Governance Maturity Level.
+
+```bash
+python3 automation/governance_dashboard.py --repo-path .
+python3 automation/governance_dashboard.py --repo-path . --output DASHBOARD.md
+python3 automation/governance_dashboard.py --repo-path . --stdout
+```
+
+Recommended: run weekly via CI, commit result to track history.
+
+---
+
+### cost_dashboard.py
+
+Generates `COST_DASHBOARD.md` — a cost analysis dashboard from `COST_LOG.md`. Breaks down spend by model, session type, and calendar month. Calculates a model routing efficiency ratio (actual spend / optimal spend) and produces specific routing recommendations.
+
+```bash
+python3 automation/cost_dashboard.py --repo-path .
+python3 automation/cost_dashboard.py --repo-path . --output COST_DASHBOARD.md
+```
+
+Recommended: run monthly before cost review. Review misrouted sessions as a team.
+
+---
 
 ### health_score_calculator.py
 

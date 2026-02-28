@@ -71,7 +71,7 @@ pipelines, schema validation on ingestion)."]
 | Component | Technology | Version | Why | ADR |
 |-----------|-----------|---------|-----|-----|
 | Primary language | Python | 3.11 | Team expertise, strong data ecosystem, pinned for platform compatibility | -- |
-| Local database | DuckDB | 1.1+ | Zero-config, fast analytics, SQL-compatible with cloud target | [ADR-001](docs/adr/ADR-001.md) |
+| Local database | DuckDB | 1.1+ | Zero-config, fast analytics, SQL-compatible with cloud target | ADR-001 |
 | Cloud database | [Your choice] | [Version] | [Your reasoning] | [ADR link] |
 | Task orchestration | [Airflow / Prefect / cron / GitHub Actions] | [Version] | [Your reasoning] | [ADR link] |
 | Testing | pytest | 8.x | Standard Python testing, good fixture support, rich plugin ecosystem | -- |
@@ -212,7 +212,7 @@ These are things deliberately kept simple. Agents must not add complexity here w
 
 | ADR | Date | Status | Title |
 |-----|------|--------|-------|
-| [ADR-001](docs/adr/ADR-001.md) | YYYY-MM-DD | Accepted | [Title of decision] |
-| [ADR-002](docs/adr/ADR-002.md) | YYYY-MM-DD | Accepted | [Title of decision] |
+| ADR-001 | YYYY-MM-DD | Accepted | [Title of decision] |
+| ADR-002 | YYYY-MM-DD | Accepted | [Title of decision] |
 
 **Rule:** Agents may not contradict an Accepted ADR without explicit human approval. To change a decided question, create a new ADR that supersedes the existing one.
