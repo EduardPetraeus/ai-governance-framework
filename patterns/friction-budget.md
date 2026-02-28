@@ -20,13 +20,19 @@ and no new mechanisms can be added.
 The budget is a forcing function: it requires every governance mechanism to justify its
 existence in terms of cost vs. value. Mechanisms that cost more than they contribute get removed.
 
-## When to Use This Pattern
+## When to Use
 
 - When designing a governance system from scratch (design to the budget from day one)
 - When developers are reporting that governance is slowing them down
 - When adoption rates for governed workflows are declining
 - When adding a new governance mechanism (first check available budget)
 - When conducting the monthly governance health review
+
+## When NOT to Use
+
+- Level 1 projects where fewer than three governance mechanisms exist (not enough to create friction problems)
+- Projects where governance has not yet been adopted (establish governance first, then apply a budget)
+- Solo developers with no "adoption rate" to measure (use personal judgment to keep it lightweight)
 
 ## Budget Definition
 
@@ -164,7 +170,7 @@ Implementation:
 
 This is the correct design: default invisible, escalate only on exception.
 
-## Related
+## Related Patterns
 
 - [docs/governance-fatigue.md](../docs/governance-fatigue.md) — the principle behind this pattern
 - [patterns/blast-radius-control.md](blast-radius-control.md) — specific blast radius limits

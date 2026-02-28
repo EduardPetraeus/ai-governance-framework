@@ -118,6 +118,12 @@ ai-mr-review:
         CLAUDE_MD="CLAUDE.md not found. Review against general software engineering best practices."
       fi
 
+      # Write diff and CLAUDE.md to temp files to avoid shell injection in the heredoc.
+      printf '%s' "$DIFF" > /tmp/review_diff.txt
+      printf '%s' "$CLAUDE_MD" > /tmp/review_claude_md.txt
+      export DIFF_LINE_COUNT="$DIFF_LINES"
+      export FILES_CHANGE_COUNT="$FILES_CHANGED"
+
       # Call Claude API and post review as MR note
       python3 << 'PYEOF'
       import urllib.request
@@ -130,15 +136,17 @@ ai-mr-review:
           print("ANTHROPIC_API_KEY not set — skipping AI review.")
           sys.exit(0)
 
-      diff = os.environ.get("DIFF", "")
-      claude_md = os.environ.get("CLAUDE_MD", "")
+      with open("/tmp/review_diff.txt") as f:
+          diff = f.read()
+      with open("/tmp/review_claude_md.txt") as f:
+          claude_md = f.read()
       mr_title = os.environ.get("CI_MERGE_REQUEST_TITLE", "")
       mr_iid = os.environ.get("CI_MERGE_REQUEST_IID", "")
       project_id = os.environ.get("CI_PROJECT_ID", "")
       gitlab_token = os.environ.get("GITLAB_TOKEN", os.environ.get("CI_JOB_TOKEN", ""))
       gitlab_url = os.environ.get("CI_API_V4_URL", "https://gitlab.com/api/v4")
-      files_changed = os.environ.get("FILES_CHANGED", "?")
-      diff_lines = os.environ.get("DIFF_LINES", "?")
+      files_changed = os.environ.get("FILES_CHANGE_COUNT", "?")
+      diff_lines = os.environ.get("DIFF_LINE_COUNT", "?")
 
       prompt = f"""You are a code reviewer for an AI-assisted software project. Review this merge request.
 
@@ -242,7 +250,3 @@ ai-mr-review:
 
       print(f"\nAI MR Review verdict: {verdict}")
       PYEOF
-  variables:
-    DIFF: "${CI_COMMIT_SHA}"
-  environment:
-    name: review

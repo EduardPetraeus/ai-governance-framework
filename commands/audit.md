@@ -1,4 +1,4 @@
-# Command: /audit
+# /audit
 
 Run an adversarial governance audit to test whether governance mechanisms actually catch
 what they are supposed to catch.

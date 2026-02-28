@@ -1,8 +1,4 @@
-# Progressive Trust
-
-## Name
-
-Progressive Trust — earn autonomy through evidence, lose it immediately through failure.
+# Pattern: Progressive Trust
 
 ## Problem
 

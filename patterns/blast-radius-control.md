@@ -1,8 +1,4 @@
-# Blast Radius Control
-
-## Name
-
-Blast Radius Control — explicitly limit what a single session can change.
+# Pattern: Blast Radius Control
 
 ## Problem
 

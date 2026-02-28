@@ -1,8 +1,4 @@
-# Context Boundaries
-
-## Name
-
-Context Boundaries — give agents exactly the context they need, no more.
+# Pattern: Context Boundaries
 
 ## Problem
 

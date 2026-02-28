@@ -8,7 +8,7 @@ This agent reverses that trend. It reads code, identifies unnecessary complexity
 
 The agent does not simplify for the sake of simplification. A tax calculation is inherently complex. A distributed system coordinator is inherently complex. Complexity that exists because the domain is complex is appropriate. Complexity that exists because the AI was "being thorough" is not.
 
-## When to use
+## When to Use
 
 - **After multi-file sessions** -- when the architecture "grew" and now feels heavier than the problem
 - **When code passes tests but feels hard to read** -- the ratio of code complexity to problem complexity is off

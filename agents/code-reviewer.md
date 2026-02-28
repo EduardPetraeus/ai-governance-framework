@@ -8,7 +8,7 @@ This agent exists to handle the mechanical parts of code review -- the parts tha
 
 The agent reviews against documented rules only. If a rule is not in CLAUDE.md or ARCHITECTURE.md, it is a suggestion, not a violation. The agent makes this distinction explicit in every finding.
 
-## When to use
+## When to Use
 
 - **Every PR before human review** -- run as part of CI (automated) or manually before requesting review
 - **PRs from junior developers or new team members** -- catch convention mistakes before they become habits

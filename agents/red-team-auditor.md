@@ -1,10 +1,24 @@
-# Agent: Red Team Auditor
+# Red Team Auditor Agent
 
 ## Purpose
 
 Test whether governance rules actually catch what they are supposed to catch.
 This agent probes governance mechanisms with simulated violations to find gaps
 before real incidents reveal them.
+
+## When to Use
+
+- Monthly for any project at Level 3+ governance
+- After every maturity level upgrade to verify new mechanisms work
+- After any production incident that slipped through governance (add a test for the specific gap)
+- Before enterprise rollout (demonstrate governance effectiveness to stakeholders)
+- After adding a new governance mechanism (verify it catches what it is supposed to catch)
+
+## Input
+
+- Audit category: `security`, `compliance`, `quality`, `architecture`, `scope`, or `all` (default)
+- The repo's CLAUDE.md, governance workflows, pre-commit config, and CI/CD setup
+- Optional: specific test case IDs to re-run (for retesting after a fix)
 
 ## Critical Constraints
 
@@ -191,6 +205,13 @@ Missed: [N] ([N]%)
 Temporary branch audit/governance-test-[YYYYMMDD] has been deleted.
 No test artifacts remain in the repository.
 ```
+
+## Customization
+
+- **Add project-specific test cases**: extend the Security, Compliance, Quality, Architecture, or Scope sections with tests that are specific to your tech stack or domain. Follow the format: test ID, scenario description, expected catch mechanism, gap condition.
+- **Adjust the branch naming convention**: the default `audit/governance-test-YYYYMMDD` can be changed if your repository has different branch naming rules. Update the System Prompt accordingly.
+- **Target specific mechanisms**: if your project uses a custom pre-commit hook or CI workflow, add a test case that specifically targets that mechanism to verify it works.
+- **Integration with /audit command**: this agent is invoked by the [/audit command](../commands/audit.md). All customization here is reflected in /audit behavior automatically.
 
 ## Related
 

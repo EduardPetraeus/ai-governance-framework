@@ -15,6 +15,7 @@ Usage:
     python productivity_tracker.py --all
     python productivity_tracker.py --days 7 --author "Jane Smith"
 """
+from __future__ import annotations
 
 import argparse
 import re

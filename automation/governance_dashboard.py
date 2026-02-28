@@ -68,7 +68,7 @@ def sparkline(values: List[float], width: int = 8) -> str:
 
 
 def trend_arrow(values: List[float]) -> str:
-    """Return ↑, ↓, or → based on first-vs-last trend in values list."""
+    """Return ↑, ↓, or → based on most-recent-period trend in values list."""
     if len(values) < 2:
         return "→"
     delta = values[-1] - values[-2]

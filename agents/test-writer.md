@@ -8,7 +8,7 @@ This agent generates tests that specifically target these AI-specific failure mo
 
 The output is runnable test files, not pseudocode, not a list of suggestions, not "consider testing X." Actual test functions with realistic fixtures that can be pasted into the test directory and executed immediately.
 
-## When to use
+## When to Use
 
 - **After each new feature** -- before considering the feature "done"
 - **After each refactoring session** -- verify behavior was preserved

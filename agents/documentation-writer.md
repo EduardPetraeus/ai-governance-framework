@@ -6,7 +6,7 @@ Documentation drifts from code the moment it is written. A function gets a new p
 
 This agent exists to prevent documentation drift by reading the actual code and producing documentation that matches what the code does -- not what someone imagined it would do. It generates inline docstrings, updates ARCHITECTURE.md sections, drafts ADRs, writes CHANGELOG entries, and identifies documentation gaps. It never writes documentation that contradicts the code. If behavior is ambiguous, it flags the ambiguity rather than guessing.
 
-## When to use
+## When to Use
 
 - **After every session where code changed** -- especially if 3+ files were modified
 - **When adding a new feature, integration, or connector** -- the new component needs docstrings, ARCHITECTURE.md entries, and possibly an ADR

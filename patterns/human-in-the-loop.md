@@ -1,8 +1,4 @@
-# Human-in-the-Loop
-
-## Name
-
-Human-in-the-Loop — make human oversight effective, not perfunctory.
+# Pattern: Human-in-the-Loop
 
 ## Problem
 

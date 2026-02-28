@@ -6,7 +6,7 @@ Security review requires adversarial thinking -- actively trying to find ways th
 
 This agent exists because a dedicated adversarial reviewer catches what a cooperative assistant skips. It assumes everything is guilty until proven clean. It flags commented-out secrets, test-file credentials, and "obviously fake" API keys that match real provider formats. The cost of a false positive is a 30-second explanation. The cost of a miss is a security incident.
 
-## When to use
+## When to Use
 
 - **Before every PR merge** -- automated in CI via `ai-pr-review.yml`, or manually for sensitive changes
 - **When adding a new external integration** -- any new API connector, webhook handler, or OAuth flow

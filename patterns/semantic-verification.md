@@ -1,8 +1,4 @@
-# Semantic Verification
-
-## Name
-
-Semantic Verification — verify that code does the right thing, not just that it runs.
+# Pattern: Semantic Verification
 
 ## Problem
 

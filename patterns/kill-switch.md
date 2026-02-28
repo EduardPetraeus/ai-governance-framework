@@ -21,11 +21,17 @@ unrelated work. It waits.
 
 The kill switch makes stopping the default in ambiguous situations, not the exception.
 
-## When to Use This Pattern
+## When to Use
 
 Add to any CLAUDE.md at Level 3 or above. The kill switch is the safety mechanism that
 prevents a bad session from becoming a disaster. It is not optional for projects shipping
 to production.
+
+## When NOT to Use
+
+- Read-only or exploratory sessions where no code changes are being made
+- Prototype or throwaway projects where there is no production codebase to protect
+- Level 1-2 projects that have not yet experienced the failure modes this prevents (add the triggers as preparation anyway — they cost nothing to include)
 
 ## Triggers
 
@@ -150,7 +156,7 @@ Use confidence scoring and normal uncertainty handling for situations below the 
 it should not try to resolve it before presenting the alert. The attempt may make things
 worse and delays the human's awareness of the situation.
 
-## Related
+## Related Patterns
 
 - [docs/kill-switch.md](../docs/kill-switch.md) — full specification with all trigger details
 - [docs/session-replay.md](../docs/session-replay.md) — recording kill switch events for review

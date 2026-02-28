@@ -207,7 +207,8 @@ def parse_existing_log_sessions(cost_log_path: Path) -> set[str]:
 
     content = cost_log_path.read_text(encoding="utf-8")
     # Match session rows in the table: | 003 | ...
-    return set(re.findall(r"^\|\s*(\d+)\s*\|", content, re.MULTILINE))
+    # Normalize to zfill(3) to match parse_changelog_sessions() format.
+    return set(m.zfill(3) for m in re.findall(r"^\|\s*(\d+)\s*\|", content, re.MULTILINE))
 
 
 def format_cost_log_row(estimate: TokenEstimate) -> str:

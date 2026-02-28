@@ -30,8 +30,8 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          pytest --cov=automation --cov=scripts --cov-report=term-missing \
-                 --cov-fail-under=80 -v
+          python -m pytest --cov=automation --cov=scripts --cov-report=term-missing \
+                          --cov-fail-under=80 -v
 
       - name: Upload coverage report
         if: matrix.python-version == '3.12'

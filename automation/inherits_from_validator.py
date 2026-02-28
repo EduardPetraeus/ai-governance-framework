@@ -103,8 +103,8 @@ def extract_inherits_from(content: str) -> List[str]:
     """
     sources: List[str] = []
 
-    # Scalar: inherits_from: value (not starting with -)
-    scalar = re.search(r"^inherits_from\s*:\s*(?!-)(.+)$", content, re.MULTILINE)
+    # Scalar: inherits_from: value (not starting with -, no newline before value)
+    scalar = re.search(r"^inherits_from\s*:[ \t]*(?!-)(.+)$", content, re.MULTILINE)
     if scalar:
         value = scalar.group(1).strip().strip("\"'")
         if value:

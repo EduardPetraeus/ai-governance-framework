@@ -74,23 +74,27 @@ on_pr:
 
 session_protocol_extensions:
   on_session_start:
-    # CUSTOMIZE: Team-specific checks beyond org requirements
-    # Example: Check team sprint board for blockers
-    # Example: Verify domain-specific config files are present
+    - Check PROJECT_PLAN.md for the current sprint goal before starting work
+    - Verify that the session scope is consistent with sprint priorities
+    # CUSTOMIZE: Add team-specific checks
+    # Example: - Confirm no team-shared config files changed without notification
 
   on_session_end:
-    # CUSTOMIZE: Team-specific end-of-session steps
-    # Example: Update team Kanban board
-    # Example: Notify team channel if architecture changed
+    - Update PROJECT_PLAN.md sprint status if goal completion percentage changed
+    - Flag any architectural decisions made this session in CHANGELOG.md
+    # CUSTOMIZE: Add team-specific end-of-session steps
+    # Example: - Post session summary to team Slack channel
 
 ### naming
 # CUSTOMIZE: Team-specific naming extensions.
 # EXTEND: Add more specific rules. Do not contradict org naming rules.
 
-# Example extensions:
-# api_endpoints: /api/v1/kebab-case  (if this is an API team)
-# database_tables: snake_case with domain prefix (if this is a data team)
-# terraform_resources: snake_case with service_env_ prefix (if this is infra)
+extensions:
+  test_files: "test_[module].py — all test files use test_ prefix"
+  # CUSTOMIZE: Add domain-specific naming rules, for example:
+  # api_endpoints: /api/v1/kebab-case
+  # database_tables: snake_case with domain prefix
+  # terraform_resources: snake_case with service_env_ prefix
 
 ---
 
@@ -98,12 +102,14 @@ session_protocol_extensions:
 # EXTEND: Add team-specific security rules beyond org requirements.
 # Do not repeat or modify org security rules — they are inherited automatically.
 
-# CUSTOMIZE: Add patterns specific to your domain:
-# Example for a data engineering team:
-# data_security:
-#   - Never include real patient/customer data in test fixtures
-#   - All database schemas must be reviewed for PII fields before creation
-#   - Encryption at rest required for all tables containing health data
+data_handling:
+  - Never include production data samples in test fixtures
+  - All new tables or data models must be reviewed for PII fields before merge
+  # CUSTOMIZE: Add domain-specific data handling rules
+
+credential_handling:
+  - Rotate any accidentally committed credentials within 1 hour (not 24 hours)
+  # CUSTOMIZE: Add team-specific credential rotation or access rules
 
 ---
 
@@ -124,9 +130,9 @@ required_files:
 # CUSTOMIZE: Team-specific quality thresholds.
 # EXTEND: Set higher thresholds than org minimums. Do not set lower.
 
-# Example:
-# test_coverage_minimum: 70     # Higher than org minimum if org sets one
-# pr_review_required_from: tech_lead_or_senior  # More specific than org requirement
+test_coverage_minimum: 70     # Adjust upward if org sets a minimum
+pr_review_required_from: tech_lead_or_senior
+  # CUSTOMIZE: Options: any_team_member | senior | tech_lead_or_senior | tech_lead_only
 
 ---
 

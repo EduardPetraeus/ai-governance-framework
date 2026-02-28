@@ -17,12 +17,18 @@ at 85%. Maintain developer judgment through periodic unassisted sessions. Track 
 quality as a proxy metric for automation bias. Label categories that AI cannot verify as
 requiring mandatory human judgment.
 
-## When to Use This Pattern
+## When to Use
 
 - Level 4+: when multiple AI validation agents are active
 - Any project where human review time is measurably declining after AI validation was introduced
 - Regulated environments where audit requirements mandate genuine human review
 - Teams that have experienced the "LGTM without reading" phenomenon
+
+## When NOT to Use
+
+- Level 1-2 projects where AI validation has not yet been introduced (implement validation first)
+- Projects where developers are already actively rejecting AI suggestions and maintaining independent review
+- Solo developers who have no team dynamic creating social proof pressure
 
 ## Implementation
 
@@ -167,7 +173,7 @@ The VERIFIED items have been checked; the NOT VERIFIED items have not.
 
 The human now knows exactly where to focus. They cannot assume the AI covered everything.
 
-## Related
+## Related Patterns
 
 - [docs/automation-bias.md](../docs/automation-bias.md) — full specification and theory
 - [docs/adversarial-audit.md](../docs/adversarial-audit.md) — testing governance effectiveness

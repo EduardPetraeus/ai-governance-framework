@@ -1,8 +1,4 @@
-# Dual-Model Validation
-
-## Name
-
-Dual-Model Validation — route written work to a different model for review.
+# Pattern: Dual-Model Validation
 
 ## Problem
 

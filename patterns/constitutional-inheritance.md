@@ -16,12 +16,18 @@ Team-level constitutions add team-specific workflow rules. Repo-level constituti
 project-specific conventions. Every rule in the hierarchy is active in every repo that
 inherits from it.
 
-## When to Use This Pattern
+## When to Use
 
 - Organizations with 10+ developers using governed AI development
 - Teams that need different workflow rules but share security requirements
 - Any environment where governance needs to be verifiably consistent across repositories
 - Regulated industries where security rules must be documented as non-negotiable
+
+## When NOT to Use
+
+- Solo developers or single-team organizations (one CLAUDE.md level is sufficient)
+- Projects with fewer than 10 developers where direct communication replaces hierarchy
+- Prototypes and exploratory projects where consistency across repos is not required
 
 ## Structure
 
@@ -167,7 +173,7 @@ The agent knows:
 A new developer joining the team gets consistent governance across all repos they touch.
 A security audit can verify that org-level rules are present in every repo.
 
-## Related
+## Related Patterns
 
 - [docs/constitutional-inheritance.md](../docs/constitutional-inheritance.md) — full specification
 - [templates/CLAUDE.org.md](../templates/CLAUDE.org.md) — org-level template

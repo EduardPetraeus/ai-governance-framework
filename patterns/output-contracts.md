@@ -1,8 +1,4 @@
-# Output Contracts
-
-## Name
-
-Output Contracts — define expected output before the agent works.
+# Pattern: Output Contracts
 
 ## Problem
 

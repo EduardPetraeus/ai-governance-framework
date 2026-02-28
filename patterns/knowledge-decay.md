@@ -18,12 +18,18 @@ a date, and an expiry condition. At session start, the governance sync scans MEM
 flags entries past their lifespan, and proposes compression, archival, or deletion.
 A hard 200-line cap ensures active context stays lean regardless of session count.
 
-## When to Use This Pattern
+## When to Use
 
 - Projects past 20 sessions (MEMORY.md accumulation becomes noticeable)
 - Any project where architectural decisions have changed (stale context risk is high)
 - Teams where multiple developers contribute to MEMORY.md (conflicting entries likely)
 - Before implementing a new architectural pattern (old context may interfere)
+
+## When NOT to Use
+
+- Projects fewer than 20 sessions old (MEMORY.md has not yet accumulated enough to require lifecycle management)
+- Solo developers with small, stable projects where all context fits in a single screen and remains accurate
+- Ephemeral projects where sessions do not persist memory across runs
 
 ## Knowledge Categories
 
@@ -145,7 +151,7 @@ Treat undated entries as 90+ days old (archive-eligible).
 If the user skips it 3+ times, surface a stronger prompt: "MEMORY.md has 15 entries past
 their lifespan. Context quality is degrading. Strongly recommend cleanup."
 
-## Related
+## Related Patterns
 
 - [docs/knowledge-lifecycle.md](../docs/knowledge-lifecycle.md) — full specification
 - [templates/MEMORY.md](../templates/MEMORY.md) — MEMORY.md template with lifecycle format

@@ -18,12 +18,18 @@ task chain with decision rationale, context used, confidence scores, and governa
 Store in `.session-logs/` (gitignored). Retain 90 days. Use for post-incident investigation,
 compliance auditing, and onboarding demonstration.
 
-## When to Use This Pattern
+## When to Use
 
 - Level 3+: any project shipping to production
 - Any project with security, compliance, or audit requirements
 - Teams where multiple developers run AI sessions (cross-session traceability needed)
 - After any production incident involving AI-generated code
+
+## When NOT to Use
+
+- Solo developers on non-production projects where CHANGELOG.md provides sufficient audit trail
+- Exploratory or prototype sessions where session reasoning does not need to be preserved beyond the session
+- Projects where the overhead of log maintenance exceeds the probability of needing a post-incident investigation
 
 ## Implementation
 
@@ -132,7 +138,7 @@ CHANGELOG.md is permanent.
 A log from a clean session that preceded an incident helps establish the baseline. Generating
 logs retroactively is impossible.
 
-## Related
+## Related Patterns
 
 - [docs/session-replay.md](../docs/session-replay.md) — full specification
 - [docs/kill-switch.md](../docs/kill-switch.md) — kill switch events are recorded in session logs

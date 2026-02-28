@@ -33,22 +33,6 @@ executors:
 # Commands
 # ──────────────────────────────────────────────────────────────────────────────
 
-commands:
-  fetch-base-branch:
-    description: Fetch the base branch for diff comparison
-    steps:
-      - run:
-          name: Fetch base branch
-          command: |
-            BASE="${CIRCLE_BRANCH:-main}"
-            # For PRs, use the target branch; for pushes, use main
-            if [ -n "$CIRCLE_PULL_REQUEST" ]; then
-              # Extract base branch from GitHub PR API if available
-              git fetch origin main
-            else
-              git fetch origin main
-            fi
-
 # ──────────────────────────────────────────────────────────────────────────────
 # Jobs
 # ──────────────────────────────────────────────────────────────────────────────
@@ -135,15 +119,23 @@ jobs:
               CLAUDE_MD="No CLAUDE.md found. Review against general best practices."
             fi
 
-            python3 << PYEOF
+            # Write diff and CLAUDE.md to temp files to avoid shell injection in the heredoc.
+            printf '%s' "$DIFF" > /tmp/review_diff.txt
+            printf '%s' "$CLAUDE_MD" > /tmp/review_claude_md.txt
+            export DIFF_LINE_COUNT="$DIFF_LINES"
+            export FILES_CHANGE_COUNT="$FILES_CHANGED"
+
+            python3 << 'PYEOF'
             import urllib.request, json, os, sys
 
             api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-            diff = """$DIFF"""
-            claude_md = """$CLAUDE_MD"""
+            with open("/tmp/review_diff.txt") as f:
+                diff = f.read()
+            with open("/tmp/review_claude_md.txt") as f:
+                claude_md = f.read()
             pr_url = os.environ.get("CIRCLE_PULL_REQUEST", "")
-            files_changed = "$FILES_CHANGED"
-            diff_lines = "$DIFF_LINES"
+            files_changed = os.environ.get("FILES_CHANGE_COUNT", "0")
+            diff_lines = os.environ.get("DIFF_LINE_COUNT", "0")
 
             prompt = f"""You are a code reviewer for an AI-assisted software project.
 
