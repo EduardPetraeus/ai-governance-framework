@@ -1,72 +1,79 @@
 #!/usr/bin/env bash
-# pre_commit_guard.sh
 #
-# Claude Code hook: runs before each commit.
-# Protects against committing directly to main and warns if CHANGELOG.md is stale.
+# pre_commit_guard.sh — Claude Code pre-commit hook
+#
+# Protects against:
+#   1. Direct commits to protected branches (main, master, production)
+#   2. Source code commits without CHANGELOG.md updates
+#   3. Non-conventional commit message format
 #
 # Installation:
-#   1. Copy this file to .claude/hooks/pre_commit_guard.sh in your project
-#   2. Make it executable: chmod +x .claude/hooks/pre_commit_guard.sh
-#   3. Add to your CLAUDE.md hooks section:
-#      hooks:
-#        pre_commit: .claude/hooks/pre_commit_guard.sh
+#   cp scripts/hooks/pre_commit_guard.sh .claude/hooks/
+#   chmod +x .claude/hooks/pre_commit_guard.sh
 #
-# Claude Code will run this script before every commit operation.
-# Exit 1 to block the commit. Exit 0 to allow it.
+#   Add to CLAUDE.md:
+#     hooks:
+#       pre_commit: .claude/hooks/pre_commit_guard.sh
+#
+# Exit codes:
+#   0 — commit allowed
+#   1 — commit blocked (user declined to proceed)
 
 set -euo pipefail
 
-# ─── Color helpers ────────────────────────────────────────────────────────────
+# ── Colors ──────────────────────────────────────────────────────────────
+
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+GRAY='\033[0;90m'
+NC='\033[0m'
 
-# ─── Determine current branch ─────────────────────────────────────────────────
+# ── Current branch ──────────────────────────────────────────────────────
+
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
 
-# ─── Check 1: Block commits to protected branches ─────────────────────────────
-PROTECTED_BRANCHES=("main" "master" "production" "release")
+# ── Check 1: Protected branch guard ────────────────────────────────────
+#
+# Warns and prompts if committing directly to main/master/production.
+# Blocks by default (requires explicit "y" to proceed).
+# In non-interactive environments (CI, piped input), blocks automatically.
+
+PROTECTED_BRANCHES=("main" "master" "production")
 
 for branch in "${PROTECTED_BRANCHES[@]}"; do
     if [ "$CURRENT_BRANCH" = "$branch" ]; then
         echo ""
-        echo -e "${RED}╔══════════════════════════════════════════════════════════════╗${NC}"
-        echo -e "${RED}║         WARNING: Direct commit to protected branch           ║${NC}"
-        echo -e "${RED}╠══════════════════════════════════════════════════════════════╣${NC}"
-        echo -e "${RED}║                                                              ║${NC}"
-        echo -e "${RED}║  Branch: ${CURRENT_BRANCH}${NC}"
-        echo -e "${RED}║                                                              ║${NC}"
-        echo -e "${RED}║  You are committing directly to '${branch}'. This branch     ║${NC}"
-        echo -e "${RED}║  is protected. All changes should go through a feature       ║${NC}"
-        echo -e "${RED}║  branch and PR.                                              ║${NC}"
-        echo -e "${RED}║                                                              ║${NC}"
-        echo -e "${RED}║  Recommended workflow:                                       ║${NC}"
-        echo -e "${RED}║    git checkout -b feature/your-feature-name                ║${NC}"
-        echo -e "${RED}║    [make your changes]                                       ║${NC}"
-        echo -e "${RED}║    git push -u origin feature/your-feature-name             ║${NC}"
-        echo -e "${RED}║    [open a PR]                                               ║${NC}"
-        echo -e "${RED}║                                                              ║${NC}"
-        echo -e "${RED}╚══════════════════════════════════════════════════════════════╝${NC}"
+        echo -e "${RED}======================================================${NC}"
+        echo -e "${RED}  WARNING: Direct commit to ${branch}${NC}"
+        echo -e "${RED}======================================================${NC}"
         echo ""
-        echo -ne "${YELLOW}Proceed with direct commit to ${branch}? [y/N]: ${NC}"
+        echo -e "  This bypasses PR review. All changes should go"
+        echo -e "  through a feature branch and pull request."
+        echo ""
+        echo -e "  ${GRAY}Recommended:${NC}"
+        echo -e "    git checkout -b feature/your-change"
+        echo -e "    git push -u origin feature/your-change"
+        echo ""
 
-        # Read user response. In non-interactive environments (CI), default to N.
+        # Prompt for confirmation (default: No)
         if [ -t 0 ]; then
+            echo -ne "${YELLOW}  Proceed with direct commit to ${branch}? [y/N]: ${NC}"
             read -r response
         else
+            # Non-interactive: block by default
             response="n"
-            echo "n (non-interactive environment — blocking by default)"
+            echo -e "  ${GRAY}Non-interactive environment — blocking by default.${NC}"
         fi
 
         case "$response" in
             [yY][eE][sS]|[yY])
-                echo -e "${YELLOW}Proceeding with commit to ${branch}. Consider creating a branch next time.${NC}"
+                echo -e "${YELLOW}  Proceeding. Create a branch next time.${NC}"
+                echo ""
                 ;;
             *)
-                echo -e "${RED}Commit blocked. Create a feature branch:${NC}"
-                echo -e "  git checkout -b feature/$(git log -1 --format='%f' 2>/dev/null || echo 'your-feature')"
+                echo -e "${RED}  Commit blocked.${NC}"
+                echo -e "  ${GRAY}Run: git checkout -b feature/your-change${NC}"
                 echo ""
                 exit 1
                 ;;
@@ -75,52 +82,129 @@ for branch in "${PROTECTED_BRANCHES[@]}"; do
     fi
 done
 
-# ─── Check 2: Warn if CHANGELOG.md exists but is stale ───────────────────────
-if [ -f "CHANGELOG.md" ]; then
-    # Check if CHANGELOG.md has been staged in this commit
-    CHANGELOG_STAGED=$(git diff --cached --name-only 2>/dev/null | grep "^CHANGELOG\.md$" || true)
+# ── Check 2: CHANGELOG.md staleness warning ────────────────────────────
+#
+# If CHANGELOG.md exists and source code files are staged but CHANGELOG.md
+# is not staged, warn the user. This is a WARNING, not a block — the CI
+# governance check enforces the hard requirement on PR.
 
-    # Check if any source code files are staged
+if [ -f "CHANGELOG.md" ]; then
+    # Check for staged source code files
     SOURCE_STAGED=$(git diff --cached --name-only 2>/dev/null \
-        | grep -E '\.(py|sql|ts|js|jsx|tsx|go|java|rb|rs|cs)$' || true)
+        | grep -E '\.(py|sql|ts|js|jsx|tsx|go|java|rb|rs|cs|swift|kt)$' || true)
+
+    # Check if CHANGELOG.md is also staged
+    CHANGELOG_STAGED=$(git diff --cached --name-only 2>/dev/null \
+        | grep '^CHANGELOG\.md$' || true)
 
     if [ -n "$SOURCE_STAGED" ] && [ -z "$CHANGELOG_STAGED" ]; then
-        # Source code is being committed but CHANGELOG.md is not staged.
-        # This is a warning, not a block — the CI/CD governance check will enforce it on PR.
         echo ""
-        echo -e "${YELLOW}╔══════════════════════════════════════════════════════════════╗${NC}"
-        echo -e "${YELLOW}║           CHANGELOG.md not included in this commit           ║${NC}"
-        echo -e "${YELLOW}╠══════════════════════════════════════════════════════════════╣${NC}"
-        echo -e "${YELLOW}║                                                              ║${NC}"
-        echo -e "${YELLOW}║  Source files are being committed but CHANGELOG.md was not  ║${NC}"
-        echo -e "${YELLOW}║  updated.                                                    ║${NC}"
-        echo -e "${YELLOW}║                                                              ║${NC}"
-        echo -e "${YELLOW}║  Source files in this commit:                               ║${NC}"
+        echo -e "${YELLOW}======================================================${NC}"
+        echo -e "${YELLOW}  CHANGELOG.md not included in this commit${NC}"
+        echo -e "${YELLOW}======================================================${NC}"
+        echo ""
+        echo -e "  Source files staged:"
         while IFS= read -r file; do
-            echo -e "${YELLOW}║    • ${file}${NC}"
+            echo -e "    ${GRAY}${file}${NC}"
         done <<< "$SOURCE_STAGED"
-        echo -e "${YELLOW}║                                                              ║${NC}"
-        echo -e "${YELLOW}║  This is allowed now but will FAIL the PR governance check  ║${NC}"
-        echo -e "${YELLOW}║  when you open a pull request.                              ║${NC}"
-        echo -e "${YELLOW}║                                                              ║${NC}"
-        echo -e "${YELLOW}║  Quick fix: Run /end-session in Claude Code to update       ║${NC}"
-        echo -e "${YELLOW}║  CHANGELOG.md automatically before your PR.                 ║${NC}"
-        echo -e "${YELLOW}║                                                              ║${NC}"
-        echo -e "${YELLOW}╚══════════════════════════════════════════════════════════════╝${NC}"
         echo ""
-        # Exit 0 — this is a warning only. The PR gate enforces the requirement.
+        echo -e "  ${GRAY}This is allowed locally, but the PR governance${NC}"
+        echo -e "  ${GRAY}check will require CHANGELOG.md to be updated.${NC}"
+        echo -e "  ${GRAY}Run /end-session before your PR to update it.${NC}"
+        echo ""
+        # Do not exit — this is a warning only
     fi
 fi
 
-# ─── Check 3: Warn if CLAUDE.md is being committed to main without review ─────
-CLAUDE_MD_STAGED=$(git diff --cached --name-only 2>/dev/null | grep "^CLAUDE\.md$" || true)
-if [ -n "$CLAUDE_MD_STAGED" ] && [ "$CURRENT_BRANCH" = "main" ]; then
-    echo ""
-    echo -e "${YELLOW}Note: CLAUDE.md is being committed directly to main.${NC}"
-    echo -e "${YELLOW}CLAUDE.md changes should normally go through a PR for team review.${NC}"
-    echo ""
+# ── Check 3: Conventional commits format check ─────────────────────────
+#
+# Validates that the commit message follows conventional commits format:
+#   type(scope): description
+#   type: description
+#
+# Valid types: feat, fix, docs, refactor, test, chore, perf, style, ci, build, revert
+#
+# This is a WARNING on any branch. On protected branches, it is stronger
+# because the earlier check already warned about the branch itself.
+
+# Get the commit message from the commit message file
+# In a pre-commit hook context, the message file is .git/COMMIT_EDITMSG
+COMMIT_MSG_FILE=".git/COMMIT_EDITMSG"
+
+if [ -f "$COMMIT_MSG_FILE" ]; then
+    COMMIT_MSG=$(head -1 "$COMMIT_MSG_FILE" 2>/dev/null || echo "")
+
+    if [ -n "$COMMIT_MSG" ]; then
+        # Conventional commits pattern: type(optional-scope): description
+        CONVENTIONAL_PATTERN='^(feat|fix|docs|refactor|test|chore|perf|style|ci|build|revert)(\([a-zA-Z0-9_-]+\))?: .{3,}'
+
+        if ! echo "$COMMIT_MSG" | grep -qE "$CONVENTIONAL_PATTERN"; then
+            echo ""
+            echo -e "${YELLOW}  Commit message does not follow conventional format${NC}"
+            echo -e "  ${GRAY}Message: \"${COMMIT_MSG}\"${NC}"
+            echo -e "  ${GRAY}Expected: type(scope): description${NC}"
+            echo -e "  ${GRAY}Types: feat, fix, docs, refactor, test, chore, perf${NC}"
+            echo -e "  ${GRAY}Example: feat(api): add user profile endpoint${NC}"
+            echo ""
+
+            # Score the message
+            SCORE=0
+            SCORE_DETAILS=""
+
+            # Check for type prefix
+            if echo "$COMMIT_MSG" | grep -qE '^(feat|fix|docs|refactor|test|chore|perf|style|ci|build|revert)'; then
+                SCORE=$((SCORE + 1))
+            else
+                SCORE_DETAILS="${SCORE_DETAILS}missing type prefix, "
+            fi
+
+            # Check for scope
+            if echo "$COMMIT_MSG" | grep -qE '^\w+\([a-zA-Z0-9_-]+\)'; then
+                SCORE=$((SCORE + 1))
+            else
+                SCORE_DETAILS="${SCORE_DETAILS}missing scope, "
+            fi
+
+            # Check for colon-space separator
+            if echo "$COMMIT_MSG" | grep -qE ': .{3,}'; then
+                SCORE=$((SCORE + 1))
+            else
+                SCORE_DETAILS="${SCORE_DETAILS}missing 'type: description' format"
+            fi
+
+            # Remove trailing comma-space
+            SCORE_DETAILS=$(echo "$SCORE_DETAILS" | sed 's/, $//')
+
+            echo -e "  ${GRAY}Message quality: ${SCORE}/3${NC}"
+            if [ -n "$SCORE_DETAILS" ]; then
+                echo -e "  ${GRAY}Issues: ${SCORE_DETAILS}${NC}"
+            fi
+            echo ""
+            # Do not block — this is a warning
+        fi
+    fi
 fi
 
-# ─── All checks passed ────────────────────────────────────────────────────────
-echo -e "${GREEN}Pre-commit guard: all checks passed (branch: ${CURRENT_BRANCH})${NC}"
+# ── Check 4: CLAUDE.md direct-to-main warning ──────────────────────────
+#
+# CLAUDE.md changes should go through PR review. Warn if committing
+# directly to a protected branch.
+
+CLAUDE_MD_STAGED=$(git diff --cached --name-only 2>/dev/null | grep '^CLAUDE\.md$' || true)
+
+if [ -n "$CLAUDE_MD_STAGED" ]; then
+    for branch in "${PROTECTED_BRANCHES[@]}"; do
+        if [ "$CURRENT_BRANCH" = "$branch" ]; then
+            echo -e "${YELLOW}  Note: CLAUDE.md is being committed to ${branch}.${NC}"
+            echo -e "${GRAY}  CLAUDE.md changes affect all agent sessions and${NC}"
+            echo -e "${GRAY}  should normally go through a reviewed PR.${NC}"
+            echo ""
+            break
+        fi
+    done
+fi
+
+# ── All checks complete ────────────────────────────────────────────────
+
+echo -e "${GREEN}  Pre-commit: passed (branch: ${CURRENT_BRANCH})${NC}"
 exit 0
