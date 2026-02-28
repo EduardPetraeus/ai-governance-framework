@@ -1,97 +1,134 @@
 #!/usr/bin/env bash
-# post_commit.sh
+# post_commit.sh — Post-commit productivity tracker
 #
-# Claude Code hook: runs after each successful commit.
-# Logs the commit to a session productivity tracker (.session_log).
-# Provides a running count of session commits as immediate feedback.
+# Runs after each successful commit. Logs the commit to .session_log in the
+# repo root and provides immediate feedback: session commit count, milestone
+# notifications, and commit message quality scoring.
 #
 # Installation:
-#   1. Copy to .claude/hooks/post_commit.sh in your project
-#   2. Make it executable: chmod +x .claude/hooks/post_commit.sh
-#   3. Add to CLAUDE.md hooks section:
-#      hooks:
-#        post_commit: .claude/hooks/post_commit.sh
+#   1. Copy to .claude/hooks/post_commit.sh (or your hooks directory)
+#   2. chmod +x .claude/hooks/post_commit.sh
+#   3. Reference in your CLAUDE.md hooks section or git post-commit hook
 #
-# The .session_log file is ephemeral — it is gitignored and resets when you
-# clear it manually. It tracks the current working session only.
+# The .session_log file is ephemeral — add it to .gitignore.
 
 set -euo pipefail
 
-# ─── Color helpers ────────────────────────────────────────────────────────────
-GREEN='\033[0;32m'
-CYAN='\033[0;36m'
-GRAY='\033[0;37m'
-NC='\033[0m'
+# ─── Configuration ───────────────────────────────────────────────────────────
 
-# ─── Session log file ─────────────────────────────────────────────────────────
-SESSION_LOG=".session_log"
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+SESSION_LOG="${REPO_ROOT}/.session_log"
+TODAY="$(date +%Y-%m-%d)"
 
-# ─── Get commit information ───────────────────────────────────────────────────
-COMMIT_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
-COMMIT_MESSAGE=$(git log -1 --format="%s" 2>/dev/null || echo "")
-COMMIT_TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
-CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+# ─── Color helpers (disabled if stdout is not a terminal) ────────────────────
 
-# Count files changed in the commit
-FILES_CHANGED=$(git diff-tree --no-commit-id -r --name-only HEAD 2>/dev/null | wc -l | tr -d ' ')
-
-# Estimate task complexity by word count of commit message
-# Short messages (< 5 words) = simple edit
-# Medium messages (5-10 words) = standard task
-# Long messages (> 10 words) = complex task
-WORD_COUNT=$(echo "$COMMIT_MESSAGE" | wc -w | tr -d ' ')
-if [ "$WORD_COUNT" -lt 5 ]; then
-    COMPLEXITY="simple"
-elif [ "$WORD_COUNT" -lt 10 ]; then
-    COMPLEXITY="standard"
+if [ -t 1 ]; then
+    GREEN='\033[0;32m'
+    YELLOW='\033[0;33m'
+    CYAN='\033[0;36m'
+    GRAY='\033[0;90m'
+    BOLD='\033[1m'
+    NC='\033[0m'
 else
-    COMPLEXITY="complex"
+    GREEN='' YELLOW='' CYAN='' GRAY='' BOLD='' NC=''
 fi
 
-# ─── Create or append to session log ─────────────────────────────────────────
-# Initialize the log file if it doesn't exist
-if [ ! -f "$SESSION_LOG" ]; then
-    cat > "$SESSION_LOG" << EOF
-# Session Log
-# Started: $(date "+%Y-%m-%d %H:%M:%S")
-# Branch: ${CURRENT_BRANCH}
-# Format: timestamp | hash | files_changed | complexity | message
-EOF
+# ─── Gather commit information ───────────────────────────────────────────────
+# Each git command has a fallback so the script never exits on failure.
+
+BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")"
+COMMIT_MSG="$(git log -1 --format='%s' 2>/dev/null || echo "")"
+TIMESTAMP="$(date '+%Y-%m-%dT%H:%M:%S')"
+
+# Count files changed in this commit (compared to parent)
+FILES_CHANGED="$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null | wc -l | tr -d ' ')"
+
+# ─── Append to session log ──────────────────────────────────────────────────
+# Format: ISO-timestamp | branch | files-changed | first line of commit message
+# The file is created on first use — no separate initialization needed.
+
+if [ ! -f "${SESSION_LOG}" ]; then
+    # First commit this session — create the log with a header comment
+    echo "# .session_log — created ${TIMESTAMP}" > "${SESSION_LOG}"
 fi
 
-# Append this commit to the log
-echo "${COMMIT_TIMESTAMP} | ${COMMIT_HASH} | files:${FILES_CHANGED} | ${COMPLEXITY} | ${COMMIT_MESSAGE}" \
-    >> "$SESSION_LOG"
+echo "${TIMESTAMP}|${BRANCH}|${FILES_CHANGED}|${COMMIT_MSG}" >> "${SESSION_LOG}"
 
-# ─── Count commits in this session ────────────────────────────────────────────
-# Count lines that look like log entries (not comments)
-SESSION_COMMIT_COUNT=$(grep -v "^#" "$SESSION_LOG" 2>/dev/null | grep -c "." || echo "0")
+# ─── Count today's commits ──────────────────────────────────────────────────
+# Each data line starts with a timestamp. Filter to today's date to get the
+# count for this session (assuming one session per day).
 
-# ─── Print feedback ──────────────────────────────────────────────────────────
+TODAYS_COMMITS="$(grep -c "^${TODAY}" "${SESSION_LOG}" 2>/dev/null || echo "0")"
+
+# ─── Print session feedback ─────────────────────────────────────────────────
+
 echo ""
-echo -e "${GREEN}Commit logged: ${COMMIT_HASH}${NC}"
-echo -e "${CYAN}  Session commits: ${SESSION_COMMIT_COUNT}${NC}"
-echo -e "${GRAY}  Branch: ${CURRENT_BRANCH}${NC}"
-echo -e "${GRAY}  Files changed: ${FILES_CHANGED} | Complexity: ${COMPLEXITY}${NC}"
+echo -e "${GREEN}${BOLD}Commit ${TODAYS_COMMITS} this session${NC}"
+echo -e "${GRAY}  Branch: ${BRANCH} | Files changed: ${FILES_CHANGED}${NC}"
 
-# ─── Milestone notifications ──────────────────────────────────────────────────
-if [ "$SESSION_COMMIT_COUNT" -eq 10 ]; then
-    echo ""
-    echo -e "${CYAN}Milestone: 10 commits this session.${NC}"
-    echo -e "${GRAY}Consider running /status to review session progress.${NC}"
+# ─── Milestone notifications ────────────────────────────────────────────────
+# Specific messages at 10, 25, and 50 commits. Each milestone escalates in
+# urgency — long sessions accumulate rollback complexity.
+
+case "${TODAYS_COMMITS}" in
+    10)
+        echo ""
+        echo -e "${CYAN}10 commits — good session velocity. Run /status to verify scope.${NC}"
+        ;;
+    25)
+        echo ""
+        echo -e "${YELLOW}25 commits — substantial session. Consider /end-session soon.${NC}"
+        ;;
+    50)
+        echo ""
+        echo -e "${YELLOW}${BOLD}50 commits — long session. Rollback complexity increases. Run /end-session.${NC}"
+        ;;
+esac
+
+# ─── Commit message quality score (0-3) ─────────────────────────────────────
+#
+# Three independent checks, each worth one point:
+#   +1  Matches conventional commits format: type: description OR type(scope): description
+#   +1  Type is a recognized conventional commit type
+#   +1  Scope is present (parenthesized qualifier after the type)
+#
+# The regex is intentionally strict — it enforces the format the team agreed to.
+
+QUALITY=0
+MISSING=()
+
+VALID_TYPES="feat|fix|docs|refactor|test|chore|perf|security"
+
+# Check 1: Does it match the basic conventional commits pattern?
+# Pattern: word followed by optional (scope), then colon, then space, then description
+if echo "${COMMIT_MSG}" | grep -qE '^[a-z]+(\([^)]+\))?: .+'; then
+    QUALITY=$((QUALITY + 1))
+else
+    MISSING+=("conventional format (type: description)")
 fi
 
-if [ "$SESSION_COMMIT_COUNT" -eq 25 ]; then
-    echo ""
-    echo -e "${CYAN}Milestone: 25 commits this session. That is a productive session.${NC}"
-    echo -e "${GRAY}When you are done, run /end-session to update CHANGELOG.md.${NC}"
+# Check 2: Is the type one of the recognized types?
+EXTRACTED_TYPE="$(echo "${COMMIT_MSG}" | sed -nE 's/^([a-z]+)(\([^)]+\))?: .+/\1/p')"
+if [ -n "${EXTRACTED_TYPE}" ] && echo "${EXTRACTED_TYPE}" | grep -qE "^(${VALID_TYPES})$"; then
+    QUALITY=$((QUALITY + 1))
+else
+    MISSING+=("recognized type (${VALID_TYPES})")
 fi
 
-# ─── Remind about session end at larger commit counts ────────────────────────
-if [ "$SESSION_COMMIT_COUNT" -gt 30 ] && [ $(( SESSION_COMMIT_COUNT % 10 )) -eq 0 ]; then
-    echo ""
-    echo -e "${GRAY}Long session detected (${SESSION_COMMIT_COUNT} commits).${NC}"
-    echo -e "${GRAY}Remember to run /end-session before you finish to capture session state.${NC}"
+# Check 3: Is a scope present?
+if echo "${COMMIT_MSG}" | grep -qE '^[a-z]+\([^)]+\): .+'; then
+    QUALITY=$((QUALITY + 1))
+else
+    MISSING+=("scope (e.g., feat(auth): ...)")
+fi
+
+# Print the score
+echo -e "${GRAY}  Message quality: ${QUALITY}/3${NC}"
+
+if [ "${QUALITY}" -lt 3 ] && [ ${#MISSING[@]} -gt 0 ]; then
+    for item in "${MISSING[@]}"; do
+        echo -e "${GRAY}    - missing: ${item}${NC}"
+    done
 fi
 
 echo ""
