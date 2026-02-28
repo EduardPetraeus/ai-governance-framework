@@ -1,0 +1,212 @@
+# AI Governance Framework — Bitbucket Pipelines
+# Governance enforcement pipeline for Bitbucket repositories.
+#
+# Copy this file to your repository root as bitbucket-pipelines.yml.
+#
+# Setup:
+#   1. Copy to your repository root as bitbucket-pipelines.yml
+#   2. In Repository Settings → Pipelines → Repository variables, add:
+#      - ANTHROPIC_API_KEY (for AI PR review, mark as secured)
+#      - BB_TOKEN (repository access token for posting PR comments)
+#
+# Triggers:
+#   - All branches: governance-check, tests
+#   - Pull requests: ai-pr-review (in addition to branch jobs)
+
+image: python:3.12-slim
+
+definitions:
+  steps:
+    # ──────────────────────────────────────────────────────────────────────────
+    # Governance check — CHANGELOG must be updated when source code changes
+    # ──────────────────────────────────────────────────────────────────────────
+    - step: &governance-check
+        name: Governance check — CHANGELOG updated
+        image: alpine:3.19
+        script:
+          - apk add --no-cache git
+          - git fetch origin main || git fetch origin master || true
+          - |
+            BASE=$(git rev-parse --abbrev-ref --symbolic-full-name origin/main 2>/dev/null || \
+                   git rev-parse --abbrev-ref --symbolic-full-name origin/master 2>/dev/null || \
+                   echo "HEAD~1")
+
+            CHANGED=$(git diff --name-only $BASE...HEAD 2>/dev/null || \
+                      git diff --name-only HEAD~1...HEAD)
+
+            CODE_FILES=$(echo "$CHANGED" | grep -E '\.(py|sql|ts|js|jsx|tsx|go|java|rb|rs|cs)$' || true)
+
+            if [ -z "$CODE_FILES" ]; then
+              echo "No source code files changed — governance check not required."
+              exit 0
+            fi
+
+            echo "Source code files changed:"
+            echo "$CODE_FILES"
+
+            CHANGELOG_CHANGED=$(echo "$CHANGED" | grep "^CHANGELOG\.md$" || true)
+
+            if [ -z "$CHANGELOG_CHANGED" ]; then
+              echo ""
+              echo "GOVERNANCE CHECK FAILED"
+              echo "========================"
+              echo ""
+              echo "Source code files changed but CHANGELOG.md was not updated."
+              echo ""
+              echo "Required: Add a session entry to CHANGELOG.md before merging."
+              echo "Quick fix: Run /end-session in Claude Code, or add the entry"
+              echo "manually using the format in templates/CHANGELOG.md"
+              echo ""
+              exit 1
+            fi
+
+            echo "CHANGELOG.md updated — governance check passed."
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # AI PR review — sends diff to Claude API, posts result as PR comment
+    # ──────────────────────────────────────────────────────────────────────────
+    - step: &ai-pr-review
+        name: AI PR review
+        image: python:3.12-slim
+        script:
+          - apt-get update -qq && apt-get install -y -qq git
+          - |
+            if [ -z "$ANTHROPIC_API_KEY" ]; then
+              echo "ANTHROPIC_API_KEY not set — skipping AI review."
+              exit 0
+            fi
+
+            git fetch origin main || git fetch origin master || true
+
+            BASE=$(git rev-parse --abbrev-ref --symbolic-full-name origin/main 2>/dev/null || echo "HEAD~1")
+            DIFF=$(git diff $BASE...HEAD | head -c 15000)
+            DIFF_LINES=$(git diff $BASE...HEAD | wc -l)
+            FILES_CHANGED=$(git diff --name-only $BASE...HEAD | wc -l)
+
+            if [ -f "CLAUDE.md" ]; then
+              CLAUDE_MD=$(head -c 5000 CLAUDE.md)
+            else
+              CLAUDE_MD="No CLAUDE.md found. Review against general best practices."
+            fi
+
+            python3 << PYEOF
+            import urllib.request, json, os, sys
+
+            api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+            if not api_key:
+                print("No API key — skipping.")
+                sys.exit(0)
+
+            # Bitbucket environment variables
+            workspace = os.environ.get("BITBUCKET_WORKSPACE", "")
+            repo_slug = os.environ.get("BITBUCKET_REPO_SLUG", "")
+            pr_id = os.environ.get("BITBUCKET_PR_ID", "")
+            bb_token = os.environ.get("BB_TOKEN", "")
+
+            files_changed = "$FILES_CHANGED"
+            diff_lines = "$DIFF_LINES"
+
+            diff = """$DIFF"""
+            claude_md = """$CLAUDE_MD"""
+
+            prompt = f"""You are a code reviewer for an AI-assisted software project.
+
+            ## Governance rules (CLAUDE.md)
+            {claude_md}
+
+            ## PR diff
+            {diff}
+
+            Review for: naming conventions, architecture compliance, scope, security, documentation.
+
+            Format:
+            **Verdict: PASS** or **Verdict: WARN** or **Verdict: FAIL**
+
+            - [FAIL/WARN/PASS] `file:line` — description
+
+            **Required actions (FAIL items):**
+            1. ...
+
+            Be concise and direct."""
+
+            payload = {
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 1500,
+                "messages": [{"role": "user", "content": prompt}]
+            }
+
+            req = urllib.request.Request(
+                "https://api.anthropic.com/v1/messages",
+                data=json.dumps(payload).encode("utf-8"),
+                method="POST"
+            )
+            req.add_header("Content-Type", "application/json")
+            req.add_header("x-api-key", api_key)
+            req.add_header("anthropic-version", "2023-06-01")
+
+            try:
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    data = json.load(resp)
+                    review_text = data["content"][0]["text"]
+            except Exception as e:
+                print(f"API error: {e}")
+                sys.exit(0)
+
+            verdict = "FAIL" if "**Verdict: FAIL**" in review_text else \
+                      "WARN" if "**Verdict: WARN**" in review_text else "PASS"
+
+            print(f"\nAI Review — {verdict}")
+            print(review_text)
+
+            # Post as Bitbucket PR comment
+            if bb_token and workspace and repo_slug and pr_id:
+                comment = f"## AI PR Review — {verdict}\n\n> claude-sonnet-4-6 | Files: {files_changed} | Lines: {diff_lines}\n\n{review_text}\n\n---\n*Automated review. Supplements, not replaces, human review.*"
+
+                url = f"https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/pullrequests/{pr_id}/comments"
+                note_req = urllib.request.Request(
+                    url,
+                    data=json.dumps({"content": {"raw": comment}}).encode("utf-8"),
+                    method="POST"
+                )
+                note_req.add_header("Authorization", f"Bearer {bb_token}")
+                note_req.add_header("Content-Type", "application/json")
+                try:
+                    with urllib.request.urlopen(note_req) as r:
+                        print(f"Comment posted: HTTP {r.status}")
+                except Exception as e:
+                    print(f"Failed to post comment: {e}")
+
+            if verdict == "FAIL":
+                sys.exit(1)
+            PYEOF
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Test suite
+    # ──────────────────────────────────────────────────────────────────────────
+    - step: &run-tests
+        name: Run test suite (Python 3.12)
+        image: python:3.12-slim
+        script:
+          - pip install -r requirements-dev.txt
+          - python -m pytest tests/ --cov=automation --cov=scripts --cov-fail-under=80 -v
+        artifacts:
+          - coverage.xml
+
+pipelines:
+  default:
+    - step: *governance-check
+    - step: *run-tests
+
+  pull-requests:
+    '**':
+      - step: *governance-check
+      - step: *ai-pr-review
+      - step: *run-tests
+
+  branches:
+    main:
+      - step: *governance-check
+      - step: *run-tests
+    master:
+      - step: *governance-check
+      - step: *run-tests

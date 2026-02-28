@@ -1,0 +1,280 @@
+# AI Governance Framework — CircleCI
+# Governance enforcement pipeline for CircleCI.
+#
+# Copy this file to your repository as .circleci/config.yml
+# or include the jobs in your existing CircleCI configuration.
+#
+# Setup:
+#   1. Copy to .circleci/config.yml
+#   2. In CircleCI Project Settings → Environment Variables, add:
+#      - ANTHROPIC_API_KEY (for AI PR review)
+#      - GITHUB_TOKEN or equivalent VCS token (for posting PR comments)
+#
+# Triggers: runs on every pull request / branch push.
+
+version: 2.1
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Executors
+# ──────────────────────────────────────────────────────────────────────────────
+
+executors:
+  python-executor:
+    docker:
+      - image: cimg/python:3.12
+    resource_class: small
+
+  alpine-executor:
+    docker:
+      - image: alpine:3.19
+    resource_class: small
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Commands
+# ──────────────────────────────────────────────────────────────────────────────
+
+commands:
+  fetch-base-branch:
+    description: Fetch the base branch for diff comparison
+    steps:
+      - run:
+          name: Fetch base branch
+          command: |
+            BASE="${CIRCLE_BRANCH:-main}"
+            # For PRs, use the target branch; for pushes, use main
+            if [ -n "$CIRCLE_PULL_REQUEST" ]; then
+              # Extract base branch from GitHub PR API if available
+              git fetch origin main
+            else
+              git fetch origin main
+            fi
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Jobs
+# ──────────────────────────────────────────────────────────────────────────────
+
+jobs:
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Governance check — CHANGELOG must be updated when source code changes
+  # No secrets required.
+  # ────────────────────────────────────────────────────────────────────────────
+
+  governance-check:
+    executor: alpine-executor
+    steps:
+      - checkout
+      - run:
+          name: Install git
+          command: apk add --no-cache git
+      - run:
+          name: Check CHANGELOG.md updated when code changes
+          command: |
+            git fetch origin main
+
+            CHANGED=$(git diff --name-only origin/main...HEAD 2>/dev/null || \
+                      git diff --name-only HEAD~1...HEAD)
+
+            CODE_FILES=$(echo "$CHANGED" | grep -E '\.(py|sql|ts|js|jsx|tsx|go|java|rb|rs|cs)$' || true)
+
+            if [ -z "$CODE_FILES" ]; then
+              echo "No source code files changed — governance check not required."
+              exit 0
+            fi
+
+            echo "Source code files changed:"
+            echo "$CODE_FILES"
+
+            CHANGELOG_CHANGED=$(echo "$CHANGED" | grep "^CHANGELOG\.md$" || true)
+
+            if [ -z "$CHANGELOG_CHANGED" ]; then
+              echo ""
+              echo "╔══════════════════════════════════════════════════════════════════╗"
+              echo "║              GOVERNANCE CHECK FAILED                            ║"
+              echo "╠══════════════════════════════════════════════════════════════════╣"
+              echo "║                                                                  ║"
+              echo "║  Source code files changed but CHANGELOG.md was not updated.    ║"
+              echo "║                                                                  ║"
+              echo "║  Required: Add a session entry to CHANGELOG.md before merging.  ║"
+              echo "║  Quick fix: Run /end-session in Claude Code, or add the entry   ║"
+              echo "║  manually using the format in templates/CHANGELOG.md            ║"
+              echo "║                                                                  ║"
+              echo "╚══════════════════════════════════════════════════════════════════╝"
+              exit 1
+            fi
+
+            echo "CHANGELOG.md updated — governance check passed."
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # AI PR review — sends diff to Claude API, posts result as PR comment
+  # Requires: ANTHROPIC_API_KEY environment variable
+  # ────────────────────────────────────────────────────────────────────────────
+
+  ai-pr-review:
+    executor: python-executor
+    steps:
+      - checkout
+      - run:
+          name: Fetch base branch
+          command: git fetch origin main
+      - run:
+          name: Run AI governance review
+          command: |
+            if [ -z "$ANTHROPIC_API_KEY" ]; then
+              echo "ANTHROPIC_API_KEY not set — skipping AI review."
+              exit 0
+            fi
+
+            DIFF=$(git diff origin/main...HEAD | head -c 15000)
+            DIFF_LINES=$(git diff origin/main...HEAD | wc -l)
+            FILES_CHANGED=$(git diff --name-only origin/main...HEAD | wc -l)
+
+            if [ -f "CLAUDE.md" ]; then
+              CLAUDE_MD=$(head -c 5000 CLAUDE.md)
+            else
+              CLAUDE_MD="No CLAUDE.md found. Review against general best practices."
+            fi
+
+            python3 << PYEOF
+            import urllib.request, json, os, sys
+
+            api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+            diff = """$DIFF"""
+            claude_md = """$CLAUDE_MD"""
+            pr_url = os.environ.get("CIRCLE_PULL_REQUEST", "")
+            files_changed = "$FILES_CHANGED"
+            diff_lines = "$DIFF_LINES"
+
+            prompt = f"""You are a code reviewer for an AI-assisted software project.
+
+            ## Governance rules (CLAUDE.md)
+            {claude_md}
+
+            ## PR diff
+            {diff}
+
+            Review for: naming conventions, architecture compliance, scope, security, documentation.
+
+            Format:
+            **Verdict: PASS** or **Verdict: WARN** or **Verdict: FAIL**
+
+            - [FAIL/WARN/PASS] description
+
+            **Required actions (FAIL items):**
+            1. ...
+
+            Be concise and direct."""
+
+            payload = {
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 1500,
+                "messages": [{"role": "user", "content": prompt}]
+            }
+
+            req = urllib.request.Request(
+                "https://api.anthropic.com/v1/messages",
+                data=json.dumps(payload).encode("utf-8"),
+                method="POST"
+            )
+            req.add_header("Content-Type", "application/json")
+            req.add_header("x-api-key", api_key)
+            req.add_header("anthropic-version", "2023-06-01")
+
+            try:
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    data = json.load(resp)
+                    review_text = data["content"][0]["text"]
+            except Exception as e:
+                print(f"API error: {e}")
+                sys.exit(0)
+
+            verdict = "FAIL" if "**Verdict: FAIL**" in review_text else \
+                      "WARN" if "**Verdict: WARN**" in review_text else "PASS"
+
+            print(f"\nAI Review — {verdict}")
+            print("=" * 60)
+            print(review_text)
+            print("=" * 60)
+
+            # Note: posting comments to GitHub PRs from CircleCI requires
+            # a GITHUB_TOKEN with pr:write scope. Set this in project settings.
+            github_token = os.environ.get("GITHUB_TOKEN", "")
+            if github_token and pr_url:
+                # Extract PR number from URL (format: .../pull/123)
+                pr_num = pr_url.rstrip("/").split("/")[-1]
+                repo_slug = os.environ.get("CIRCLE_PROJECT_USERNAME", "") + "/" + \
+                            os.environ.get("CIRCLE_PROJECT_REPONAME", "")
+
+                comment = f"""## AI PR Review — {verdict}
+
+            > claude-sonnet-4-6 | Files: {files_changed} | Lines: {diff_lines}
+
+            {review_text}
+
+            ---
+            *Automated review. Supplements, not replaces, human review.*"""
+
+                url = f"https://api.github.com/repos/{repo_slug}/issues/{pr_num}/comments"
+                note_req = urllib.request.Request(
+                    url,
+                    data=json.dumps({"body": comment}).encode("utf-8"),
+                    method="POST"
+                )
+                note_req.add_header("Authorization", f"token {github_token}")
+                note_req.add_header("Content-Type", "application/json")
+                note_req.add_header("Accept", "application/vnd.github.v3+json")
+                try:
+                    with urllib.request.urlopen(note_req) as r:
+                        print(f"Review comment posted: HTTP {r.status}")
+                except Exception as e:
+                    print(f"Failed to post comment: {e}")
+
+            if verdict == "FAIL":
+                sys.exit(1)
+            PYEOF
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Test suite — runs pytest across Python versions
+  # ────────────────────────────────────────────────────────────────────────────
+
+  test-python-310:
+    docker:
+      - image: cimg/python:3.10
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: pip install -r requirements-dev.txt
+      - run:
+          name: Run tests
+          command: python -m pytest tests/ --cov=automation --cov=scripts --cov-fail-under=80 -v
+      - store_artifacts:
+          path: coverage.xml
+
+  test-python-312:
+    docker:
+      - image: cimg/python:3.12
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: pip install -r requirements-dev.txt
+      - run:
+          name: Run tests
+          command: python -m pytest tests/ --cov=automation --cov=scripts --cov-fail-under=80 -v
+      - store_artifacts:
+          path: coverage.xml
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Workflows
+# ──────────────────────────────────────────────────────────────────────────────
+
+workflows:
+  governance:
+    jobs:
+      - governance-check
+      - ai-pr-review:
+          requires:
+            - governance-check
+      - test-python-310
+      - test-python-312
