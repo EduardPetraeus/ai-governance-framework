@@ -243,9 +243,98 @@ Rationale: Strong evidence, clear implementation path, complements existing
 
 **Human decision:** The maintainer reviews the proposal, reads the Stripe blog post, and decides to adopt. The research agent (or a contributor) creates a PR adding the new pattern file and updating the quality control patterns document.
 
+## Default Sources
+
+The following sources are pre-configured for the research agent. Copy this block into the system prompt to activate them. Each source includes a `scan_frequency` and the `keywords` used to filter content for relevance.
+
+```yaml
+default_sources:
+  tier_1:
+    - url: https://docs.anthropic.com
+      name: Anthropic Documentation
+      scan_frequency: weekly
+      keywords:
+        - claude code
+        - agent behavior
+        - context window
+        - system prompt
+        - tool use
+        - model capabilities
+        - api changes
+
+    - url: https://www.anthropic.com/news
+      name: Anthropic News and Research Blog
+      scan_frequency: weekly
+      keywords:
+        - ai safety
+        - agent governance
+        - model evaluation
+        - alignment
+        - responsible ai
+        - claude
+        - constitutional ai
+
+  tier_2:
+    - url: https://github.com/trending?q=ai-governance&since=weekly
+      name: GitHub Trending — AI Governance
+      scan_frequency: weekly
+      keywords:
+        - ai governance
+        - llm governance
+        - agent framework
+        - ai policy
+        - claude code
+        - ai agent
+
+    - url: https://github.com/trending?q=claude-code&since=weekly
+      name: GitHub Trending — Claude Code
+      scan_frequency: weekly
+      keywords:
+        - claude code
+        - claude agent
+        - mcp
+        - anthropic sdk
+        - agent workflow
+
+  tier_3:
+    - url: https://news.ycombinator.com
+      name: Hacker News
+      scan_frequency: weekly
+      keywords:
+        - ai governance
+        - llm agent
+        - claude code
+        - ai development workflow
+        - agent safety
+        - prompt engineering
+        - ai code review
+
+    - url: https://www.reddit.com/r/dataengineering
+      name: r/dataengineering
+      scan_frequency: biweekly
+      keywords:
+        - ai agent
+        - llm
+        - claude
+        - ai workflow
+        - data pipeline automation
+        - ai code generation
+
+    - url: https://www.reddit.com/r/ExperiencedDevs
+      name: r/ExperiencedDevs
+      scan_frequency: biweekly
+      keywords:
+        - ai coding assistant
+        - ai governance
+        - code review automation
+        - ai agent
+        - llm workflow
+        - copilot alternatives
+```
+
 ## Customization
 
-**Adding project-specific sources:** If your organization has internal engineering blogs, wikis, or knowledge bases relevant to AI governance, add them to the Tier 2 source list in the system prompt. Internal sources often contain the most relevant findings because they describe patterns that worked in your specific context.
+**Adding project-specific sources:** If your organization has internal engineering blogs, wikis, or knowledge bases relevant to AI governance, add them to the Tier 2 source list in the system prompt or in the `default_sources` YAML block above. Internal sources often contain the most relevant findings because they describe patterns that worked in your specific context.
 
 **Adjusting filtering strictness:** The default filters are tuned for a general-purpose framework. Teams in regulated industries (healthcare, finance) should add a compliance filter: "Does this finding have implications for regulatory compliance?" Teams in early-stage startups may relax the evidence requirement from 2 stars to 1 star for experimental adoption.
 
