@@ -1,133 +1,139 @@
 # Maturity Model
 
-The AI Governance Framework defines six maturity levels, numbered 0 through 5. Each level is a stable, coherent state — not a position on a continuous scale. You are not "between" levels; you are at a level, and upgrading requires completing specific implementation steps.
+The AI Governance Framework defines six maturity levels, numbered 0 through 5. Each level is a stable, coherent state — not a position on a sliding scale. You are at a level. Upgrading requires completing specific implementation steps, not gradually improving.
 
-The model is designed to be implemented incrementally. Level 0 teams do not jump to Level 3. They implement Level 1, run it for a sprint, understand what it does, and then move to Level 2. The framework compounds: each level makes the next level more valuable.
+The model is designed for incremental adoption. Level 0 teams do not jump to Level 3. They implement Level 1, run it for a sprint, internalize what it does, then move to Level 2. Each level makes the next level more valuable.
 
 ---
 
 ## Level 0: Ad-hoc
 
-**"Vibe coding." No governance. The agent does whatever is asked.**
+**"Vibe coding." The agent does whatever is asked, often brilliantly, but nobody knows what was built or why.**
 
-### What's implemented
+### The Tell-Tale Sign
 
-- Nothing. The agent operates from its training data and the nearest user instruction.
-- No shared context across sessions — the agent re-learns the project every time.
-- No constraints on what the agent may change — it modifies what it infers should be modified.
-- No record of what was built — you would have to read git history to reconstruct the project state.
+You finish a session and cannot answer: "What exactly changed, and does it advance the project goal?" You reconstruct project state from git log and your own memory.
 
-### Concrete files that exist
+### What Is Implemented
 
-- None — or only the standard project files (`README.md`, source code, perhaps a `.gitignore`)
-- No `CLAUDE.md`, `PROJECT_PLAN.md`, `CHANGELOG.md`, or `ARCHITECTURE.md`
+Nothing. The agent operates from training data and the immediate conversation. No shared context across sessions. No constraints on what the agent may change. No record of intent — only git diffs.
 
-### Metrics you can track
+### Files That Exist
 
-At Level 0, there is almost nothing to measure because there is no instrumentation. The only available signal is git commit history, which tells you what files changed but not why, what the intent was, or whether it was correct.
+Standard project files only: `README.md`, source code, `.gitignore`. No `CLAUDE.md`, `PROJECT_PLAN.md`, `CHANGELOG.md`, or `ARCHITECTURE.md`.
 
-- **Commit count:** useful as a proxy for activity, not for quality
-- **Time to working feature:** only measurable manually
-- **Bug rate:** only visible after bugs surface in production
+### What You Can Measure
 
-### How to upgrade to Level 1
+Almost nothing, because there is no instrumentation.
 
-1. Create `CLAUDE.md` from the template at [`templates/CLAUDE.md.template`](../templates/CLAUDE.md.template). Fill in the `project_context` section.
-2. Create `PROJECT_PLAN.md` from the template. Add your current sprint goal and the next 5–8 tasks.
+| Metric | Source | Usefulness |
+|--------|--------|-----------|
+| Commit count | git log | Proxy for activity, not quality |
+| Time to feature | Manual tracking | Only if someone remembers to track |
+| Bug rate | Production incidents | Visible only after damage |
+
+### How to Upgrade to Level 1
+
+1. Create `CLAUDE.md` from [`templates/CLAUDE.md`](../templates/CLAUDE.md). Fill in `project_context`.
+2. Create `PROJECT_PLAN.md` from the template. Add the current sprint goal and 5-8 tasks.
 3. Create `CHANGELOG.md` from the template.
-4. Run your next session using the `/plan-session` command and complete the session end with `/end-session`.
+4. Run your next session with `/plan-session`. End it with `/end-session`.
 5. Commit all three governance files.
 
-That is the complete upgrade. See [getting-started.md](getting-started.md) for step-by-step instructions.
+See [getting-started.md](getting-started.md) for the complete walkthrough.
 
-### Estimated time to implement
+### Time Estimate
 
-**One afternoon** — 2–4 hours for initial setup and the first governed session.
+**One afternoon** — 2-4 hours for setup and the first governed session.
 
-### Who it's for
+### Who This Fits
 
-Every team and every project begins at Level 0. The question is how long they stay there. Solo developers building hobby projects can operate at Level 0 indefinitely. Developers building anything they will maintain for more than a month, any codebase another human will touch, or any product with real users will find Level 0 increasingly painful as the project grows.
+Every project begins here. Solo developers building hobby projects can stay at Level 0. Anyone building something they will maintain for more than a month, that another human will touch, or that has real users should move to Level 1 as soon as they start.
 
 ---
 
 ## Level 1: Foundation
 
-**First governed sessions. The agent has a constitution and follows a session protocol.**
+**First governed sessions. The agent reads a constitution before it writes code. Sessions start with orientation and end with documented state.**
 
-### What's implemented
+### The Tell-Tale Sign
+
+Your agent's first action in any session is reading `PROJECT_PLAN.md` and `CHANGELOG.md`, presenting sprint status, and asking you to confirm scope. It never writes code before you say "proceed."
+
+### What Is Implemented
 
 - `CLAUDE.md` exists, is maintained, and the agent reads it at every session start
-- Session start protocol: agent reads governance files, presents sprint status, confirms scope before writing code
-- Session end protocol: agent updates `CHANGELOG.md` and `PROJECT_PLAN.md`, proposes governance commit
-- `CHANGELOG.md` updated per session with tasks completed, files changed, and goal progress
-- Git-based workflow: feature branches, commit message conventions, no direct pushes to main
+- Session start protocol: governance sync, sprint status, scope confirmation before code
+- Session end protocol: CHANGELOG update, PROJECT_PLAN update, governance commit
+- `CHANGELOG.md` updated per session with tasks, files changed, goal progress
+- Git workflow: feature branches, commit message conventions, no direct pushes to main
 
-### Concrete files that exist
+### Files That Exist
 
 ```
 project-root/
-├── CLAUDE.md                      # The agent's constitution
-├── PROJECT_PLAN.md                # Sprint tasks, phase structure, progress tracking
-└── CHANGELOG.md                   # Session-by-session audit trail
+├── CLAUDE.md              # Constitution — agent reads this first
+├── PROJECT_PLAN.md        # Sprint tasks, phases, progress tracking
+└── CHANGELOG.md           # Session-by-session audit trail
 ```
 
-### Metrics you can track
-
-At Level 1, you have enough instrumentation for the most important baseline metrics:
+### What You Can Measure
 
 | Metric | How to measure | Target |
 |--------|---------------|--------|
-| Governance compliance rate | Sessions with complete start/end protocol ÷ total sessions | 100% |
+| Governance compliance rate | Sessions with full start/end protocol / total sessions | 100% |
 | Tasks completed per session | Count from CHANGELOG entries | Trending up |
-| Scope accuracy | Tasks completed that were in the confirmed scope | >80% |
-| Session context reconstruction time | Time to productive work at session start | Under 5 minutes |
+| Scope accuracy | Tasks completed that were in confirmed scope / total tasks | >80% |
+| Context reconstruction time | Time from session start to first productive action | Under 5 min |
 
-You will also notice an immediate qualitative improvement: sessions start with purpose rather than re-orientation, and you leave every session with documented state rather than wondering what was built.
+### How to Upgrade to Level 2
 
-### How to upgrade to Level 2
+1. Write `docs/ARCHITECTURE.md` — describe what has been built, not the vision
+2. Create your first ADR. Use [`docs/adr/ADR-000-template.md`](adr/ADR-000-template.md). Place at `docs/adr/ADR-001-your-decision.md`
+3. Create `docs/MEMORY.md` for cross-session agent context
+4. Add `ARCHITECTURE.md` and `MEMORY.md` to the session start file list in `CLAUDE.md`
+5. Install slash commands from [`commands/`](../commands/) into `.claude/commands/`
+6. Define your first sprint with explicit weekly goals in `PROJECT_PLAN.md`
 
-1. Write `docs/ARCHITECTURE.md` describing what has been built so far (not the vision — the current state)
-2. Create your first ADR for the most significant architectural decision made to date. Use the template at [`templates/adr-template.md`](../templates/adr-template.md). Place it at `docs/adr/ADR-001-your-decision.md`.
-3. Create `docs/MEMORY.md` — a running file where the agent captures decisions, patterns, and project-specific conventions discovered across sessions
-4. Add `ARCHITECTURE.md` and `MEMORY.md` to the files read at session start in `CLAUDE.md`
-5. Install the slash commands from [`commands/`](../commands/) into `.claude/commands/`
-6. Define your first sprint with explicit week-level goals in `PROJECT_PLAN.md`
+### Time Estimate
 
-### Estimated time to implement
+**One afternoon** for setup. Ongoing cost: ~5 minutes per session for start/end protocols. This is not overhead — it is the work of maintaining context.
 
-**One afternoon** for initial setup. The ongoing cost is approximately 5 minutes per session for the start and end protocols — this is not overhead, it is the work of maintaining project context.
+### Who This Fits
 
-### Who it's for
-
-Every developer using AI assistance for a project they care about. Solo developers building anything with more than one week of work ahead. Teams who have already noticed that their agents are inconsistent across sessions. This is the baseline below which AI-assisted development is ungoverned by definition.
+Every developer using AI assistance for a project they care about. Solo developers with more than a week of work ahead. Teams who have noticed their agents are inconsistent across sessions. This is the baseline below which AI development is ungoverned by definition.
 
 ---
 
 ## Level 2: Structured
 
-**Architecture decisions are recorded. The project has memory. Specialized agents and slash commands automate routine workflows.**
+**Architecture decisions are recorded. Memory persists across sessions. Agents are specialized. Sprint goals are tracked.**
 
-### What's implemented
+### The Tell-Tale Sign
+
+When the agent encounters a design choice, it checks `docs/adr/` before proposing an approach. It does not suggest alternatives to decisions already marked as Accepted. New team members can read the knowledge files and contribute on day one.
+
+### What Is Implemented
 
 - `PROJECT_PLAN.md` with explicit phases, milestones, and task dependencies
-- `ARCHITECTURE.md` with current-state diagrams and component descriptions
+- `ARCHITECTURE.md` with current-state component descriptions
 - ADRs for significant architectural decisions (`docs/adr/`)
-- `MEMORY.md` giving agents cross-session context on project-specific decisions
-- Basic CI/CD: linting and tests running on pull requests
-- Sprint-based workflow with defined goals and regular retrospectives
-- Slash commands for common workflows: `/plan-session`, `/end-session`, `/sprint-status`, `/security-review`
-- Initial agent role definitions: at minimum a code agent and a review agent with different scopes
+- `MEMORY.md` for cross-session agent context
+- Basic CI/CD: linting and tests on pull requests
+- Sprint-based workflow with defined goals
+- Slash commands: `/plan-session`, `/end-session`, `/sprint-status`, `/security-review`
+- Agent role definitions: at minimum a code agent and a review agent
 
-### Concrete files that exist
+### Files That Exist
 
 ```
 project-root/
-├── CLAUDE.md                       # Constitution (extended with agent roles)
-├── PROJECT_PLAN.md                 # Phases, milestones, sprint tasks
-├── CHANGELOG.md                    # Session audit trail
+├── CLAUDE.md
+├── PROJECT_PLAN.md
+├── CHANGELOG.md
 ├── docs/
-│   ├── ARCHITECTURE.md             # Current architecture state
-│   ├── MEMORY.md                   # Cross-session context and decisions
+│   ├── ARCHITECTURE.md          # Current architecture state
+│   ├── MEMORY.md                # Cross-session context
 │   └── adr/
 │       ├── ADR-001-first-decision.md
 │       └── ADR-002-second-decision.md
@@ -139,269 +145,271 @@ project-root/
 │       └── security-review.md
 └── .github/
     └── workflows/
-        └── ci.yml                  # Lint + tests
+        └── ci.yml               # Lint + tests
 ```
 
-### Metrics you can track
-
-In addition to Level 1 metrics:
+### What You Can Measure
 
 | Metric | How to measure | Target |
 |--------|---------------|--------|
-| ADR coverage | Significant decisions with ADRs ÷ significant decisions total | >80% |
-| Architecture drift | New components not reflected in ARCHITECTURE.md | 0 |
-| Sprint goal completion rate | Sprint goals fully completed ÷ sprints run | >70% |
-| Test coverage | From CI/CD report | Trending up; target >50% |
-| Rework rate | Tasks redone after completion ÷ total tasks | <15% |
+| ADR coverage | Decisions with ADRs / significant decisions made | >80% |
+| Architecture drift | New components not in ARCHITECTURE.md | 0 |
+| Sprint goal completion | Goals fully completed / sprints run | >70% |
+| Test coverage | CI/CD report | >50%, trending up |
+| Rework rate | Tasks redone / total tasks | <15% |
 
-### How to upgrade to Level 3
+### How to Upgrade to Level 3
 
-1. Install pre-commit hooks from [`ci-cd/pre-commit-config.yaml`](../ci-cd/pre-commit-config.yaml): secret scanning (gitleaks), naming convention validation, hardcoded path detection
-2. Add the AI PR review workflow from [`ci-cd/ai-review.yml`](../ci-cd/ai-review.yml) to your GitHub Actions
-3. Add the governance file update check: CI fails if code files changed but `CHANGELOG.md` was not updated
-4. Configure branch protection on main: require PR, require CI pass, require at least one human approval
+1. Install pre-commit hooks from [`ci-cd/pre-commit/.pre-commit-config.yaml`](../ci-cd/pre-commit/.pre-commit-config.yaml): secret scanning, naming validation, hardcoded path detection
+2. Add AI PR review from [`ci-cd/github-actions/ai-pr-review.yml`](../ci-cd/github-actions/ai-pr-review.yml) to GitHub Actions
+3. Add governance file check: CI fails if code changed but CHANGELOG was not updated
+4. Configure branch protection on main: require PR, CI pass, human approval
 5. Create `docs/COST_LOG.md` and add cost tracking to the session end protocol
-6. Add a security scan to the session start protocol in `CLAUDE.md` (the agent checks recently modified files for secrets and PII patterns)
+6. Add security scan to session start in `CLAUDE.md`
 
-### Estimated time to implement
+### Time Estimate
 
-**2–4 hours** for initial setup of ADRs, ARCHITECTURE.md, and MEMORY.md. Slash commands take approximately 30 minutes to install. CI/CD setup is 1–2 hours depending on your existing pipeline. Total: **one focused day** spread across the first week of the next sprint.
+**One focused day** spread across a sprint. ADRs, ARCHITECTURE.md, MEMORY.md: 2-4 hours. Slash commands: 30 minutes. CI/CD: 1-2 hours.
 
-### Who it's for
+### Who This Fits
 
-Teams past the experimental phase. Projects that have made deliberate architectural decisions and want to protect them. Developers who have experienced the "the agent proposed the same thing we rejected three weeks ago" problem and want to prevent it. This is the level where solo developer projects start to feel like they have genuine engineering discipline rather than fast prototyping.
+Teams past the experimental phase. Projects with deliberate architectural decisions worth protecting. Developers who have experienced "the agent proposed the same thing we rejected three weeks ago" and want to prevent it. Solo projects that feel like real engineering, not just fast prototyping.
 
 ---
 
 ## Level 3: Enforced
 
-**Governance is non-optional. CI/CD gates, AI PR review, pre-commit hooks, and security scanning make the rules deterministic.**
+**Governance has teeth. CI/CD rejects ungoverned changes. Pre-commit hooks catch secrets before they enter history. AI reviews every PR against the constitution.**
 
-### What's implemented
+### The Tell-Tale Sign
 
-- Pre-commit hooks running locally before every commit: secret scanning, naming convention validation, hardcoded path detection
-- GitHub Actions CI/CD pipeline with four tiers: syntax/structure, tests, AI code review, human review
-- AI PR review as a CI check: agent reviews every PR against `CLAUDE.md` and `ARCHITECTURE.md` and posts structured feedback
-- Governance file update check: PRs with code changes that do not include a CHANGELOG update fail CI
-- Branch protection: no direct pushes to main, required CI pass, required human approval
-- Automated security scanning on every PR (gitleaks, trufflehog, or equivalent)
+A developer tries to merge a PR without updating CHANGELOG. CI blocks it. A hardcoded path in a Python file is caught by the pre-commit hook before it ever reaches a commit. The AI reviewer posts a WARN on a naming convention violation before the human reviewer opens the PR. Governance is a system, not a discipline.
+
+### What Is Implemented
+
+- Pre-commit hooks: secret scanning, naming validation, hardcoded path detection
+- GitHub Actions with four tiers: syntax/structure, tests, AI review, human review
+- AI PR review posting PASS/WARN/FAIL with specific line comments
+- Governance file check: code changes without CHANGELOG update fail CI
+- Branch protection: no direct pushes, CI pass required, human approval required
+- Automated security scanning on every PR
 - `COST_LOG.md` with per-session cost tracking
 - Security scan as part of session protocol
 
-### Concrete files that exist
+### Files That Exist
 
 Everything from Level 2, plus:
 
 ```
 project-root/
-├── .pre-commit-config.yaml        # Pre-commit hooks: secrets, naming, paths
+├── .pre-commit-config.yaml       # Hooks: secrets, naming, paths
 ├── docs/
-│   └── COST_LOG.md                # Per-session cost tracking
+│   └── COST_LOG.md               # Per-session cost tracking
 └── .github/
     └── workflows/
-        ├── ci.yml                  # Tier 1 + 2: lint, type check, tests
-        ├── ai-review.yml           # Tier 3: AI code review
-        ├── security-scan.yml       # Secret and PII scanning
-        └── governance-check.yml    # Governance file update validation
+        ├── ci.yml                 # Tier 1+2: lint, type check, tests
+        ├── ai-review.yml          # Tier 3: AI code review
+        ├── security-scan.yml      # Secret and PII scanning
+        └── governance-check.yml   # Governance file update validation
 ```
 
-### Metrics you can track
-
-In addition to Level 2 metrics:
+### What You Can Measure
 
 | Metric | How to measure | Target |
 |--------|---------------|--------|
-| AI review pass rate (first submission) | PRs passing AI review on first try ÷ total PRs | >75% |
-| Pre-commit rejection rate | Commits rejected by hooks ÷ total commit attempts | Trending to 0 |
-| Security scan findings | Secrets/PII found per scan | 0 (critical finding = immediate fix) |
-| Governance compliance (enforced) | PRs blocked for missing governance update ÷ total PRs | 0 (compliance is now enforced, not optional) |
-| Cost per session | From COST_LOG.md | Tracked; no specific target at this level |
-| Test coverage | From CI/CD | >60% |
+| AI review pass rate (first try) | PRs passing on first submission / total | >75% |
+| Pre-commit rejection rate | Commits rejected / total attempts | Trending to 0 |
+| Security findings | Secrets/PII found per scan | 0 |
+| Governance compliance (enforced) | PRs blocked for missing updates | 0 (now enforced) |
+| Cost per session | COST_LOG.md | Tracked |
+| Test coverage | CI/CD | >60% |
 
-### How to upgrade to Level 4
+### How to Upgrade to Level 4
 
-1. Build a quality metrics dashboard — even a simple Markdown file that aggregates CHANGELOG data is sufficient. Automate its generation from `COST_LOG.md` and CHANGELOG entries.
-2. Configure the master agent (see [`agents/master-agent.md`](../agents/master-agent.md)) to run on all PRs with full context: PR diff, `CLAUDE.md`, `ARCHITECTURE.md`, all ADRs, recent CHANGELOG.
-3. Implement model routing: define which tasks use which model tier, add the routing table to `CLAUDE.md`, configure the agent to flag when a task requires a more capable model than the current session is running.
-4. Achieve test coverage above 70% — this is a prerequisite for the automated quality metrics at Level 4 to be meaningful.
-5. Define the multi-agent specialization you need for your project. At minimum: a code agent and a review agent with distinct system prompts and file access scopes.
+1. Build a quality metrics dashboard — even a Markdown file aggregating CHANGELOG data
+2. Configure a master agent (read-only, full project context) for PR review
+3. Implement model routing: routing table in `CLAUDE.md`, agent flags task-model mismatches
+4. Achieve test coverage >70%
+5. Define multi-agent specialization: at minimum code agent and review agent with distinct scopes
 
-### Estimated time to implement
+### Time Estimate
 
-**One sprint** (1–2 weeks) to implement all enforcement layers. Pre-commit hooks are 30 minutes. GitHub Actions workflows are 2–4 hours. Configuring branch protection is 15 minutes. The time investment is front-loaded; enforcement then runs automatically without ongoing maintenance beyond tuning false positives.
+**One sprint** (1-2 weeks). Pre-commit hooks: 30 minutes. GitHub Actions: 2-4 hours. Branch protection: 15 minutes. Front-loaded investment; enforcement then runs automatically.
 
-### Who it's for
+### Who This Fits
 
-Teams shipping to production. Projects with security or compliance requirements. Any team where a single unreviewed commit with a hardcoded secret would be a serious problem. This is the level at which governance transitions from "discipline that requires remembering" to "system that enforces itself."
+Teams shipping to production. Projects with security or compliance requirements. Any codebase where an unreviewed commit with a hardcoded secret would be a serious problem. This is where governance transitions from "discipline that requires remembering" to "system that enforces itself."
 
-The HealthReporting implementation reached Level 3 from Level 0 in two weeks. For a team with existing CI/CD infrastructure, Level 3 is achievable in a sprint.
+The HealthReporting project reached Level 3 from Level 0 in two weeks.
 
 ---
 
 ## Level 4: Measured
 
-**Quality metrics are tracked systematically. The master agent has full context. Architecture drift is detected automatically. Cost is optimized through model routing.**
+**You know your AI productivity number. Architecture drift is detected automatically. Quality metrics drive decisions.**
 
-### What's implemented
+### The Tell-Tale Sign
 
-- Automated quality metrics dashboard: session productivity, test coverage trend, cost per session, AI review pass rate, governance compliance
-- Master agent running on all PRs with full project context — not just code review but architectural consistency checking against all ADRs and `ARCHITECTURE.md`
-- Automatic drift detection: the master agent flags when new code diverges from documented architectural patterns
-- Multi-agent specialization: dedicated code, review, security, test, docs, and cost agents with explicit role boundaries
-- Model routing: routing table in `CLAUDE.md` specifies which model tier is used for which task type; the agent flags mismatches
-- Test coverage above 70% with coverage reporting in CI/CD
-- Cost optimization: actual cost tracking compared to optimal routing cost; monthly review of over/under-usage of model tiers
+You can answer the question: "How much faster is AI making us, and at what quality?" You have a dashboard showing session productivity, cost trends, test coverage, and drift score. You optimize deliberately based on data, not intuition.
 
-### Concrete files that exist
+### What Is Implemented
+
+- Automated quality metrics dashboard
+- Master agent on all PRs with full project context (CLAUDE.md + ARCHITECTURE.md + all ADRs)
+- Automatic drift detection: master agent flags code diverging from documented patterns
+- Multi-agent specialization: code, review, security, test, docs, cost agents with explicit boundaries
+- Model routing: routing table in `CLAUDE.md`, agent flags mismatches
+- Test coverage >70%
+- Cost optimization: actual vs. optimal routing cost, monthly review
+
+### Files That Exist
 
 Everything from Level 3, plus:
 
 ```
 project-root/
 ├── docs/
-│   ├── metrics-dashboard.md       # Auto-generated quality metrics summary
-│   └── DECISIONS.md               # Non-ADR agent decision log
+│   ├── metrics-dashboard.md      # Auto-generated quality metrics
+│   └── DECISIONS.md              # Non-ADR decision log
 ├── agents/
-│   ├── code-agent.md              # Code agent scope and system prompt
-│   ├── review-agent.md            # Review agent scope
-│   ├── security-agent.md          # Security agent scope
-│   ├── docs-agent.md              # Docs/governance update agent
-│   └── cost-agent.md              # Cost tracking and alerting agent
+│   ├── code-agent.md
+│   ├── review-agent.md
+│   ├── security-agent.md
+│   ├── docs-agent.md
+│   └── cost-agent.md
 └── .github/
     └── workflows/
-        └── master-review.yml      # Master agent with full project context
+        └── master-review.yml     # Master agent full-context review
 ```
 
-### Metrics you can track
-
-In addition to Level 3 metrics:
+### What You Can Measure
 
 | Metric | How to measure | Target |
 |--------|---------------|--------|
-| Architecture drift score | Deviations from ARCHITECTURE.md flagged by master agent | 0 per sprint |
-| Model routing efficiency | Actual cost ÷ optimal routing cost | <1.3 (within 30% of optimal) |
-| Master agent review accuracy | Correct flags ÷ total flags (no false positives) | >85% |
-| Governance overhead | Time in governance processes ÷ total development time | <10% |
+| Architecture drift score | Deviations flagged by master agent | 0 per sprint |
+| Model routing efficiency | Actual cost / optimal routing cost | <1.3x |
+| Master agent accuracy | Correct flags / total flags | >85% |
+| Governance overhead | Governance time / total development time | <10% |
 | Test coverage | CI/CD | >70% |
-| Cost per feature shipped | COST_LOG.md ÷ features shipped per sprint | Tracked, declining |
+| Cost per feature | COST_LOG / features per sprint | Tracked, declining |
 
-### How to upgrade to Level 5
+### How to Upgrade to Level 5
 
-1. Create an org-level `CLAUDE.md` at `~/.claude/CLAUDE.md` that defines security rules, naming conventions, and compliance requirements that apply to all repositories in the organization
-2. Implement cross-repo governance: a master agent that reads governance files across multiple repositories and flags inconsistencies
-3. Build the compliance audit trail: ensure that every AI-assisted decision has a documented human approval, suitable for external audit
-4. Define role-based agent access: different developers have different agent capabilities based on their role (junior developers cannot bypass certain CI gates that senior developers can override with documented justification)
-5. Implement the governance dashboard as a real-time view, not just a periodic Markdown file
+1. Create org-level `CLAUDE.md` at `~/.claude/CLAUDE.md` for cross-repo rules
+2. Implement cross-repo governance: master agent reading governance files across repositories
+3. Build compliance audit trail: every AI decision with documented human approval
+4. Define role-based agent access: capabilities governed by developer role
+5. Move governance dashboard from periodic Markdown to real-time view
 
-### Estimated time to implement
+### Time Estimate
 
-**One quarter** (2–3 months) for the full Level 4 implementation. The metrics dashboard can be built in a sprint. Multi-agent specialization takes 1–2 sprints to define and tune. Test coverage above 70% depends heavily on the existing state of the test suite — budget appropriately.
+**One quarter** (2-3 months). Metrics dashboard: one sprint. Multi-agent specialization: 1-2 sprints. Test coverage improvement depends on existing state.
 
-### Who it's for
+### Who This Fits
 
-Teams that have been running Level 3 for at least a sprint and want to move from reactive governance (catching problems) to proactive governance (detecting drift before it compounds). Engineering managers who want visibility into AI development quality without requiring manual reporting. Projects with significant technical debt from pre-governance development that needs systematic detection and remediation.
+Teams running Level 3 for at least a sprint who want to move from reactive (catching problems) to proactive (detecting drift before it compounds). Engineering managers wanting visibility without manual reporting. Projects with pre-governance technical debt needing systematic detection.
 
 ---
 
 ## Level 5: Self-Optimizing
 
-**Organizational governance. Cross-repo consistency. Compliance audit trails. The framework improves itself based on observed patterns.**
+**The framework improves itself. Org-level governance cascades to every repo. Compliance audit trails are complete. Retrospectives generate governance improvements automatically.**
 
-### What's implemented
+### The Tell-Tale Sign
 
-- Org-level `CLAUDE.md` defining security rules, compliance requirements, and naming conventions that cascade to all repositories
-- Cross-repo governance: master agent monitors multiple repositories for architectural consistency and naming convention drift
-- Compliance audit trail: complete record of every AI-assisted decision, every human approval, every governance override — structured for external audit
-- Role-based agent access: agent capabilities are governed by developer role; security-critical operations require senior review regardless of who initiates them
-- Automated retrospectives: after each sprint, a meta-agent analyzes session patterns, identifies recurring issues, and proposes specific CLAUDE.md or process improvements
-- Governance dashboard with real-time visibility: sprint progress, cost attribution by developer and by repository, quality metrics trend, compliance status
-- Full cost attribution: AI cost tracked per developer, per team, per project, per sprint — with budget alerts and optimization recommendations
+After each sprint, a meta-agent analyzes session patterns and proposes specific CLAUDE.md improvements. Governance rules that are consistently ignored get flagged for removal. New developers run their first governed session within hours of joining. The framework produces less friction today than it did three months ago, despite handling more complexity.
 
-### Concrete files that exist
+### What Is Implemented
+
+- Org-level `CLAUDE.md` cascading to all repositories
+- Cross-repo governance: master agent monitoring multiple repos for consistency
+- Complete compliance audit trail: every AI decision, every human approval, structured for external audit
+- Role-based agent access: capabilities governed by developer role and seniority
+- Automated retrospectives: meta-agent analyzes patterns and proposes improvements
+- Real-time governance dashboard: progress, cost attribution, quality trends, compliance status
+- Full cost attribution: per developer, per team, per project, per sprint
+
+### Files That Exist
 
 Everything from Level 4, plus:
 
 ```
 ~/.claude/
-└── CLAUDE.md                       # Org-level constitution: security, compliance, naming
+└── CLAUDE.md                      # Org-level constitution
 
 org-governance-repo/
-├── CLAUDE.md                       # Org-level (same as above, source of truth)
+├── CLAUDE.md                      # Org-level source of truth
 ├── policies/
-│   ├── security-constitution.md    # Never-list, classification model
-│   ├── data-governance.md          # What may and may not go into AI context
-│   └── compliance-trail.md         # Audit trail format and requirements
+│   ├── security-constitution.md
+│   ├── data-governance.md
+│   └── compliance-trail.md
 ├── agents/
-│   └── master-agent-org.md         # Cross-repo master agent spec
+│   └── master-agent-org.md        # Cross-repo master agent
 └── dashboards/
-    └── governance-dashboard.md     # Org-level governance metrics view
+    └── governance-dashboard.md
 ```
 
-### Metrics you can track
-
-In addition to Level 4 metrics:
+### What You Can Measure
 
 | Metric | How to measure | Target |
 |--------|---------------|--------|
-| Cross-repo consistency | Pattern deviations flagged by org master agent | <5 per sprint org-wide |
-| Compliance audit readiness | % of AI decisions with human approval documented | 100% |
-| Governance framework improvement rate | CLAUDE.md improvements shipped per quarter | >3 (evidence of active evolution) |
-| AI cost per developer per month | COST_LOG.md aggregated | Within defined budget |
-| Onboarding time for new AI-enabled developers | Time from hire to first governed session | <1 day |
-| Governance overhead (org-wide) | Time in governance ÷ total development time | <8% |
+| Cross-repo consistency | Deviations flagged by org master agent | <5 per sprint |
+| Compliance audit readiness | AI decisions with human approval documented | 100% |
+| Framework improvement rate | CLAUDE.md improvements per quarter | >3 |
+| AI cost per developer per month | Aggregated COST_LOG | Within budget |
+| Onboarding time | Time to first governed session | <1 day |
+| Governance overhead (org-wide) | Governance time / total development time | <8% |
 
-### How to upgrade beyond Level 5
+### Beyond Level 5
 
-Level 5 is not a final destination — it is a stable state from which the framework continues to evolve. Beyond Level 5, the improvements are incremental rather than structural:
+Level 5 is a stable state, not a final destination. Beyond it, improvements are incremental:
 
-- Custom tooling for your specific tech stack (specialized agents for your domain)
-- Advanced model routing (automated, not just flagged recommendations)
-- Integration with external compliance systems (SOX, HIPAA, ISO 27001 audit tooling)
-- AI-assisted retrospectives that propose not just CLAUDE.md changes but team process changes
+- Custom tooling for your specific domain (specialized agents per tech stack)
+- Automated model routing (not just flagged, but switched automatically)
+- Integration with external compliance systems (SOX, HIPAA, ISO 27001)
+- AI-assisted retrospectives proposing team process changes, not just CLAUDE.md changes
 
-### Estimated time to implement
+### Time Estimate
 
-**3–6 months** from Level 4, assuming Level 4 has been stable for at least one quarter. The org-level governance layer requires buy-in from across the engineering organization, not just one team's adoption. The compliance audit trail requires coordination with security and legal. The cross-repo master agent requires infrastructure that not all organizations have in place.
+**3-6 months** from Level 4, assuming Level 4 has been stable for at least one quarter. Requires organizational buy-in beyond a single team. Compliance audit trails need coordination with security and legal.
 
-### Who it's for
+### Who This Fits
 
-Engineering organizations at significant scale (50+ developers) where AI adoption is happening whether or not governance exists. CTOs who need compliance documentation for AI-assisted development. Organizations in regulated industries (healthcare, finance, government) where AI code generation has specific audit requirements. Teams that have experienced the cost of inconsistent governance across teams and want to solve it systemically rather than repeatedly.
+Engineering organizations at scale (50+ developers) where AI adoption is happening across multiple teams. CTOs needing compliance documentation for AI-assisted development. Regulated industries (healthcare, finance, government) with specific audit requirements. Organizations that have experienced the cost of inconsistent governance across teams.
 
 ---
 
-## Self-Assessment: Find Your Current Level
+## Self-Assessment
 
-Answer these 10 questions. Count how many you can answer "yes" honestly.
+Answer these 10 questions based on what is consistently happening, not what happened once or what you intend to implement. A protocol that ran 4 times out of 10 is Level 0 with occasional governance.
 
-1. **Does your repository have a `CLAUDE.md` file that the agent reads at every session start, containing rules about naming conventions, forbidden actions, and a session protocol?**
+1. **Does your `CLAUDE.md` contain a session protocol with explicit start/end phases, and does it have a last-reviewed date within the past 30 days?**
 
-2. **Do you run a session start command before every AI session, and does the agent confirm scope with you before writing any code?**
+2. **Does the agent confirm scope with you before writing any code in every session — not most sessions, every session?**
 
-3. **Is `CHANGELOG.md` updated after every single session, with specific files changed, tasks completed, and progress percentage — not just a vague summary?**
+3. **Is `CHANGELOG.md` updated after every session with specific file paths, task outcomes, and progress percentages — not just a vague summary?**
 
-4. **Are your significant architectural decisions documented in ADRs with status, context, decision, consequences, and alternatives considered?**
+4. **Do ADRs exist for your significant architectural decisions, and do they include Status, Context, Decision, Consequences, and Alternatives Considered?**
 
-5. **Does your CI/CD pipeline block merges when governance files were not updated alongside code changes?**
+5. **Does your CI/CD pipeline block PRs that change code files but do not include a governance file update?**
 
-6. **Does every pull request get reviewed by an AI agent against your `CLAUDE.md` rules before human review?**
+6. **Does an AI agent review every pull request against your `CLAUDE.md` rules and `ARCHITECTURE.md` before human review begins?**
 
-7. **Do pre-commit hooks prevent secrets, hardcoded paths, and naming convention violations from entering git history?**
+7. **Do pre-commit hooks prevent secrets, hardcoded paths, and naming violations from entering git history — and have you verified this by testing with an intentional violation?**
 
-8. **Do you track AI API cost per session, and do you know what you spent on AI assistance in the last two weeks?**
+8. **Do you track AI API cost per session in a dedicated file, and can you state your AI spend for the last two weeks without looking it up?**
 
-9. **Can a new team member or a new AI session read your governance files and produce code that is architecturally consistent with what was built three months ago — without being told anything verbally?**
+9. **Can a new developer (or a fresh Claude Code session) read your governance files and produce architecturally consistent code without any verbal context — and has this actually been tested?**
 
-10. **Is there a defined process for changing `CLAUDE.md` that requires human review, and has the framework itself been reviewed and improved in the last month?**
+10. **Is there a defined, PR-based process for changing `CLAUDE.md`, and has the framework been reviewed and improved within the last 30 days?**
 
-**Score interpretation:**
+### Scoring
 
-| Score | Level | What it means |
-|-------|-------|---------------|
-| 0–1 | Level 0 | No governance. Start with [getting-started.md](getting-started.md). |
-| 2–3 | Level 1 | Foundation in place but incomplete. Complete the Level 1 checklist. |
-| 4–5 | Level 2 | Structured but unenforced. Add ADRs and slash commands. |
-| 6–7 | Level 3 | Enforcement is partially in place. Close the gaps in CI/CD. |
-| 8–9 | Level 4 | Strong enforcement and measurement. Add master agent and metrics dashboard. |
-| 10   | Level 5 | Full self-optimizing governance. Focus on evolution and cross-repo consistency. |
-
-The self-assessment is honest if you answer based on what is consistently happening, not what happened once or what you intend to implement. A session protocol that ran 4 times out of 10 is not implemented at Level 1 — it is a Level 0 project with occasional governance.
+| Score | Level | Interpretation |
+|:-----:|:-----:|---------------|
+| 0-1 | Level 0 | No governance. Start with [getting-started.md](getting-started.md). |
+| 2-3 | Level 1 | Foundation in place, incomplete. Finish the Level 1 checklist. |
+| 4-5 | Level 2 | Structured but unenforced. Add ADRs and enforcement. |
+| 6-7 | Level 3 | Partial enforcement. Close the CI/CD gaps. |
+| 8-9 | Level 4 | Strong measurement. Add master agent and metrics dashboard. |
+| 10 | Level 5 | Full governance. Focus on evolution and cross-repo consistency. |
