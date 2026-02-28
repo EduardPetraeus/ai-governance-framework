@@ -6,6 +6,18 @@
 
 > **Your AI agent is 15x faster. But is it building the right thing?**
 
+## What Makes This Different
+
+Most AI governance approaches are static rule documents. This framework is a **living system**:
+
+- **Self-testing**: A red team agent actively probes for governance gaps ([/audit](commands/audit.md))
+- **Self-updating**: Checks for new best practices and framework updates ([/upgrade](commands/upgrade.md))
+- **Self-aware**: Agents know their own model and flag when a task needs a different one
+- **Anti-fragile**: Production incidents automatically tighten the rules that allowed them
+- **Friction-conscious**: Governance overhead is measured and budgeted — if it's too heavy, we fix it
+- **Enterprise-native**: Constitutional inheritance (org → team → repo) with enforced compliance
+- **Honest about limits**: Explicit automation bias defense — AI validation has a confidence ceiling of 85%
+
 ## The Problem
 
 AI agents are obedient, not wise. They optimize for the nearest instruction, not your organization's actual goals. Without governance, they produce technical debt at 15x speed: divergent implementations across developers, architectural decisions reopened in every session, scope that expands silently, and a codebase that drifts from every deliberate choice ever made.

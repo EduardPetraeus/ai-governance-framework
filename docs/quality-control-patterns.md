@@ -201,6 +201,34 @@ See related: [CI/CD workflows](../ci-cd/) for automated regression detection in 
 
 ---
 
+## Pattern 8: Automation Bias Defense
+
+More AI validation layers can make code LESS safe by reducing human scrutiny. When multiple
+agents approve a change, the human reviewer interprets this as evidence of completeness and
+skips independent verification. This is automation bias — documented, predictable, dangerous.
+
+**Explicit uncertainty surfacing**: every AI validation agent lists what it did NOT check.
+Security scan: clean. Naming: compliant. Business logic: NOT VERIFIED — requires human
+domain judgment. The human reviewer cannot assume completeness when gaps are explicitly listed.
+
+**Confidence ceiling**: regardless of how many agents approve, the overall confidence is
+capped at 85%. This ceiling is accurate — AI systems structurally cannot verify business
+logic correctness, requirement interpretation, or domain-specific correctness. Representing
+AI validation as complete would be false.
+
+**Periodic unassisted sessions**: once a month, run a session without AI review agents.
+Pure human review. This maintains the developer's independent verification skill and reveals
+what the human can catch that the AI misses. If unassisted review finds significant issues,
+the AI review configuration needs improvement.
+
+**Review quality tracking**: if human review time drops significantly after AI validation
+is introduced, automation bias is likely active. Track average human review time. Alert if it
+drops more than 40% — that is the signal that humans are rubber-stamping rather than reviewing.
+
+See the full pattern: [Automation Bias Defense](../patterns/automation-bias-defense.md)
+
+---
+
 ## The Quality Control Stack
 
 These patterns layer into a defense-in-depth stack. Each layer catches what the layers below miss.
@@ -252,6 +280,9 @@ The quality control patterns are not a separate system. They are the enforcement
 - [Blast Radius Control](../patterns/blast-radius-control.md) — full pattern specification
 - [Context Boundaries](../patterns/context-boundaries.md) — limiting agent scope to reduce errors
 - [Human-in-the-Loop](../patterns/human-in-the-loop.md) — making human oversight effective
+- [Automation Bias Defense](../patterns/automation-bias-defense.md) — preventing false trust in AI validation
+- [Kill Switch](../patterns/kill-switch.md) — emergency agent termination
 - [Architecture](architecture.md) — the 7-layer governance stack
 - [Session Protocol](session-protocol.md) — how sessions implement quality control
 - [AI Code Quality](ai-code-quality.md) — code-specific quality patterns
+- [Adversarial Audit](adversarial-audit.md) — testing whether governance mechanisms work

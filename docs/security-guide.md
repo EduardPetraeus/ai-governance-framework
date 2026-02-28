@@ -548,7 +548,51 @@ jobs:
 
 ---
 
-## 9. The Confidence Problem
+## 9. Adversarial Auditing: Testing Your Security Controls
+
+Security controls are hypotheses until they are tested. The assumption that gitleaks catches
+secrets in your specific file types, on your team's machines, with your git configuration,
+has never been verified until you test it with a simulated violation. Most teams discover
+security gaps when something goes wrong in production. Adversarial auditing discovers them
+in controlled conditions.
+
+### What Adversarial Security Auditing Involves
+
+In a temporary, isolated branch (`audit/governance-test-YYYYMMDD`), the red team auditor
+agent attempts specific simulated violations:
+
+- Plant a fake API key in a Python config file → does gitleaks catch it?
+- Plant a fake API key in a Markdown file → is Markdown in scope for scanning?
+- Add synthetic PII in a code comment → does AI security review flag it?
+- Add a hardcoded internal IP address → is this pattern in the scanner rules?
+- Add a connection string with fake credentials → does the credential pattern match?
+- Add a fake key in a test fixture → are test files in scope for scanning?
+
+All test inputs are synthetic — fake keys, constructed examples, no real sensitive data.
+The branch is deleted at audit completion. The outcome is a pass rate and a list of specific
+gaps with recommended fixes.
+
+### When to Run Security Audits
+
+- When initially setting up security scanning (verify before trusting)
+- Monthly for active production projects
+- After any security incident (add a test for the specific failure mode that occurred)
+- Before enterprise rollout (demonstrate effectiveness to security team or compliance)
+
+### The Smoke Alarm Principle
+
+You do not install a smoke alarm and assume it works. You press the test button. Governance
+mechanisms are the same. The pre-commit hook that "should" catch secrets has never been
+verified to catch secrets in your specific setup. Until you test it, you do not know if it
+works.
+
+Run `/audit security` to press the test button.
+
+See [docs/adversarial-audit.md](adversarial-audit.md) for the full adversarial audit specification.
+
+---
+
+## 10. The Confidence Problem
 
 The most dangerous characteristic of AI-generated code from a security perspective: **the agent presents secure and insecure code with identical confidence, identical formatting quality, and identical professional tone.**
 

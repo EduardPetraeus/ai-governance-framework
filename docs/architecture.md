@@ -101,6 +101,10 @@ repo/.claude/commands/           # Repo-specific slash commands
 
 The org level defines security, compliance, naming, and git workflow. The repo level adds domain-specific architecture, source configurations, and deployment rules. Repo-level rules cannot contradict org-level rules.
 
+**Constitutional inheritance** is the enterprise scaling mechanism for Layer 1. A single CLAUDE.md cannot serve a 50-person engineering organization — it is either too vague (useless) or too specific (wrong for most teams). The solution is a three-level hierarchy: org → team → repo. Each level extends the level above. No level weakens a higher-level rule. The org security constitution applies to every repository automatically. Teams extend it for their domain. Repos extend it for their project.
+
+See [docs/constitutional-inheritance.md](constitutional-inheritance.md) for the full specification and [templates/CLAUDE.org.md](../templates/CLAUDE.org.md) for the org-level template.
+
 ### How It Connects
 
 Constitution rules flow **down** into all other layers. Layer 2 reads the Constitution at session start and operates within it. Layer 3 enforces Constitution compliance at CI/CD gates. Violations bubble **up** through observability — enforcement logs, review comments, and compliance metrics all trace back to specific constitutional rules.
@@ -448,6 +452,8 @@ Without Evolution, governance calcifies. Rules that were correct six months ago 
 
 **The anti-bureaucracy principle:** Governance should decrease friction over time, not increase it. Governance that slows teams more than it helps is worse than no governance — it trains people to route around it.
 
+**Governance fatigue** is the specific failure mode where governance becomes harder than the ungoverned alternative, causing developers to bypass it entirely via "shadow AI" — using ungoverned tools to avoid the friction. The correct response is not enforcement but friction reduction. Every governance mechanism must justify its cost in developer seconds. The framework includes a friction budget model to make this explicit. See [docs/governance-fatigue.md](governance-fatigue.md).
+
 ### What Is In It
 
 **Governance ownership table:**
@@ -526,3 +532,5 @@ Levels 1-3 operate with independent agents. Orchestration is additive, not a rep
 See [docs/agent-orchestration.md](agent-orchestration.md) for the complete master agent pattern, sub-agent communication protocol, spawn rules, anti-patterns, and implementation levels.
 
 See [docs/quality-control-patterns.md](quality-control-patterns.md) for the 7 quality control patterns that agent orchestration relies on for output validation.
+
+**Automation bias** is a known architectural risk in any system with multiple AI validation layers. When several agents each approve a change, the human reviewer reduces their own scrutiny — interpreting multiple AI approvals as evidence of completeness. This makes the overall system less safe than fewer validation layers with more attentive human review. The defense is structural: agents must explicitly list what they did NOT check, overall confidence is capped at 85%, and periodic unassisted sessions maintain human judgment skills. See [docs/automation-bias.md](automation-bias.md) and [patterns/automation-bias-defense.md](../patterns/automation-bias-defense.md).

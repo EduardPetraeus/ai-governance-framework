@@ -368,6 +368,57 @@ contract_enforcement:
 
 ---
 
+## kill_switch
+# OPTIONAL: Add at Level 3+. Strongly recommended for any project shipping to production.
+# WHY: Agents continue producing output even when failing. Without explicit stop triggers,
+# a confidence collapse or cascade failure generates 20 wrong changes before anyone notices.
+# See docs/kill-switch.md for the full specification.
+
+You MUST immediately stop and present a kill switch alert if:
+- You are about to violate any rule in this constitution
+- Your confidence drops below 30% on 3 consecutive tasks
+- You have modified more than [CUSTOMIZE: 20] files this session
+- You have entered an error→fix→error loop (3+ cycles)
+- You reference files or architecture that does not exist in the current codebase
+
+When activated: stop ALL work immediately.
+Present: trigger reason + last 3 actions + all files modified this session + recommended action.
+Wait for explicit human instruction before any further action.
+
+---
+
+## knowledge_lifecycle
+# OPTIONAL: Add at Level 4+. Required for projects with 20+ sessions.
+# WHY: MEMORY.md grows every session. Stale knowledge degrades output quality.
+# An agent reading outdated architecture context makes confidently wrong decisions.
+# See docs/knowledge-lifecycle.md for the full specification.
+
+on_session_start lifecycle_check:
+  - Flag MEMORY.md entries older than their category lifespan
+  - Flag entries referencing files or components that no longer exist
+  - Flag entries conflicting with current ARCHITECTURE.md or accepted ADRs
+  - Compress entries older than 30 days to one-line summaries
+  - Archive entries older than 90 days to MEMORY_ARCHIVE.md
+  - Maximum active MEMORY.md size: 200 lines
+  - Present lifecycle report before starting work if any flags found
+
+---
+
+## inherits_from
+# OPTIONAL: Add for teams using constitutional inheritance (multi-repo governance).
+# WHY: A single CLAUDE.md cannot serve an entire organization. Inheritance allows
+# org-level security rules to cascade to every repo without repetition.
+# See docs/constitutional-inheritance.md for the full specification.
+#
+# CUSTOMIZE: Uncomment and fill in parent constitutions.
+# - org: [URL or path to CLAUDE.org.md]
+# - team: [URL or path to CLAUDE.team.md]
+#
+# Rules below EXTEND parent rules. They cannot WEAKEN parent rules.
+# If you need an exception to a parent rule, submit a request to the parent level owner.
+
+---
+
 ## agent_orchestration
 # OPTIONAL: Add at Level 5.
 # WHY: Independent agents with no coordination produce redundant work and conflicting feedback.

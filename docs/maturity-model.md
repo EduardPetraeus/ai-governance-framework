@@ -224,6 +224,12 @@ project-root/
 | Cost per session | COST_LOG.md | Tracked |
 | Test coverage | CI/CD | >60% |
 
+### Additional Capabilities at Level 3
+
+**Adversarial audit** ([/audit](../commands/audit.md)): run the red team auditor agent to verify that your governance mechanisms actually catch what they are supposed to catch. A governance system that has never been tested is a hypothesis, not a defense. Run `/audit` after Level 3 setup to generate the first evidence-based pass rate. See [docs/adversarial-audit.md](adversarial-audit.md).
+
+**Kill switch**: configure the kill switch triggers in CLAUDE.md. At Level 3, agents are making more consequential changes. The kill switch prevents cascade failures and blast radius overruns. See [docs/kill-switch.md](kill-switch.md).
+
 ### How to Upgrade to Level 4
 
 1. Build a quality metrics dashboard — even a Markdown file aggregating CHANGELOG data
@@ -292,6 +298,14 @@ project-root/
 | Governance overhead | Governance time / total development time | <10% |
 | Test coverage | CI/CD | >70% |
 | Cost per feature | COST_LOG / features per sprint | Tracked, declining |
+
+### Additional Capabilities at Level 4
+
+**Knowledge lifecycle management**: after 20+ sessions, MEMORY.md accumulates stale context that degrades output quality. Implement the knowledge decay protocol — category-based lifespans, automatic compression, archival to MEMORY_ARCHIVE.md, and a hard 200-line cap. See [docs/knowledge-lifecycle.md](knowledge-lifecycle.md).
+
+**Session replay**: enable `.session-logs/` generation at session end. Post-incident investigation becomes tractable when session logs capture the decision chain, context used, and confidence scores. See [docs/session-replay.md](session-replay.md).
+
+**Automation bias defense**: with multiple validation agents active, configure explicit uncertainty surfacing (agents list what they did NOT check), enforce the 85% confidence ceiling, and establish periodic unassisted review sessions. See [docs/automation-bias.md](automation-bias.md).
 
 ### How to Upgrade to Level 5
 
@@ -371,6 +385,14 @@ org-governance-repo/
 | AI cost per developer per month | Aggregated COST_LOG | Within budget |
 | Onboarding time | Time to first governed session | <1 day |
 | Governance overhead (org-wide) | Governance time / total development time | <8% |
+
+### Additional Capabilities at Level 5
+
+**Constitutional inheritance**: implement the org → team → repo hierarchy. Org-level security rules cascade automatically. Teams extend without weakening. Compliance can be audited at the org level. See [docs/constitutional-inheritance.md](constitutional-inheritance.md) and [templates/CLAUDE.org.md](../templates/CLAUDE.org.md).
+
+**Adaptive friction**: measure governance overhead per session. Apply the friction budget model — if governance overhead exceeds 15 minutes per session, developers will route around it via shadow AI. Track and reduce friction as the framework matures. See [docs/governance-fatigue.md](governance-fatigue.md).
+
+**Anti-fragile feedback loops**: every production incident that slipped through governance gets a new deterministic check. The framework tightens automatically in response to real failures. Adversarial audits run quarterly at minimum. Governance maturity is demonstrated by evidence, not assertion.
 
 ### Beyond Level 5
 
