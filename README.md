@@ -93,15 +93,15 @@ See [docs/maturity-model.md](docs/maturity-model.md) for the full model with upg
 
 | Directory | Contents |
 |-----------|----------|
-| [`templates/`](templates/) | Core governance file templates: `CLAUDE.md`, `PROJECT_PLAN.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, ADR template |
-| [`agents/`](agents/) | Specialized agent definitions: code, review, security, docs, cost, master agent, quality gate, research, drift detector, onboarding |
-| [`commands/`](commands/) | Slash command definitions: `/plan-session`, `/end-session`, `/sprint-status`, `/review`, `/security-review`, `/validate`, `/research`, `/upgrade`, `/health-check` |
-| [`ci-cd/`](ci-cd/) | GitHub Actions workflows: AI PR review, naming validation, security scanning, governance file check |
-| [`scripts/`](scripts/) | Utility scripts: naming convention validator, governance compliance checker, cost log parser |
+| [`templates/`](templates/) | Core governance file templates: `CLAUDE.md`, `CLAUDE.org.md`, `CLAUDE.team.md`, `PROJECT_PLAN.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `MEMORY.md`, `SPRINT_LOG.md`, `COST_LOG.md`, `DECISIONS.md`, ADR template |
+| [`agents/`](agents/) | Specialized agent definitions: security reviewer, code reviewer, documentation writer, test writer, code simplifier, master agent, quality gate, drift detector, red team auditor, research agent, onboarding agent |
+| [`commands/`](commands/) | Slash command definitions: `/plan-session`, `/end-session`, `/status`, `/prioritize`, `/security-review`, `/validate`, `/research`, `/upgrade`, `/health-check`, `/audit` |
+| [`ci-cd/`](ci-cd/) | GitHub Actions workflows: AI PR review, governance check, release automation, pre-commit hooks |
+| [`scripts/`](scripts/) | Utility scripts: productivity tracker, pre-commit guard hook, post-commit session logger |
 | [`docs/`](docs/) | Framework documentation: [architecture](docs/architecture.md), [session protocol](docs/session-protocol.md), [maturity model](docs/maturity-model.md), [getting started](docs/getting-started.md) |
-| [`patterns/`](patterns/) | Pattern library: dual-model validation, output contracts, progressive trust, semantic verification, blast radius control, context boundaries, human-in-the-loop |
+| [`patterns/`](patterns/) | Pattern library: dual-model validation, output contracts, progressive trust, semantic verification, blast radius control, context boundaries, human-in-the-loop, automation bias defense, kill switch, session replay, knowledge decay, friction budget, constitutional inheritance |
 | [`automation/`](automation/) | Automation scripts: framework updater, best-practice scanner, governance health calculator |
-| [`examples/`](examples/) | Worked examples from the HealthReporting case study (anonymized) |
+| [`examples/`](examples/) | Complete configurations for three personas: solo developer, small team, enterprise |
 
 ## Agent Orchestration
 
@@ -117,7 +117,7 @@ See [docs/agent-orchestration.md](docs/agent-orchestration.md) for the full arch
 
 AI agents are confident about everything. A wrong answer and a right answer look identical. The burden of verification is 100% on the human — unless you build a system that helps.
 
-Seven patterns for verifying AI output:
+Eight patterns for verifying AI output:
 
 | Pattern | What it solves |
 |---------|---------------|
@@ -128,6 +128,7 @@ Seven patterns for verifying AI output:
 | [Blast radius control](patterns/blast-radius-control.md) | Limit how much damage one session can do. Maximum 15 files, 200 lines per file by default. |
 | [Context boundaries](patterns/context-boundaries.md) | Agents given access to everything use everything. Define what they should and shouldn't see. |
 | [Human-in-the-loop](patterns/human-in-the-loop.md) | Specify exactly when human judgment is required. Everything else can proceed without approval. |
+| [Automation bias defense](patterns/automation-bias-defense.md) | More AI validation layers can reduce human scrutiny. Cap AI confidence at 85% and surface what was NOT verified. |
 
 See [docs/quality-control-patterns.md](docs/quality-control-patterns.md) for the complete guide.
 

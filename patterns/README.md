@@ -42,6 +42,12 @@ Each pattern primarily serves one or more layers of the [governance architecture
 | [Blast Radius Control](blast-radius-control.md) | Explicitly limit what a single session can change to contain the damage from a bad session. |
 | [Context Boundaries](context-boundaries.md) | Give agents exactly the context they need for a task — no more — to prevent unintended coupling and scope creep. |
 | [Human-in-the-Loop](human-in-the-loop.md) | Define specific checkpoints where human judgment is genuinely required and make those checkpoints meaningful. |
+| [Automation Bias Defense](automation-bias-defense.md) | Prevent AI validation layers from reducing human scrutiny. Cap confidence at 85% and surface what was NOT verified. |
+| [Kill Switch](kill-switch.md) | Define explicit stop triggers so agents halt immediately when confidence collapses or limits are exceeded. |
+| [Session Replay](session-replay.md) | Record session decisions and actions to enable post-incident investigation and governance auditing. |
+| [Knowledge Decay](knowledge-decay.md) | Manage the lifecycle of cross-session memory so stale knowledge does not degrade agent output quality. |
+| [Friction Budget](friction-budget.md) | Measure and cap governance overhead so process friction does not outweigh the protection it provides. |
+| [Constitutional Inheritance](constitutional-inheritance.md) | Cascade governance rules from organization to team to repo level with explicit override controls. |
 
 ## Further Reading
 

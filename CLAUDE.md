@@ -14,7 +14,7 @@ This framework governs itself. No exceptions.
 
 ## conventions
 
-- File names: `snake_case.md` (e.g., `session_protocol.md`)
+- File names: `kebab-case.md` for docs, patterns, agents, and commands (e.g., `session-protocol.md`); `snake_case.py` for Python source files
 - Directory names: `kebab-case/` (e.g., `ci-cd/`)
 - All content in English — no exceptions
 - Cross-references use relative links: `[file](../path/file.md)` — never absolute URLs

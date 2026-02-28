@@ -63,6 +63,12 @@ These are different tools for different purposes:
 | [documentation-writer](documentation-writer.md) | Writes and updates documentation to match actual code | After features, after architectural decisions |
 | [test-writer](test-writer.md) | Generates tests targeting AI-specific failure modes | After new features, before merging PRs lacking coverage |
 | [code-simplifier](code-simplifier.md) | Reduces complexity without changing behavior | After multi-file sessions, when code feels over-engineered |
+| [master-agent](master-agent.md) | Coordinates specialist agents, decomposes tasks, validates outputs, escalates conflicts | Tasks spanning 2+ agents, architecture changes, multi-step features |
+| [quality-gate-agent](quality-gate-agent.md) | Scores session output (0-100) against output contracts, architecture, coverage, conventions | After every session, before PR merge |
+| [drift-detector-agent](drift-detector-agent.md) | Detects governance drift: convention violations, stale docs, undocumented patterns | Monthly governance review, after maturity level upgrades |
+| [red-team-auditor](red-team-auditor.md) | Adversarial testing of governance mechanisms with simulated violations | Monthly audits, after adding new governance mechanisms |
+| [research-agent](research-agent.md) | Scans external sources for new AI governance insights and best practices | On-demand via `/research`, weekly automated scans |
+| [onboarding-agent](onboarding-agent.md) | Assesses repo state, recommends maturity level, generates configured governance files | First-time framework setup, new repo onboarding |
 
 ## How to create a new agent
 

@@ -14,12 +14,17 @@ Commands are workflow steps, not domain expertise. They read project files, exec
 # Create the commands directory
 mkdir -p .claude/commands
 
-# Copy the commands you want
+# Copy all commands (or pick the ones you need)
 cp ai-governance-framework/commands/plan-session.md .claude/commands/
 cp ai-governance-framework/commands/end-session.md .claude/commands/
 cp ai-governance-framework/commands/status.md .claude/commands/
 cp ai-governance-framework/commands/prioritize.md .claude/commands/
 cp ai-governance-framework/commands/security-review.md .claude/commands/
+cp ai-governance-framework/commands/audit.md .claude/commands/
+cp ai-governance-framework/commands/health-check.md .claude/commands/
+cp ai-governance-framework/commands/research.md .claude/commands/
+cp ai-governance-framework/commands/upgrade.md .claude/commands/
+cp ai-governance-framework/commands/validate.md .claude/commands/
 ```
 
 Verify installation by typing `/` in Claude Code -- you should see the command names in the autocomplete list. No other configuration is needed. The commands read your existing project files (`PROJECT_PLAN.md`, `CHANGELOG.md`, `ARCHITECTURE.md`) automatically.
@@ -61,6 +66,11 @@ Use agents for analysis: reviewing, testing, simplifying, documenting.
 | [status](status.md) | `/status` | Quick project snapshot: phase progress, session work, blockers, next task |
 | [prioritize](prioritize.md) | `/prioritize` | Ranked task list with reasoning: sprint commitments, dependencies, value/effort |
 | [security-review](security-review.md) | `/security-review` | In-session security scan of current branch changes |
+| [audit](audit.md) | `/audit` | Run adversarial governance audit to test whether governance mechanisms catch violations |
+| [health-check](health-check.md) | `/health-check` | Calculate governance health score (0-100) with gap analysis and recommendations |
+| [research](research.md) | `/research` | Scan external sources for new AI governance best practices and insights |
+| [upgrade](upgrade.md) | `/upgrade` | Check for framework updates and show available changes with migration guidance |
+| [validate](validate.md) | `/validate` | Run quality control checkpoint against output contracts and conventions |
 
 ## Creating new commands
 

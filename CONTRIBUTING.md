@@ -183,7 +183,7 @@ A complete, realistic example of correct output from this command.
 - Contain real default content, not empty sections
 - Include inline comments explaining what to customize and why
 - Work without modification for a reasonable default case
-- Follow the naming convention: `filename.md.template`
+- Follow the naming convention: `FILENAME.md` (uppercase for governance files like `CLAUDE.md`, `PROJECT_PLAN.md`)
 
 **Examples** (`examples/`) are complete worked implementations. They must:
 
