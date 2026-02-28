@@ -6,6 +6,37 @@
 
 > **Your AI agent is 15x faster. But is it building the right thing?**
 
+## Installation
+
+Three ways to get started — all lead to the same governed session in under 15 minutes.
+
+**Interactive wizard (recommended):**
+
+```bash
+npx ai-governance-init
+```
+
+Asks about your project, team size, and CI setup — then scaffolds the right files. Requires Node.js 14+.
+
+**One-liner (macOS / Linux):**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/EduardPetraeus/ai-governance-framework/main/install.sh | bash
+```
+
+Clones the framework, runs the wizard, cleans up. Requires git and Node.js 14+.
+
+**Manual:**
+
+```bash
+git clone https://github.com/EduardPetraeus/ai-governance-framework.git
+cp ai-governance-framework/templates/CLAUDE.md       ./CLAUDE.md
+cp ai-governance-framework/templates/PROJECT_PLAN.md ./PROJECT_PLAN.md
+cp ai-governance-framework/templates/CHANGELOG.md    ./CHANGELOG.md
+```
+
+See [docs/getting-started.md](docs/getting-started.md) for the full walkthrough, including slash command setup and Level 2 upgrade path.
+
 ## What Makes This Different
 
 Most AI governance approaches are static rule documents. This framework is a **living system**:
@@ -60,19 +91,13 @@ Each layer builds on the one below. You cannot enforce rules you have not writte
 ## Quick Start
 
 ```bash
-# 1. Clone the framework
-git clone https://github.com/clauseduardpetraeus/ai-governance-framework.git
-
-# 2. Copy Level 1 templates into your project
-cp ai-governance-framework/templates/CLAUDE.md       your-project/CLAUDE.md
-cp ai-governance-framework/templates/PROJECT_PLAN.md  your-project/PROJECT_PLAN.md
-cp ai-governance-framework/templates/CHANGELOG.md     your-project/CHANGELOG.md
-
-# 3. Open your project in Claude Code — it reads CLAUDE.md automatically.
-#    The session protocol guides the agent from the first message.
+# Inside your project directory:
+npx ai-governance-init
 ```
 
-Your agent now has a constitution to follow, a session protocol to execute, and a project plan to orient against. Layers 1 and 2 are live. Time investment: under five minutes.
+The wizard asks four questions and scaffolds the right files. Your agent now has a constitution to follow, a session protocol to execute, and a project plan to orient against. Time investment: under five minutes.
+
+Prefer manual setup? See the [Installation](#installation) section above.
 
 See [docs/getting-started.md](docs/getting-started.md) for the full walkthrough.
 
@@ -162,7 +187,7 @@ Governance does not slow development down. It redirects a small fraction of velo
 
 ## Roadmap
 
-- [ ] CLI installer (`npx ai-governance-init`) — scaffolds templates into an existing project
+- [x] CLI installer (`npx ai-governance-init`) — scaffolds templates into an existing project
 - [ ] VS Code extension — inline governance compliance hints
 - [ ] GitLab CI/CD equivalents for all GitHub Actions workflows
 - [ ] CircleCI and Bitbucket Pipelines support

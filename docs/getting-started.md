@@ -6,7 +6,33 @@ By the end of this guide you will have: a `CLAUDE.md` constitution that your age
 
 ---
 
-## Prerequisites
+## Installation
+
+Three ways to install — choose whichever fits your workflow.
+
+### Option A: Interactive wizard (recommended)
+
+```bash
+npx ai-governance-init
+```
+
+Requires Node.js 14+. Run this inside your project directory. The wizard asks about your project, team size, and desired features, then scaffolds the correct files automatically. Takes about 2 minutes.
+
+### Option B: One-liner (curl)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/EduardPetraeus/ai-governance-framework/main/install.sh | bash
+```
+
+Clones the framework to a temp directory, runs the interactive wizard, then cleans up. Works on macOS and Linux. Requires git and Node.js 14+.
+
+### Option C: Manual (five steps)
+
+Clone the framework and copy files yourself. Full walkthrough below — use this if you want control over exactly which files are placed where, or if you cannot use Node.js.
+
+---
+
+## Prerequisites (manual install)
 
 - **Claude Code installed** — [claude.ai/code](https://claude.ai/code). The session protocol is designed for Claude Code; the governance concepts apply to any AI coding assistant.
 - **A git repository** — any existing project. If starting fresh, `git init` and an initial commit are enough.
