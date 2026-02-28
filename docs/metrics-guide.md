@@ -1,273 +1,318 @@
-# Metrics Guide: What to Measure and What Not to Measure
+# Metrics Guide: What to Measure, What Not to Measure, and Why
 
 ## 1. The Measurement Principle
 
 Measure outcomes, not activity.
 
-This distinction sounds obvious and is routinely ignored. The reason it gets ignored is that activity is easy to count and outcomes are hard to define. AI development amplifies this problem: agents generate enormous amounts of measurable activity — commits, lines of code, tasks, sessions — and almost none of it correlates with the outcomes that matter to the business.
+This distinction sounds obvious and is routinely ignored. The reason: activity is easy to count (commits, lines, sessions) and outcomes are hard to define (working features, prevented defects, maintained architecture). AI development amplifies this problem catastrophically. Agents generate enormous amounts of measurable activity — commits, lines of code, documentation pages, tasks — and almost none of it correlates reliably with the outcomes that matter to the business.
 
-The measurement principle has three corollaries:
+Three corollaries follow from the measurement principle:
 
-1. **Fewer metrics, measured consistently, acted upon.** Ten metrics reviewed monthly produce more value than fifty metrics reviewed never.
-2. **A bad metric is worse than no metric.** Metrics that incentivize the wrong behavior are actively harmful. They will be optimized for, and that optimization will damage the real outcomes you care about.
-3. **The most important metric is the one that reveals problems early.** A metric that tells you something went wrong three months ago is not useful. A metric that tells you something is going wrong now is.
+1. **Fewer metrics, measured consistently, acted upon.** Ten metrics reviewed weekly and used to drive decisions produce more value than fifty metrics reviewed never. Every metric you add dilutes attention from the metrics that matter. If you cannot describe the specific action you would take when a metric crosses a threshold, you do not need that metric.
 
-This guide defines three tiers of metrics. Start with Tier 1. Add Tier 2 when Tier 1 is stable. Tier 3 is for organizations with dedicated analytics infrastructure.
+2. **A bad metric is worse than no metric.** Metrics that incentivize the wrong behavior are actively harmful. They will be optimized for — developers are rational agents who respond to incentives — and that optimization will damage the real outcomes you care about. Lines of code is the canonical example: optimizing for it produces bloated codebases.
+
+3. **The most important metric is the one that reveals problems early.** A metric that tells you something went wrong three months ago is a post-mortem artifact. A metric that tells you something is going wrong *now* is an intervention opportunity. Rework rate is valuable because it reveals quality problems within 48 hours, not at the end of the quarter.
+
+This guide defines three tiers of metrics. Start with Tier 1. Add Tier 2 when Tier 1 is stable and consistently below warning thresholds. Tier 3 is for organizations with dedicated analytics infrastructure and 6+ months of governance data.
 
 ---
 
 ## 2. Tier 1: Always Track
 
-These five metrics apply to every team, regardless of size or maturity. They require no special tooling — only consistent discipline in following the session protocol.
+These five metrics apply to every team, regardless of size or maturity. They require no special tooling — only consistent discipline in following the session protocol and maintaining `CHANGELOG.md`.
 
 ### Tasks per Session
 
-**Definition**: The number of meaningful tasks completed in a single AI-assisted session, as documented in `CHANGELOG.md`.
+**Definition:** The number of meaningful tasks completed in a single AI-assisted session, as documented in `CHANGELOG.md`. A task is a discrete, scope-defined unit of work: a connector built, a bug fixed, a document updated, a test suite created. Sub-steps within a task (e.g., "created the file," "added imports") do not count separately.
 
-**How to measure**: Count `CHANGELOG.md` entries per session. A task is a discrete, scope-defined unit of work (a connector built, a bug fixed, a document updated). Sub-steps within a task do not count separately.
+**How to measure:** Count `CHANGELOG.md` entries per session. The session protocol requires each session to list completed tasks.
 
-**Baseline**: Establish in the first two weeks before enforcing governance. Typical range without governance: 1–3 tasks per session (sessions run long and lose focus). With governance: 3–6 tasks per session.
+**Baseline:** Establish in the first two weeks before enforcing governance. Typical range without governance: 1-3 tasks per session (sessions run long, lose focus, and drift). With governance: 3-6 tasks per session (sessions are scoped, focused, and bounded).
 
-**Target**: The target is not a fixed number — it is consistency. Variance is the warning sign. A week with 8 tasks followed by a week with 1 task indicates either scope control failure (the 8-task week) or blocking problems (the 1-task week).
+**Target:** Not a fixed number — **consistency is the target**. A week with 8 tasks followed by a week with 1 task indicates either scope control failure (the 8-task week had tasks defined too granularly) or blocking problems (the 1-task week hit unresolved dependencies). Week-over-week variance greater than 50% is a warning sign regardless of the absolute number.
 
-**Warning signs**:
-- Consistently above 7: tasks are defined too granularly (gaming the metric)
-- Consistently below 2: scope definition is failing or sessions are running unfocused
-- High variance (>50% week-over-week): lack of session discipline
+**Warning signs:**
+- Consistently above 7: tasks are defined too granularly — the metric is being gamed
+- Consistently below 2: scope definition is failing, sessions are unfocused, or the codebase has blockers
+- High variance (>50% week-over-week): lack of session discipline or unpredictable task complexity
+- Sudden drop to 0-1 for a developer who was previously at 4-5: investigate — blocked? Burned out? Struggling with a new part of the codebase?
 
 ### Rework Rate
 
-**Definition**: The percentage of completed tasks that are redone within 48 hours. "Redone" means a PR is reopened, reverted, or substantially replaced.
+**Definition:** The percentage of completed tasks that are redone, reverted, or substantially corrected within 48 hours. "Redone" means: a PR is reopened, a commit is reverted, a follow-up commit with "fix:" or "redo" in the message appears, or a task reappears in the next session's scope after being marked complete.
 
-**How to measure**: Git log analysis. Count commits that contain "revert", "fix:", or "redo" within 48 hours of the original commit. Compare to total tasks completed.
+**How to measure:** Git log analysis. Count commits containing "revert", "fix:", "redo", "correct" within 48 hours of the original commit's timestamp. Compare to total tasks completed in the same period.
 
-**Baseline**: Without governance, typical AI-assisted rework rate is 15–25% (agent output not reviewed thoroughly, scope creep causing partial solutions). With governance target: <10%.
+```bash
+# Count reverts and fixes in last 30 days
+git log --oneline --since="30 days ago" --grep="revert\|fix:\|redo\|correct:" -i | wc -l
 
-**Target**: <10%. Below 5% is excellent. Note: a rework rate of 0% may indicate tasks are too simple or review standards are too low.
+# Count total tasks (approximate: count session entries in CHANGELOG)
+grep -c "^## " docs/CHANGELOG.md
+```
 
-**Warning signs**:
-- Rising rework rate: scope definition deteriorating, review quality falling, or agent output quality dropping
-- Rework always from the same developer: coaching opportunity
-- Rework clustered around specific task types: that task type needs better prompt templates
+**Why this is the most important metric:** Rework rate is the single most reliable indicator of governance health. High rework means one or more of: poor prompt quality (vague scope leads to wrong output), insufficient review (bugs pass into main and are caught later), scope creep (changes extend beyond what was tested), or architectural drift (agent produces code that conflicts with patterns established elsewhere).
+
+**Baseline:** Without governance, typical AI-assisted rework rate is 15-25%. With governance: target <10%.
+
+**Target:** <10%. Below 5% is excellent — but note: 0% may indicate tasks are trivially easy or review standards are too low. Some rework is a sign of a team that catches its mistakes; zero rework in a complex codebase is suspicious.
+
+**Warning signs:**
+- Rising rework rate over 3+ weeks: scope definition deteriorating, review quality falling, or codebase complexity increasing without governance adaptation
+- Rework consistently from one developer: coaching opportunity — check their prompt quality and review practices
+- Rework clustered around a specific task type: that task type needs a better prompt template or a different model tier
 
 ### Governance Compliance
 
-**Definition**: The percentage of sessions that follow the complete start/end protocol, as evidenced by a proper `CHANGELOG.md` entry.
+**Definition:** The percentage of sessions that follow the complete governance protocol, as evidenced by proper `CHANGELOG.md` entries. A compliant session has: timestamp, session number, model used, tasks completed, files changed, and governance files updated.
 
-**How to measure**: Audit `CHANGELOG.md` entries. A compliant session has: timestamp, session number, phase, model used, tasks completed, files changed. An entry missing more than two of these fields is non-compliant.
+**How to measure:** Audit `CHANGELOG.md` entries. A session entry missing more than two of the required fields is non-compliant. This can be automated with a simple parser.
 
-**Baseline**: Before enforcement, expect 40–70% compliance (developers forget or skip when rushed). With governance target: >90%.
+```bash
+# Simple compliance check: does each session entry have required fields?
+python scripts/check_changelog_compliance.py docs/CHANGELOG.md
+```
 
-**Target**: >90%. 100% is the goal but rarely achieved — enforce consequences for non-compliance rather than accepting chronic low rates.
+**Baseline:** Before enforcement, expect 40-70% compliance (developers forget or skip when rushed). With governance: target >90%.
 
-**Warning signs**:
-- Compliance that peaks around review cycles and drops afterward: performative compliance, not genuine adoption
-- Teams that are 100% compliant but have no useful content in entries: gaming with boilerplate
-- Sudden drop in one team: session protocol has broken down, needs immediate champion attention
+**Target:** >90%. 100% is the aspiration but rarely sustained — enforce remediation for non-compliance rather than accepting chronically low rates.
+
+**Warning signs:**
+- Compliance that peaks around review cycles and drops afterward: performative compliance, not genuine adoption. The team follows the protocol when being watched and abandons it when not
+- Teams at 100% with entries that are copy-pasted boilerplate: gaming the metric. The entries exist but contain no useful information
+- Sudden drop in one team: session protocol has broken down — needs immediate champion attention
 
 ### Test Coverage Delta
 
-**Definition**: Change in test coverage percentage per session. Not the absolute coverage number — the direction of change.
+**Definition:** Change in test coverage percentage per session. Not the absolute coverage number — the direction of change.
 
-**How to measure**: CI/CD report from the test runner (pytest-cov, coverage.py, etc.). Compare coverage percentage at session start (last commit on main) to session end (PR branch).
+**How to measure:** CI/CD report from the test runner (pytest-cov, coverage.py, Istanbul, etc.). Compare coverage percentage at session start (last commit on main) to session end (PR branch).
 
-**Baseline**: Sessions should not decrease test coverage. A session that adds code without tests is a governance failure.
+**Baseline:** Sessions should not decrease test coverage. A session that adds code without tests is a governance failure — it creates untested surface area that will produce bugs.
 
-**Target**: Coverage should be flat or increasing per session. A session that significantly decreases coverage (>2 percentage points) requires explanation and remediation.
+**Target:** Flat or increasing per session. A session that decreases coverage by more than 2 percentage points requires explanation in the `CHANGELOG.md` entry and remediation in the next session.
 
-**Warning signs**:
-- Steady decline over multiple sessions: agent is generating code without tests; prompt templates need to include test requirements
-- Sudden sharp drop: large feature added without test suite
-- Coverage fluctuates without trend: inconsistent test discipline
+**Warning signs:**
+- Steady decline over multiple sessions: agent is generating code without tests because the prompt templates do not require tests
+- Sudden sharp drop: large feature added without any test suite — this is a governance failure, not a test failure
+- Coverage increases but rework rate also increases: the tests are not testing the right things (testing what the code does, not what it should do)
 
 ### Cost per Session
 
-**Definition**: Total estimated AI API cost for a session, in USD.
+**Definition:** Total estimated AI API cost for a session, in USD.
 
-**How to measure**: Log to `docs/COST_LOG.md` — model used, input tokens, output tokens, estimated cost. Claude Code provides token counts per session.
+**How to measure:** Log to `docs/COST_LOG.md`: model used, approximate input tokens, approximate output tokens, estimated cost. Claude Code provides token usage information per session.
 
-**Baseline**: Establish in first two sessions. Typical range: $0.10–$1.00 per session depending on model mix and task volume.
+```markdown
+| Date | Session | Model | Input Tokens | Output Tokens | Est. Cost |
+|------|---------|-------|--------------|---------------|-----------|
+| 2026-03-01 | 012 | sonnet | 45,000 | 12,000 | $0.31 |
+| 2026-03-01 | 012 | opus | 8,000 | 3,500 | $0.38 |
+```
 
-**Target**: Not a fixed number — cost should be proportional to value delivered. A $0.80 session that ships a complete feature is excellent. A $0.80 session that produces two config edits is not.
+**Baseline:** Establish in first two sessions. Typical range: $0.10-$1.00 per session depending on model mix, task volume, and context window usage.
 
-**Warning signs**:
-- Cost rising without task count rising: context window is growing too large (too much context loaded per session), or model is being used inefficiently
-- High cost on simple sessions: wrong model tier being used (see [Model Routing](./model-routing.md))
-- Cost spike: unusually long session or unexpectedly large output — investigate
+**Target:** Not a fixed number — cost should be proportional to value delivered. A $0.80 session that ships a complete, tested feature is excellent. A $0.80 session that produces two config edits is misrouted (see [Model Routing](./model-routing.md)).
+
+**Warning signs:**
+- Cost rising without task count rising: context window is growing too large (too much context loaded), or the model is being used inefficiently (long conversations instead of focused tasks)
+- High cost on simple sessions: wrong model tier — Opus being used for tasks Sonnet handles identically
+- Cost spike with no explanation: unusually long session, regeneration loops (agent produced wrong output repeatedly), or unexpectedly large codebase loaded into context
 
 ---
 
 ## 3. Tier 2: Mature Teams
 
-Track these once Tier 1 metrics are stable and consistently below their warning thresholds. These metrics require additional tooling or more sophisticated analysis.
+Track these once Tier 1 metrics are stable and consistently below their warning thresholds for at least 4 consecutive weeks. These metrics require more setup or more sophisticated analysis.
 
 ### Architecture Drift Score
 
-**Definition**: A count of deviations from `ARCHITECTURE.md` detected in the codebase. Measured by the master agent or a periodic manual review.
+**Definition:** A count of deviations between `ARCHITECTURE.md` and the actual codebase. Each deviation is one point of drift. Measured by the master agent, a review agent, or a periodic manual review.
 
-**How to measure**: Master agent or review agent scans the repository and flags patterns that contradict `ARCHITECTURE.md`. Each flag is one point of drift. Score of 0 is clean.
+**How to measure:** An agent (or human) scans the repository and flags patterns that contradict `ARCHITECTURE.md`: files in the wrong directory, patterns that violate stated conventions, layers that bypass stated boundaries, dependencies that should not exist.
 
-**Baseline**: 0 drift is the starting point. Drift accumulates when sessions introduce changes without updating `ARCHITECTURE.md`, or when agents misinterpret architectural constraints.
-
-**Target**: 0 at all times. Any non-zero score requires immediate remediation before the next session.
+**Target:** 0 at all times. Any non-zero score requires immediate remediation before the next session. Drift compounds — one deviation becomes the precedent for the next.
 
 ### PR Pass Rate (First Attempt)
 
-**Definition**: The percentage of PRs that pass all CI checks (including agent review) on the first submission, without changes required.
+**Definition:** The percentage of PRs that pass all CI checks (including agent review, if configured) on the first submission, without modifications required.
 
-**How to measure**: GitHub Actions / CI dashboard. Count PRs where the first CI run is fully green.
+**How to measure:** GitHub Actions run history. Count PRs where the first CI run completes with all checks green.
 
-**Baseline**: Without governance, typically 40–60% first-attempt pass rate. With governance target: >80%.
+**Baseline:** Without governance, typically 40-60% first-attempt pass rate. With governance: target >80%.
 
-**Target**: >80%. Higher targets (>95%) may indicate checks are too lenient, not that code quality is extremely high.
+**Interpretation:** >95% may indicate checks are too lenient, not that code quality is exceptional. If every PR passes on first attempt, the checks are not catching anything, which means they are not providing value.
 
 ### Time to Production
 
-**Definition**: Time from PR creation to merge to main, in hours.
+**Definition:** Time from PR creation to merge to main, in hours.
 
-**How to measure**: GitHub API — `created_at` to `merged_at` for all merged PRs.
+**How to measure:** GitHub API — `created_at` to `merged_at` for all merged PRs.
 
-**Baseline**: Without governance, PR reviews are inconsistent; time to production varies widely. Target range depends on organization culture but should be measurable and improving.
+```bash
+gh pr list --state merged --limit 50 --json createdAt,mergedAt \
+  --jq '.[] | "\(.createdAt) -> \(.mergedAt)"'
+```
 
-**Target**: Not a fixed number, but a consistent number. High variance is the problem. A team that merges in 2–4 hours consistently is healthier than one that sometimes merges in 30 minutes and sometimes waits three days.
+**Target:** Not a fixed number, but a **consistent** number. High variance is the problem. A team that merges in 2-4 hours consistently is healthier than one that sometimes merges in 30 minutes (rubber-stamping) and sometimes waits three days (review bottleneck).
 
 ### Prompt Quality Score
 
-**Definition**: A qualitative rating (1–5) of the prompts used in a session, assessed by the champion during retrospective.
+**Definition:** A qualitative rating (1-5) of the prompts used in a session, assessed by the champion during weekly review or retrospective.
 
-**How to measure**: After each session, the champion or the developer rates the session's prompts on:
-- Scope clarity (1–5)
-- Constraint specification (1–5)
-- Acceptance criteria (1–5)
-- Average the three scores
+**How to measure:** The champion reviews 2-3 prompts per session on three dimensions:
+- Scope clarity (1-5): is it clear what can and cannot change?
+- Constraint specification (1-5): are MUST NOT / MUST / SHOULD specified?
+- Acceptance criteria (1-5): is "done" defined in verifiable terms?
 
-**Baseline**: Without training, typical prompt quality is 2–3/5. With governance and training target: >3.5/5.
+Average the three scores.
 
-**Target**: >3.5/5 consistently. Track per developer to identify coaching opportunities.
+**Baseline:** Without training, typical prompt quality is 2-3/5. With governance and shared prompt library: target >3.5/5.
+
+**Action:** Track per developer to identify coaching opportunities. A developer consistently at 2/5 needs prompt training, not performance management.
 
 ---
 
 ## 4. Tier 3: Enterprise
 
-These metrics require data infrastructure, automated pipelines, and dedicated analytics. Appropriate for organizations that have been running AI governance for 6+ months.
+These metrics require data infrastructure, automated pipelines, and dedicated analytics. Appropriate for organizations with 6+ months of governance data and dedicated platform support.
 
 ### Cost per Developer per Month
 
-**Definition**: Total AI API spend divided by number of active developers.
+**Definition:** Total AI API spend divided by number of active developers.
 
-**Why it matters**: Enables budget forecasting, ROI conversations with leadership, and identification of teams with unusual cost profiles (potentially indicating misuse or exceptional productivity).
+**Why it matters:** Enables budget forecasting, ROI conversations with leadership, and identification of teams with unusual cost profiles — either exceptionally efficient (learn from them) or misrouted (coach them).
 
-**Data source**: Aggregated `COST_LOG.md` entries across all teams + HR system for developer count.
+**Data source:** Aggregated `COST_LOG.md` entries across all teams, cross-referenced with HR system for developer count.
 
 ### AI vs. Human Defect Rate
 
-**Definition**: The rate at which bugs are found in production that originated from AI-generated code vs. human-written code.
+**Definition:** The rate at which production bugs originate from AI-generated code vs. human-written code.
 
-**Why it matters**: The primary evidence base for AI code quality at scale. If AI-generated code has a higher defect rate, the review process needs strengthening. If it has a lower defect rate (plausible for certain task types), this is a powerful argument for expanded adoption.
+**Why it matters:** This is the primary evidence base for AI code quality at scale. If AI-generated code has a higher defect rate, the review process needs strengthening. If it has a lower defect rate (plausible for certain well-structured task types), this is a powerful argument for expanded adoption.
 
-**Data source**: Production incident system + git blame + `Co-Authored-By` metadata in commits.
+**Data source:** Production incident system + `git blame` + `Co-Authored-By` metadata in commits. Only valid if AI-generated code is systematically tagged.
 
-**Caution**: This metric is only valid if AI-generated code is systematically tagged. Without tagging, you cannot separate AI from human defects.
+**Caution:** Without consistent `Co-Authored-By` tagging, this metric cannot be calculated. Ensure tagging is in place before attempting to measure this.
 
 ### Compliance Audit Pass Rate
 
-**Definition**: The percentage of randomly sampled sessions that pass a manual compliance audit (session protocol followed, data governance rules observed, no security violations, governance files updated).
+**Definition:** The percentage of randomly sampled sessions that pass a manual compliance audit: session protocol followed, data governance rules observed, no security violations, governance files updated correctly, human review was meaningful (not rubber-stamped).
 
-**Why it matters**: Tier 1 governance compliance tells you whether sessions are documented. Audit pass rate tells you whether they are documented correctly and whether the underlying practices match the documentation.
+**Why it matters:** Tier 1 governance compliance tells you whether sessions are documented. Audit pass rate tells you whether they are documented correctly and whether the underlying practices match the documentation. This is the metric that regulators care about.
 
-**Data source**: Random sampling + manual review by governance lead or external auditor.
+**Data source:** Random sampling (5-10% of sessions per quarter) + manual review by governance lead or external auditor.
 
 ---
 
-## 5. Anti-Metrics: What Not to Optimize
+## 5. Anti-Metrics: The Danger Table
 
-These metrics appear in governance discussions regularly and should be explicitly rejected. Each has a "vanity" version that is easy to measure and dangerous to optimize, and a "real" version that is harder to measure but actually meaningful.
+For every real metric, there is a vanity version that is easy to measure, satisfying to report, and dangerous to optimize for. These anti-metrics appear regularly in governance discussions and must be explicitly rejected.
 
-### Lines of Code
+| Real Metric | Vanity Version | What Gaming Looks Like | Why It's Dangerous |
+|-------------|---------------|----------------------|-------------------|
+| Working features delivered per sprint | Lines of code generated | Agent generates verbose, over-engineered code. Developer does not consolidate. | More lines = more maintenance, more bugs, more cognitive load |
+| Rework rate (% of tasks redone) | Commits per day | Developer makes micro-commits. Each commit is trivially small. Commit count goes up, actual progress does not. | Incentivizes activity over quality |
+| Onboarding time to productivity | Documentation pages generated | AI produces 50 pages of documentation. Nobody reads it. Onboarding time unchanged. | Volume of documentation without quality standard is noise |
+| Features still live after 30 days | Tickets closed per sprint | Tickets closed by deferring the hard part, duplicating existing solutions, or solving symptoms not causes. | Closing a ticket is not the same as solving a problem |
+| Defects caught in review | Speed of PR approval | PRs approved in under 5 minutes. Zero comments. Zero questions. | Incentivizes rubber-stamping — the opposite of meaningful review |
+| Cost per working feature | Cost per session (alone) | Sessions are artificially shortened to lower cost. Quality drops. Rework increases. Net cost rises. | Optimizing session cost without tracking value delivered misses the point |
 
-**Vanity version**: Total lines of code generated per session.
-**The danger**: AI inflates this effortlessly. More lines of code means more code to maintain, more potential bugs, more cognitive load for future developers. Optimizing for this metric produces bloated, over-engineered codebases.
-**Real metric**: Working features delivered per sprint.
-
-### Content Volume
-
-**Vanity version**: Number of documentation pages, CHANGELOG entries, or commit messages generated.
-**The danger**: AI can produce documentation at industrial scale. Quantity of documentation with no quality standard produces noise that reduces signal. Developers stop reading documentation that is 80% boilerplate.
-**Real metric**: Onboarding time for new developers (how long until they can work independently using the documentation that exists).
-
-### Tickets Closed
-
-**Vanity version**: Number of tasks or tickets closed per sprint.
-**The danger**: Closing a ticket by deferring the hard part, duplicating an existing solution, or solving a symptom rather than the root cause is activity without value.
-**Real metric**: Bugs prevented (defect rate trend), or features shipped that are still live and used after 30 days.
-
-### Commits per Day
-
-**Vanity version**: Number of git commits, measured daily.
-**The danger**: AI generates enormous commit volumes. Tracking commits incentivizes micro-commits and session fragmentation. A developer who commits 40 times in a session is not more productive than one who commits 4 times.
-**Real metric**: Rework rate (the inverse of commit quality — fewer reverts means commits were right the first time).
+**The rule:** For every metric you report, identify its gaming vector. If you cannot describe how the metric could be gamed, you do not understand the metric well enough to use it.
 
 ---
 
 ## 6. Dashboard Design
 
-### Weekly: Tier 1 Dashboard
+### Weekly: Tier 1 Dashboard (Developers and Team Leads)
 
-Updated every Monday, covering the previous week. Takes 15 minutes to prepare from `CHANGELOG.md` and CI reports.
+Updated every Monday. Takes 15 minutes to prepare from `CHANGELOG.md`, `COST_LOG.md`, and CI reports.
 
 ```markdown
 # Team AI Governance — Weekly Dashboard
-## Week of [date]
+## Week of 2026-03-03
 
-| Metric | This Week | Last Week | Target | Status |
-|--------|-----------|-----------|--------|--------|
-| Tasks/session (avg) | 4.1 | 3.9 | ≥4.0 | OK |
-| Rework rate | 7% | 12% | <10% | OK |
-| Governance compliance | 92% | 88% | >90% | OK |
-| Test coverage (avg delta) | +1.2% | +0.8% | ≥0% | OK |
-| Cost/session (avg) | $0.38 | $0.45 | <$0.50 | OK |
+| Metric | This Week | Last Week | 4-Week Avg | Target | Status |
+|--------|-----------|-----------|------------|--------|--------|
+| Tasks/session (avg) | 4.1 | 3.9 | 4.0 | >=4.0 | On target |
+| Rework rate | 7% | 12% | 9% | <10% | Improved |
+| Governance compliance | 92% | 88% | 89% | >90% | On target |
+| Test coverage delta | +1.2% | +0.8% | +0.7% | >=0% | Good |
+| Cost/session (avg) | $0.38 | $0.45 | $0.40 | <$0.50 | Good |
 
-### Notable events
-- Session 015: scope creep incident — three cross-layer changes in one session. Remediated.
-- Session 016: first use of /use-opus for security review. Cost: $0.82. Result: caught auth bypass edge case.
+### Notable Events
+- Session 015: scope creep incident — three cross-layer changes in one session. Caught by champion. Remediated: session split into three follow-ups.
+- Session 016: first use of /use-opus for security review. Cost: $0.82. Result: caught auth bypass edge case in token validation.
+- Developer C onboarding: completed 3 supervised sessions. Certification quiz scheduled for Friday.
 
-### Next week focus
-- Champion to run prompt quality review with Developer A (rework rate above team average)
+### Action Items
+- [ ] Champion: prompt quality review with Developer A (rework rate above team avg for 3 weeks)
+- [ ] Update SQL transform prompt template — current version does not specify deduplication strategy
 ```
 
-### Monthly: Tier 2 Dashboard
+### Monthly: Tier 2 Dashboard (Engineering Managers)
 
-Updated first Monday of each month. Reviewed with the team.
+Updated first Monday of each month. Reviewed with the team in a 30-minute meeting.
 
 ```markdown
 # Team AI Governance — Monthly Dashboard
-## [Month, Year]
+## March 2026
 
-### Tier 1 Summary
-[Four-week average of all Tier 1 metrics]
+### Tier 1 Summary (4-week averages)
+| Tasks/Session | Rework | Compliance | Coverage Delta | Cost/Session |
+|---------------|--------|------------|----------------|--------------|
+| 4.0 | 9% | 89% | +0.7% | $0.40 |
 
 ### Tier 2 Metrics
-| Metric | This Month | Last Month | Trend |
-|--------|------------|------------|-------|
-| Architecture drift score | 0 | 0 | Stable |
-| PR first-attempt pass rate | 84% | 79% | Improving |
-| Time to production (avg) | 3.2 hours | 4.1 hours | Improving |
-| Prompt quality score (avg) | 3.8/5 | 3.5/5 | Improving |
+| Metric | This Month | Last Month | Trend | Target |
+|--------|------------|------------|-------|--------|
+| Architecture drift score | 0 | 1 | Improved | 0 |
+| PR first-attempt pass rate | 84% | 79% | Improving | >80% |
+| Time to production (avg) | 3.2 hours | 4.1 hours | Improving | <4 hours |
+| Prompt quality score (avg) | 3.8/5 | 3.5/5 | Improving | >3.5 |
 
-### Cost summary
-- Total monthly AI cost: $[X]
-- Cost/developer: $[X]
-- Model breakdown: Haiku [X]%, Sonnet [X]%, Opus [X]%
+### Cost Summary
+- Total monthly AI cost: $47.20
+- Cost/developer: $9.44
+- Model breakdown: Haiku 35%, Sonnet 45%, Opus 20%
+- Routing efficiency: 2 sessions flagged as mis-routed (Opus used for documentation)
 
-### Framework health
-- CLAUDE.md last updated: [date]
-- Active ADRs: [N]
-- Security incidents: [N]
+### Framework Health
+- CLAUDE.md last updated: 2026-02-28 (version 1.3)
+- Active ADRs: 7
+- Security incidents: 0
+- Champion status: active, attending monthly syncs
 ```
 
-### Quarterly: Tier 3 Dashboard
+### Quarterly: Tier 3 Dashboard (VPs and Leadership)
 
-For organizations with enterprise-level metrics infrastructure. Reviewed with leadership.
+For organizations with enterprise-level metrics. Reviewed with leadership as part of quarterly business review.
+
+```markdown
+# AI Governance — Quarterly Report
+## Q1 2026
+
+### Organization Overview
+| Metric | Q1 2026 | Q4 2025 | Change |
+|--------|---------|---------|--------|
+| Active governed teams | 8 | 3 | +167% |
+| Total AI spend | $1,240 | $890 | +39% |
+| Cost per developer/month | $12.40 | $14.80 | -16% |
+| Org rework rate (avg) | 8.5% | 14.2% | -40% |
+| Security incidents | 0 | 2 | -100% |
+| Compliance audit pass rate | 94% | N/A | Baseline |
+
+### ROI Summary
+- Estimated rework hours saved: 320 hours (vs. pre-governance baseline)
+- Estimated security incident cost avoided: $25,000-$50,000 (2 incidents in Q4, 0 in Q1)
+- Developer satisfaction: 3.8/5 (up from 3.2/5)
+
+### Risks and Recommendations
+- 2 teams below 80% compliance — champion intervention underway
+- Opus cost trending up — recommend routing audit for teams 4 and 7
+- New hire onboarding gap — 3 developers started without completing certification
+```
 
 ---
 
@@ -278,43 +323,73 @@ For organizations with enterprise-level metrics infrastructure. Reviewed with le
 Most Tier 1 metrics can be extracted from git log with basic scripting:
 
 ```bash
-# Sessions per week (count CHANGELOG entries)
-git log --oneline --since="7 days ago" | grep "docs: update project state"
+# Count sessions per week (CHANGELOG entries with session markers)
+git log --oneline --since="7 days ago" -- docs/CHANGELOG.md | wc -l
 
-# Rework rate (reverts in last 30 days)
-git log --oneline --since="30 days ago" | grep -i "revert\|fix:\|redo"
+# Count reverts and fixes in last 30 days (rework proxy)
+git log --oneline --since="30 days ago" --grep="revert\|fix:\|redo" -i | wc -l
 
-# Time between PR creation and merge (requires GitHub API)
-gh pr list --state merged --limit 50 --json createdAt,mergedAt
+# Count total tasks completed (approximate: CHANGELOG task entries)
+grep -c "\- \[x\]\|^- " docs/CHANGELOG.md
+
+# Time between PR creation and merge
+gh pr list --state merged --limit 50 --json number,createdAt,mergedAt \
+  --jq '.[] | {pr: .number, hours: (((.mergedAt | fromdateiso8601) - (.createdAt | fromdateiso8601)) / 3600 | floor)}'
+
+# PR first-attempt pass rate
+gh run list --limit 100 --json conclusion,event \
+  --jq '[.[] | select(.event == "pull_request")] | group_by(.conclusion) | map({(.[0].conclusion): length}) | add'
 ```
 
 ### CI/CD Data
 
-- Test coverage: available from coverage.py report in CI artifacts
-- PR pass rate: available from GitHub Actions run history
-- Security scan results: available from gitleaks / trufflehog output in CI logs
+- **Test coverage:** Available from coverage.py / pytest-cov report in CI artifacts
+- **PR pass rate:** Available from GitHub Actions run history via `gh api`
+- **Security scan results:** Available from gitleaks / trufflehog output in CI logs
+- **Build time:** Available from CI timestamps — useful for detecting bloating
 
-### Manual Session Logs
+### Automated Dashboard Generation
 
-The `CHANGELOG.md` session format contains the raw data for most Tier 1 metrics:
+A simple Python script running weekly can extract Tier 1 metrics from `CHANGELOG.md` and `COST_LOG.md`, query the GitHub API for PR data, and generate the weekly dashboard automatically:
 
-```markdown
-## 2026-03-01 — Session 012
-**Model:** claude-sonnet-4-6
-**Duration:** ~2 hours
-**Tasks completed:** 4/4
-**Files changed:** 7
-**Est. cost:** $0.38
+```python
+# scripts/generate_dashboard.py
+"""
+Generate weekly Tier 1 dashboard from governance files and GitHub API.
+Run every Monday via cron or GitHub Actions.
+Output: docs/dashboard/weekly-YYYY-MM-DD.md
+"""
+import subprocess
+import json
+from datetime import datetime, timedelta
+
+def count_sessions_this_week():
+    result = subprocess.run(
+        ["git", "log", "--oneline", "--since=7 days ago", "--", "docs/CHANGELOG.md"],
+        capture_output=True, text=True
+    )
+    return len(result.stdout.strip().split("\n")) if result.stdout.strip() else 0
+
+def count_rework_this_week():
+    result = subprocess.run(
+        ["git", "log", "--oneline", "--since=7 days ago", "--grep=revert\\|fix:\\|redo", "-i"],
+        capture_output=True, text=True
+    )
+    return len(result.stdout.strip().split("\n")) if result.stdout.strip() else 0
+
+def get_pr_metrics():
+    result = subprocess.run(
+        ["gh", "pr", "list", "--state=merged", "--limit=20",
+         "--json", "createdAt,mergedAt"],
+        capture_output=True, text=True
+    )
+    return json.loads(result.stdout) if result.stdout else []
+
+# ... extend with COST_LOG.md parsing, coverage report parsing, etc.
 ```
 
-Consistent format is essential for automated extraction. Define the exact format in `CLAUDE.md` and enforce it.
-
-### Automating Collection
-
-A simple Python script running weekly can extract Tier 1 metrics from `CHANGELOG.md` and generate the weekly dashboard automatically. This eliminates the manual overhead and removes the "it depends on someone remembering to fill it in" failure mode.
-
-At enterprise scale, pipe CI/CD data, git logs, and `CHANGELOG.md` extractions into a lightweight data store (SQLite locally, BigQuery at scale) and generate dashboards automatically.
+At enterprise scale, pipe CI/CD data, git logs, and governance file extractions into a lightweight data store (SQLite locally, BigQuery or Databricks at scale) and generate dashboards automatically. Eliminate the "someone forgot to update the dashboard" failure mode.
 
 ---
 
-*Related guides: [Productivity Measurement](./productivity-measurement.md) | [Enterprise Playbook](./enterprise-playbook.md) | [Model Routing](./model-routing.md)*
+*Related guides: [Enterprise Playbook](./enterprise-playbook.md) | [Model Routing](./model-routing.md) | [Prompt Engineering](./prompt-engineering.md) | [AI Code Quality](./ai-code-quality.md)*

@@ -1,55 +1,63 @@
 # Prompt Engineering as a Governance Discipline
 
-## 1. Why This Matters for Governance
+## 1. Why This Is Governance
 
-`CLAUDE.md` defines the rules. Prompts are the language.
+`CLAUDE.md` sets the rules. Prompt engineering is the language you speak with the agent.
 
-Every AI-assisted development session involves two layers of instruction: the constitution (what the agent may and may not do, permanently encoded in `CLAUDE.md`) and the prompt (what the agent does right now, in this task). Governance covers the constitution thoroughly. Prompt quality is where governance breaks down in practice.
+Every AI-assisted session involves two layers of instruction: the constitution (what the agent may and may not do, permanently encoded in `CLAUDE.md`) and the prompt (what the agent does right now, for this specific task). Governance covers the constitution thoroughly. Prompt quality is where governance breaks down in practice.
 
-The session protocol, the ADRs, the never-commit list — all of this is wasted if the developer then writes: "fix the auth bug." The agent will attempt to fix something. It will produce output. It will look correct. And it will not fix the actual bug, or it will fix it in a way that introduces a different one, or it will "fix" code that was working correctly while leaving the real problem intact.
+Consider: the session protocol is followed. The ADRs are written. The never-commit list is in place. The developer then writes: "fix the auth bug."
 
-Quality of input determines quality of output, regardless of how well the constitution is written.
+The agent will attempt to fix something. It will produce output. The code will compile. It will look correct at a glance. And it will not fix the actual bug — or it will fix it in a way that introduces a different one, or it will "fix" code that was working correctly while leaving the real problem untouched, or it will modify files outside the intended scope because "fix the auth bug" does not specify what should and should not change.
 
-Prompt engineering is therefore not a developer preference or a nice-to-have skill. It is a governance discipline with measurable consequences for code quality, rework rate, and security. Teams that treat it as optional will have higher rework rates, more scope creep, and worse outcomes from the same AI tools.
+**The same rules + a poor prompt = poor output.** Quality of input determines quality of output, regardless of how well the constitution is written.
+
+Prompt engineering is therefore not a developer preference or a nice-to-have skill. It is a governance discipline with measurable consequences for code quality, rework rate, session efficiency, and security. Teams that treat it as optional will have higher rework rates (40-60% higher, based on comparative session data), more scope creep, and worse outcomes from the same AI tools and the same constitution.
+
+The implication for organizations: prompt engineering is a team skill, not an individual one. It should be standardized, reviewed, and improved — exactly like code.
 
 ---
 
-## 2. The Skill Gap Is Real
+## 2. The Skill Gap
 
 The same model. The same rules. The same codebase. Dramatically different results.
 
 An experienced AI developer and a developer new to AI-assisted workflows can work side by side, using the same Claude Code installation with the same `CLAUDE.md`, and produce wildly different quality output. The difference is not intelligence, seniority, or domain expertise. It is prompt crafting.
 
+**Observable evidence of the skill gap:**
+
 A well-crafted prompt produces:
-- Output within the defined scope (no unexpected file changes)
-- Code that satisfies the stated acceptance criteria
-- Explicit handling of constraints (what must not change)
-- Self-limiting behavior (the agent knows when to stop)
+- Output that stays within the defined scope — no unexpected file changes, no architectural surprises
+- Code that satisfies the stated acceptance criteria on the first attempt
+- Explicit handling of constraints — the agent demonstrably avoided things it was told not to do
+- Self-limiting behavior — the agent knew when to stop and reported what it did not do
 
 A poorly crafted prompt produces:
-- Output that does something adjacent to what was requested
-- Code that works in the happy path but fails edge cases
+- Output that does something adjacent to what was requested — close enough to look correct, different enough to need rework
+- Code that works for the happy path but fails edge cases that a constrained prompt would have surfaced
 - Changes to files that were not mentioned and should not have been touched
-- Scope creep that seems helpful but violates architectural boundaries
+- Scope creep that seems helpful ("I also noticed that X could be improved, so I...") but violates architectural boundaries
 
-This gap is measurable. Teams that invest in prompt library development and prompt quality review see rework rates 40–60% lower than teams that do not. The investment is one to two weeks of champion time to build a shared library, and ongoing review during sessions.
+**This gap is measurable.** Teams that invest in prompt library development, prompt quality review, and prompt training see rework rates 40-60% lower than teams that do not. The investment is one to two weeks of champion time to build a shared library, ongoing review during retrospectives, and prompt quality scoring as a Tier 2 metric.
+
+The skill gap also compounds over time. A developer with good prompt discipline produces consistently predictable sessions. A developer with poor prompt discipline produces sessions with high variance — some excellent, some requiring hours of rework — which makes sprint planning unreliable and team velocity unpredictable.
 
 ---
 
 ## 3. Anti-Patterns
 
-The following patterns appear consistently in poorly performing AI development sessions. Each has a specific failure mode.
+The following patterns appear consistently in poorly performing AI development sessions. Each has a specific failure mode and a specific fix.
 
-| Anti-Pattern | Example | Problem | Consequence |
+| Anti-Pattern | Example Prompt | What Goes Wrong | Better Version |
 |---|---|---|---|
-| Vague instruction | "make it better" | Agent guesses the definition of "better" based on training patterns, not your project context | Output optimizes for a generic version of quality, not your specific requirements |
-| Multiple unrelated tasks | "fix the bug, add the new feature, and clean up the old code" | Agent context is split; changes to one concern contaminate the others | Mixed concerns in one commit; impossible to isolate and revert individual changes; rework cascade |
-| No acceptance criteria | "add validation" | Agent decides what "validation" means | Validation that passes the happy path but misses the specific edge cases the task was motivated by |
-| No constraints | "rewrite this function" | Agent treats the entire function as fair game | Signature changes, behavior changes, interface changes the agent was not authorized to make |
-| No context | "why does this fail?" with no stack trace | Agent fills in missing context from patterns, not facts | Confident-sounding diagnosis of the wrong problem |
-| Assuming shared knowledge | "implement it like we discussed" | The agent has no memory of previous sessions | Agent invents an interpretation of "like we discussed" that may be entirely different from what was actually discussed |
-| No scope boundaries | "improve the data pipeline" | Agent interprets scope as broadly or narrowly as its training patterns suggest | Multi-file changes across architectural boundaries; blast radius exceeds intent |
-| Accepting the first output | Running one prompt without validation | The first output is often good enough to look correct but wrong in subtle ways | Committed bugs with a thin layer of correct-looking code on top |
+| Vague instruction | "make it better" | Agent guesses the definition of "better" from training patterns, not your project context. Produces generic optimization. | "Reduce the cyclomatic complexity of `run_merge.py` by extracting the error handling into a shared helper. MUST NOT change function signatures." |
+| Multiple unrelated tasks | "fix the bug, add the new feature, and clean up the old code" | Agent context is split across three concerns. Changes contaminate each other. Impossible to revert one without reverting all. | Three separate prompts, each with its own scope, constraints, and acceptance criteria. One commit per task. |
+| No acceptance criteria | "add validation" | Agent decides what "validation" means. Validates the wrong things, or validates correctly but misses the specific edge case that motivated the task. | "Add input validation to `process_record()`. MUST reject: null user_id, dates before 2020-01-01, heart_rate outside 30-250 bpm. Return specific error messages for each case." |
+| No constraints | "rewrite this function" | Agent treats the entire function as fair game. Changes the signature, modifies the return type, renames parameters — breaking callers. | "Refactor `calculate_metrics()` to reduce duplication. MUST NOT change the function signature or return type. MUST preserve all existing unit tests." |
+| No context | "why does this fail?" (no stack trace, no file reference) | Agent fills missing context from training patterns, not from your actual codebase. Produces a confident diagnosis of the wrong problem. | "The function `load_data()` in `connectors/oura.py` raises `KeyError: 'heart_rate'` when processing the attached API response. Stack trace: [paste]. What is wrong?" |
+| Assuming shared knowledge | "implement it like we discussed" | Agent has no memory of previous sessions. Invents an interpretation of "like we discussed" that may be entirely wrong. | "Implement incremental loading using watermark-based approach (see ADR-003). Track `last_loaded_at` per source in `metadata.load_tracking`." |
+| No scope boundaries | "improve the data pipeline" | Agent interprets scope as broadly as its training patterns suggest. Multi-file changes across architectural boundaries. Blast radius exceeds intent. | "Improve error handling in the bronze ingestion step only. Scope: `ingestion/bronze_loader.py`. Do NOT modify silver or gold transforms." |
+| Accepting first output | Running one prompt, accepting without verification | First output often passes the glance test but fails at edges. Committed bugs under a thin layer of correct-looking code. | Run the prompt. Review output against acceptance criteria. If criteria are not fully met, provide specific feedback and iterate. |
 
 ---
 
@@ -57,84 +65,102 @@ The following patterns appear consistently in poorly performing AI development s
 
 ### Task Decomposition
 
-The most universally effective pattern. Break complex tasks into small, well-defined units. Each unit has exactly one concern.
+The most universally effective pattern. Break complex tasks into small, well-defined units with exactly one concern each.
 
 **Full example with all required fields:**
 
 ```
 Task: Add Oura heart rate connector.
 
+Context:
+  We have a standard connector pattern (see source_connectors/oura/sleep.py).
+  The Oura API returns heart rate data as daily summaries.
+  This is the third Oura connector — sleep and activity already exist.
+
 Scope:
-  - Modify: source_connectors/oura/heartrate.py (create if not exists)
-  - Modify: sources_config.yaml (add Oura heart rate entry)
-  - Do NOT modify: ingestion_engine.py, any existing connector files, any SQL transforms
+  Create: source_connectors/oura/heartrate.py
+  Modify: sources_config.yaml (add oura_heart_rate entry)
+  Do NOT modify: ingestion_engine.py, any existing connector file, any SQL transform
 
 Constraints:
-  - Use existing OuraConnector base class from source_connectors/oura/base.py
-  - Follow the exact same pattern as source_connectors/oura/sleep.py
-  - Bronze table name: bronze.oura_heart_rate_daily
-  - Columns: timestamp (datetime), bpm (integer), source_system (string), _ingested_at (datetime)
-  - API endpoint: configured in env var OURA_API_BASE_URL, do not hardcode
+  MUST: Use existing OuraConnector base class from source_connectors/oura/base.py
+  MUST: Follow the exact same pattern as source_connectors/oura/sleep.py
+  MUST: Use environment variable OURA_API_BASE_URL for API endpoint — no hardcoded URLs
+  MUST NOT: Add any new Python dependencies
+  MUST NOT: Modify the ingestion engine's connector discovery logic
 
 Acceptance criteria:
-  - Script runs without errors against mock API response
-  - Bronze table created with specified schema
-  - All columns populated correctly from sample API response (fixture in tests/fixtures/oura_heartrate_sample.json)
-  - sources_config.yaml includes the new connector with correct entity name
+  - source_connectors/oura/heartrate.py exists and imports without error
+  - Bronze table name: bronze.oura_heart_rate_daily
+  - Columns: timestamp (datetime), bpm (integer), source_system (string), _ingested_at (datetime)
+  - Script runs without errors against mock fixture in tests/fixtures/oura_heartrate_sample.json
+  - sources_config.yaml includes the new connector with correct entity name and schema
 
 Do NOT:
   - Write validation tests (next task)
+  - Write silver transforms (next sprint)
   - Add any new dependencies
   - Modify the ingestion engine's connector discovery logic
+  - Add data quality checks (separate task)
+
+Reference file: source_connectors/oura/sleep.py — follow this exactly
 ```
 
-This prompt produces a deterministic outcome. The agent knows exactly what to touch, what not to touch, what done looks like, and where to stop.
+This prompt produces a deterministic outcome. The agent knows exactly what to create, what to modify, what not to touch, what "done" looks like, and where to stop. The output is verifiable against specific criteria, not against the developer's subjective impression.
 
 ### Constraint Specification
 
-Use explicit permission tiers for constraints. `MUST NOT` is a hard stop. `MUST` is required. `SHOULD` is a preference that can be overridden with justification.
+Use explicit permission tiers. `MUST NOT` is a hard stop — the agent treats this as a prohibition. `MUST` is required — the agent treats this as an obligation. `SHOULD` is a preference — the agent may override it with justification.
 
 ```
 Refactor run_merge.py to reduce duplication in error handling.
 
-MUST NOT: Change function signatures (other code depends on these)
-MUST NOT: Change the names or locations of SQL files referenced
-MUST NOT: Remove or modify existing unit tests
+MUST NOT: Change any function signature (other code depends on these)
+MUST NOT: Change the names or locations of SQL files referenced in the module
+MUST NOT: Remove or modify any existing unit test
+MUST NOT: Add new dependencies
+
 MUST: Keep all existing behavior identical from the caller's perspective
-MUST: Add a docstring to any function that does not have one
+MUST: Add a docstring to any function that does not currently have one
+MUST: Run all existing tests after refactoring — they must pass unchanged
+
 SHOULD: Extract repeated error handling into a shared helper function
-SHOULD: Reduce the file to under 200 lines if possible without violating the above
+SHOULD: Reduce the file to under 200 lines if possible without violating the MUST NOTs
+SHOULD: Improve variable names where they are ambiguous
 ```
 
-This pattern makes the agent's review of its own output systematic: "Did I change any function signature? No. Did I change SQL file references? No." The constraints function as a checklist.
+This pattern makes the agent's self-review systematic: "Did I change any function signature? No. Did I change SQL file references? No. Did any test fail? No." The constraints function as a checklist that the agent can verify against its own output.
 
 ### Example-Driven
 
-The most reliable pattern for tasks that follow a known pattern. Point directly at the pattern to follow.
+The most reliable pattern for tasks that follow a known pattern. Point directly at the reference and say "follow this exactly."
 
 ```
 Create a silver transform for Lifesum food diary data.
 
 Reference file: transforms/silver/oura_daily_sleep.sql
-Follow this file exactly:
+Follow this file EXACTLY:
   - Same MERGE INTO structure
-  - Same column naming pattern (source column → silver column)
+  - Same column naming pattern (source_column -> silver_column)
   - Same metadata columns: _source_system, _ingested_at, _processed_at
   - Same grain: one row per user per day
   - Same deduplication logic in the USING clause
+  - Same WHERE clause structure for incremental loading
 
 Input table: bronze.lifesum_food_diary
 Output table: silver.lifesum_daily_nutrition
-Columns to transform: (see data/schemas/lifesum_food_diary_schema.yaml)
+Columns to transform: see data/schemas/lifesum_food_diary_schema.yaml
 
-Do not introduce any patterns not present in the reference file.
+Do NOT introduce any patterns not present in the reference file.
+Do NOT add CTEs, window functions, or additional metadata columns
+that are not in the reference. Consistency is more important than cleverness.
 ```
 
-The "do not introduce patterns not in the reference" instruction is critical. Without it, agents will helpfully add patterns they have seen in training — window functions, CTEs, additional metadata columns — that break the consistency you are trying to maintain.
+The instruction "do not introduce patterns not in the reference" is critical. Without it, agents will helpfully add patterns they have seen in training — window functions, additional metadata columns, alternative deduplication strategies — that may be individually reasonable but break the consistency you are trying to maintain.
 
 ### Chain-of-Thought for Architecture Decisions
 
-For decisions with significant long-term consequences, ask the agent to reason before concluding. This produces dramatically better quality analysis.
+For decisions with significant long-term consequences, ask the agent to reason explicitly before concluding. This produces dramatically better analysis than asking for a direct recommendation.
 
 ```
 I am deciding how to implement incremental loading for the bronze layer.
@@ -155,13 +181,14 @@ For each approach, reason through:
   3. API rate limit implications (Oura allows 100 calls/day)
   4. Complexity for future developers to maintain
   5. Risk of data gaps or duplicates
-  6. Implementation time
+  6. Implementation time estimate
 
-After reasoning through both, make a recommendation with explicit trade-offs.
-Do not jump to the recommendation before completing the analysis.
+After reasoning through BOTH approaches completely, make a recommendation
+with explicit trade-offs stated. Do not jump to the recommendation before
+completing the analysis of both approaches.
 ```
 
-The last instruction — "do not jump to the recommendation before completing the analysis" — is essential. Without it, the agent often produces the recommendation first and then constructs reasoning that supports it, rather than reasoning that might challenge it.
+The last instruction is essential. Without it, the agent often produces the recommendation first, then constructs reasoning that supports it — reasoning biased toward the conclusion, not reasoning that might challenge it. Requiring the analysis before the conclusion produces more honest evaluation.
 
 ---
 
@@ -173,38 +200,47 @@ All teams should use this template as the starting point for all tasks. Fields c
 ## [Task type]: [Short descriptive title]
 
 **Context:**
-[What is the current situation? What files are relevant? What is the broader goal this task serves?
-Link to relevant ADRs, architecture docs, or recent CHANGELOG entries if helpful.]
+[What is the current situation? What files are relevant? What is the broader goal
+this task serves? Link to relevant ADRs, architecture docs, or recent CHANGELOG
+entries if they provide important context.]
 
 **Goal:**
-[Precisely what should be achieved. One to three sentences. Specific and verifiable.]
+[Precisely what should be achieved. One to three sentences. Specific and verifiable.
+Not "improve" or "fix" without specifying what improvement or fix means.]
 
 **Scope:**
-[Which files may be created or modified. Which files must NOT be touched. Be explicit.]
+[Which files may be created or modified — list them explicitly.
+Which files MUST NOT be touched — list them explicitly.
+If in doubt, list more files in the "must not touch" category.]
 
 **Constraints:**
-[Technical limitations. Existing patterns that must be followed. Things that must not change.
-Format as MUST NOT / MUST / SHOULD when helpful.]
+[Technical limitations. Existing patterns that must be followed. Dependencies that
+must not change. Use MUST NOT / MUST / SHOULD hierarchy when helpful.]
 
 **Acceptance criteria:**
 [How will you verify this is done correctly? List specific, checkable conditions.
-At least one criterion should be a test or a verifiable output.]
+At least one criterion should be a test or a verifiable runtime output.
+"It works" is not an acceptance criterion. "It processes the test fixture
+without errors and produces a table with 15 rows" is.]
 
 **Do NOT:**
 [Explicit list of things that are out of scope. This is not redundant with Scope —
-it lists specific tempting additions the agent should resist.]
+it lists specific tempting additions the agent should resist. Common entries:
+"Do not write tests (next task)", "Do not refactor adjacent code",
+"Do not add features not specified above".]
 
 **Reference files:**
-[If the task follows an existing pattern, name the file(s) to follow.]
+[If the task follows an existing pattern, name the file(s) to follow.
+The agent should match the reference exactly unless constraints specify otherwise.]
 ```
 
-This template belongs in `.claude/prompts/task-template.md` and should be referenced in `CLAUDE.md` as the required format for all task prompts.
+This template belongs in `.claude/prompts/task-template.md` and should be referenced in `CLAUDE.md` as the required structure for all task prompts.
 
 ---
 
 ## 6. Bad Prompt vs. Good Prompt
 
-Concrete side-by-side comparison for a feature request: adding a new health data source connector.
+Side-by-side comparison for a realistic task: adding a new health data source connector.
 
 ### Bad Prompt
 
@@ -212,145 +248,215 @@ Concrete side-by-side comparison for a feature request: adding a new health data
 add withings connector to the project
 ```
 
-**What this produces**: The agent will create *something*. It might look at existing connectors for inspiration, or it might create something entirely different. It will definitely touch files it was not asked to touch. It will probably not follow the project's naming conventions. It may create a table with different columns than the rest of the pipeline expects. The agent will complete quickly and confidently. The output will look complete. The bugs will be subtle.
+**What this produces:** The agent will create *something*. It might examine existing connectors for inspiration, or it might create something structurally different. It will probably touch files outside the intended scope — perhaps modifying the ingestion engine to accommodate the new connector, or adding configuration entries with different field names than existing connectors use. It may create a table with columns that do not match the rest of the pipeline's expectations. It might add a dependency you do not want. It will complete quickly and confidently. The output will look professional. The bugs will be subtle — wrong column types, missing error handling for API rate limits, hardcoded endpoint URLs.
+
+**Cost of the bad prompt:** 5 seconds to write. 2-4 hours to debug and rework.
 
 ### Good Prompt
 
 ```
-## Feature: Add Withings health data connector (bronze layer)
+## Feature: Add Withings weight connector (bronze layer)
 
 **Context:**
 We have a standard connector pattern (see source_connectors/oura/sleep.py).
-Withings provides: weight, blood pressure, heart rate. We only need weight for now.
-API docs: https://developer.withings.com/api-reference (oauth2, already configured in .env)
+Withings API provides weight, blood pressure, and heart rate data.
+We only need weight for this task — blood pressure and heart rate are future tasks.
+API docs: https://developer.withings.com/api-reference
+Authentication: OAuth2, already configured in .env as WITHINGS_CLIENT_ID and WITHINGS_CLIENT_SECRET.
 
 **Goal:**
-Create a Withings weight connector that fetches data from the Withings API
-and loads it into a bronze table following the existing connector pattern.
+Create a Withings weight connector that fetches daily weight measurements from the
+Withings API and loads them into a bronze table following our existing connector pattern.
 
 **Scope:**
   Create: source_connectors/withings/weight.py
+  Create: source_connectors/withings/base.py (following oura/base.py pattern)
   Modify: sources_config.yaml (add withings_weight entry)
-  Do NOT modify: ingestion_engine.py, any other connector, any SQL file
+  Do NOT modify: ingestion_engine.py, any other connector, any SQL file, requirements.txt
 
 **Constraints:**
-  MUST: Follow exactly the same structure as source_connectors/oura/sleep.py
-  MUST: Use WithingsConnector base class (create base.py following OuraConnector pattern)
-  MUST: Store API credentials from env vars WITHINGS_CLIENT_ID, WITHINGS_CLIENT_SECRET
+  MUST: Follow exactly the same class structure as source_connectors/oura/sleep.py
+  MUST: Create WithingsConnector base class following OuraConnector pattern
+  MUST: Read credentials from env vars: WITHINGS_CLIENT_ID, WITHINGS_CLIENT_SECRET
+  MUST: Use existing dependencies only (requests, python-dotenv)
   MUST NOT: Hardcode any API endpoints, credentials, or configuration values
-  MUST NOT: Add any new Python dependencies (use existing: requests, python-dotenv)
+  MUST NOT: Add any new Python dependencies
 
 **Acceptance criteria:**
   - source_connectors/withings/weight.py exists and imports without error
-  - sources_config.yaml has withings_weight entity with correct schema definition
-  - Running the connector against the mock fixture in tests/fixtures/withings_weight_sample.json
-    produces a bronze table with columns: date, weight_kg, source_system, _ingested_at
-  - No API call is made when running in test mode (WITHINGS_TEST_MODE=true)
+  - source_connectors/withings/base.py exists with WithingsConnector class
+  - sources_config.yaml has withings_weight entity with schema definition
+  - Running connector against tests/fixtures/withings_weight_sample.json produces
+    bronze table with columns: date (date), weight_kg (float), source_system (string),
+    _ingested_at (datetime)
+  - No API call is made when WITHINGS_TEST_MODE=true in environment
 
 **Do NOT:**
-  - Implement heart rate or blood pressure (future task)
-  - Write silver transforms (future task)
+  - Implement blood pressure or heart rate connectors (future tasks)
+  - Write silver or gold transforms
   - Write integration tests against the live API (separate task)
+  - Add data quality validation (separate task)
+  - Modify the ingestion engine's connector discovery mechanism
 
-**Reference file:** source_connectors/oura/sleep.py
+**Reference file:** source_connectors/oura/sleep.py — follow this exactly
 ```
 
-The good prompt is longer. It takes 5 minutes to write. It produces output that is correct, in-scope, and requires no rework. The bad prompt is faster to write and produces output that requires 2–4 hours of debugging and rework. The math is not complicated.
+**Cost of the good prompt:** 5 minutes to write. Output is correct, in-scope, and requires no rework.
+
+**The math:** The good prompt takes 60x longer to write than the bad prompt. It saves 120-480x more time in debugging and rework. The return on prompt quality investment is not subtle.
 
 ---
 
 ## 7. Shared Prompt Library
 
-Prompts should be versioned and shared, exactly like code. A developer who discovers a prompt structure that consistently produces better output should not keep it to themselves.
+Prompts should be versioned and shared, exactly like code. A developer who discovers a prompt structure that consistently produces better output should not keep it to themselves — just as a developer who discovers a better design pattern shares it with the team.
 
 ### Directory Structure
 
 ```
 .claude/prompts/
-├── task-template.md        ← The standard task template (section 5)
-├── new-feature.md          ← Standard prompt for new features
-├── bug-fix.md              ← Standard prompt for bug fixes
-├── refactor.md             ← Standard prompt for refactoring
-├── sql-transform.md        ← Standard prompt for SQL bronze/silver/gold transforms
-├── new-connector.md        ← Standard prompt for adding data source connectors
-├── security-review.md      ← Standard prompt for security review (Opus)
-├── adr.md                  ← Standard prompt for writing ADRs
-└── code-review.md          ← Standard prompt for reviewing PRs
+├── task-template.md        <- The standard task template (section 5)
+├── new-feature.md          <- Standard prompt for new features
+├── bug-fix.md              <- Standard prompt for bug fixes with debugging context
+├── refactor.md             <- Standard prompt for refactoring with constraint specification
+├── sql-transform.md        <- Standard prompt for SQL bronze/silver/gold transforms
+├── new-connector.md        <- Standard prompt for adding data source connectors
+├── security-review.md      <- Standard prompt for security review (Opus)
+├── adr.md                  <- Standard prompt for writing Architecture Decision Records
+├── code-review.md          <- Standard prompt for reviewing PRs
+└── test-suite.md           <- Standard prompt for writing test suites
 ```
 
-### Versioning Prompts
+### Versioning and Change Control
 
 Treat prompt changes like code changes:
 
-- Prompts live in git; changes go through PR review
-- The champion reviews prompt changes before they are merged
-- Breaking changes to prompt templates require a CHANGELOG entry
-- When a prompt produces notably better results after modification, document why in a comment at the top of the file
+- **Prompts live in git.** Changes go through PR review. The champion reviews prompt changes before they are merged.
+- **Breaking changes require a CHANGELOG entry.** If a prompt template changes in a way that produces different output for the same input, this is a breaking change and should be documented.
+- **Document what works and why.** When a prompt modification produces notably better results, add a comment at the top of the file explaining the change and why it improved output quality.
+- **Stability over novelty.** Do not update prompts continuously. Stable prompt templates produce predictable output. Constant churn means every session is a new experiment with unknown results.
 
 ### When to Update a Prompt Template
 
-Update a prompt template when:
-- The same type of task has been redone more than twice due to prompt quality issues
-- A developer discovers a significantly better structure and demonstrates it on a real task
-- The project's architecture or conventions change in a way that makes the existing template incorrect
+Update when:
+- The same task type has been redone more than twice due to prompt quality issues
+- A developer discovers a significantly better structure and demonstrates it on a real task (not hypothetically)
+- The project's architecture or conventions change in a way that makes the existing template produce incorrect output
+- A new constraint needs to be universal (e.g., "all connectors must now include retry logic")
 
-Do not update prompts continuously. Stability in prompt templates means stability in agent output. Constant churn means every session is a new experiment.
+Do not update when:
+- One developer prefers different wording (preference is not a reason for change)
+- A minor formatting variation would look better (consistency matters more than aesthetics)
+- The prompt "could be better" without evidence of a specific failure it would prevent
 
 ---
 
 ## 8. Prompt Linting
 
-The concept: before a prompt is sent to the AI, check that it contains the required structural fields. A prompt that is missing `Acceptance criteria` or `Scope` is less likely to produce correct output.
+The concept: before a prompt is stored in the shared library or used for a high-stakes task, verify that it contains the structural fields that correlate with high-quality output. A prompt missing `Scope` or `Acceptance criteria` is statistically more likely to produce output that requires rework.
 
 ### Minimum Required Fields
 
-A lintable prompt must contain:
-- A task title
+A prompt that will be stored in the shared library must contain:
+- A task title (what type of task and a short description)
 - Scope (what can and cannot be changed)
-- At least one acceptance criterion
-- At least one explicit constraint
+- At least one acceptance criterion (how to verify the output is correct)
+- At least one explicit constraint (what must not change)
 
-### Simple Lint Check
-
-A pre-session hook or champion review can check for these fields in any prompt that will be committed to the prompt library:
+### Simple Lint Script
 
 ```python
-# scripts/lint_prompt.py
+#!/usr/bin/env python3
+"""
+Lint a prompt file for required structural fields.
+Usage: python scripts/lint_prompt.py .claude/prompts/new-feature.md
+"""
 import sys
+from pathlib import Path
 
-REQUIRED_FIELDS = ["Scope", "Acceptance criteria", "Constraints", "Do NOT"]
+REQUIRED_FIELDS = {
+    "scope": ["Scope:", "Scope (", "**Scope:**", "**Scope**"],
+    "acceptance_criteria": ["Acceptance criteria:", "**Acceptance criteria:**", "Acceptance criteria ("],
+    "constraints": ["Constraints:", "**Constraints:**", "MUST NOT", "MUST:"],
+    "do_not": ["Do NOT:", "**Do NOT:**", "Do not:", "Out of scope:"],
+}
 
-def lint_prompt(prompt_text: str) -> list[str]:
-    missing = []
-    for field in REQUIRED_FIELDS:
-        if field.lower() not in prompt_text.lower():
-            missing.append(field)
-    return missing
+RECOMMENDED_FIELDS = {
+    "context": ["Context:", "**Context:**"],
+    "reference": ["Reference file:", "**Reference", "Reference:"],
+}
+
+def check_field(content: str, markers: list[str]) -> bool:
+    content_lower = content.lower()
+    return any(marker.lower() in content_lower for marker in markers)
+
+def lint_prompt(filepath: str) -> tuple[list[str], list[str]]:
+    content = Path(filepath).read_text()
+    missing_required = []
+    missing_recommended = []
+
+    for field, markers in REQUIRED_FIELDS.items():
+        if not check_field(content, markers):
+            missing_required.append(field)
+
+    for field, markers in RECOMMENDED_FIELDS.items():
+        if not check_field(content, markers):
+            missing_recommended.append(field)
+
+    return missing_required, missing_recommended
 
 if __name__ == "__main__":
-    prompt = open(sys.argv[1]).read()
-    missing = lint_prompt(prompt)
-    if missing:
-        print(f"PROMPT LINT FAILED: Missing required fields: {', '.join(missing)}")
+    if len(sys.argv) != 2:
+        print("Usage: python lint_prompt.py <prompt_file>")
         sys.exit(1)
-    print("PROMPT LINT PASSED")
+
+    missing_req, missing_rec = lint_prompt(sys.argv[1])
+
+    if missing_req:
+        print(f"FAIL: Missing required fields: {', '.join(missing_req)}")
+        sys.exit(1)
+
+    if missing_rec:
+        print(f"WARN: Missing recommended fields: {', '.join(missing_rec)}")
+
+    if not missing_req and not missing_rec:
+        print("PASS: All fields present")
+
+    sys.exit(0)
 ```
 
-This script is not a replacement for good judgment. A prompt can contain all required fields and still be poorly written. Lint checks are a floor, not a ceiling.
+### When to Enforce Prompt Linting
 
-### When Prompt Linting Makes Sense
+**Always enforce for:**
+- Prompts being added to the shared library (all must pass lint)
+- Prompts for high-stakes tasks: security reviews, architectural changes, ADR writing, anything touching authentication or authorization
 
-Enforce prompt linting for:
-- Prompts being added to the shared library (all must pass)
-- Prompts for high-stakes tasks (security reviews, architectural changes, ADR writing)
+**Do not enforce for:**
+- Quick lookups and exploratory questions ("what does this function do?")
+- Conversational debugging sessions ("I see this error, what might cause it?")
+- Tasks where the developer is still formulating the problem (early exploration)
 
-Do not enforce prompt linting for:
-- Quick lookups and exploratory questions
-- Conversational debugging sessions
-- Tasks where the developer is still formulating the problem
+The goal is not to bureaucratize every AI interaction. It is to ensure that consequential prompts — the ones that produce code that will be committed, reviewed, and maintained — are written with the structural discipline that produces correct output.
 
-The goal is not to bureaucratize every AI interaction. It is to ensure that consequential prompts are written carefully.
+### Integrating Linting into CI
+
+For teams ready to enforce prompt quality in the shared library:
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: local
+    hooks:
+      - id: lint-prompts
+        name: Lint prompt templates
+        entry: python scripts/lint_prompt.py
+        language: python
+        files: \.claude/prompts/.*\.md$
+        pass_filenames: true
+```
+
+This ensures every prompt added to the shared library passes the structural check before it can be merged.
 
 ---
 
-*Related guides: [AI Code Quality](./ai-code-quality.md) | [Metrics Guide](./metrics-guide.md) | [Enterprise Playbook](./enterprise-playbook.md)*
+*Related guides: [AI Code Quality](./ai-code-quality.md) | [Metrics Guide](./metrics-guide.md) | [Enterprise Playbook](./enterprise-playbook.md) | [Model Routing](./model-routing.md)*
