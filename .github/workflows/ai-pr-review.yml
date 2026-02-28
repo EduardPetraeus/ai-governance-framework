@@ -64,6 +64,36 @@ jobs:
             echo "CLAUDE.md not found — review will use general best practices."
           fi
 
+      - name: Run security scan on diff
+        id: security-scan
+        run: |
+          # Run the security review script on the PR diff.
+          # Exit code 1 means CRITICAL findings — the job fails immediately.
+          git diff origin/${{ github.base_ref }}...HEAD \
+            | python3 scripts/ai_security_review.py > /tmp/security_report.json || SECURITY_EXIT=$?
+
+          if [ "${SECURITY_EXIT:-0}" -ne 0 ]; then
+            echo "security_failed=true" >> $GITHUB_OUTPUT
+            echo ""
+            echo "╔══════════════════════════════════════════════════════════════════╗"
+            echo "║                 SECURITY SCAN: CRITICAL FINDINGS                ║"
+            echo "╠══════════════════════════════════════════════════════════════════╣"
+            echo "║                                                                  ║"
+            echo "║  CRITICAL security findings were detected in this PR diff.      ║"
+            echo "║  Secrets, credentials, or sensitive data may have been added.   ║"
+            echo "║                                                                  ║"
+            echo "║  Review /tmp/security_report.json for details.                  ║"
+            echo "║  Remove all CRITICAL findings before requesting re-review.       ║"
+            echo "╚══════════════════════════════════════════════════════════════════╝"
+            echo ""
+            cat /tmp/security_report.json
+            exit 1
+          fi
+
+          echo "security_failed=false" >> $GITHUB_OUTPUT
+          echo "Security scan passed — no CRITICAL findings."
+          cat /tmp/security_report.json
+
       - name: Send to Claude API for review
         id: ai-review
         env:
