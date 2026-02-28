@@ -3,6 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Made with Claude Code](https://img.shields.io/badge/Made%20with-Claude%20Code-blueviolet)](https://claude.ai/code)
+[![Tests](https://github.com/EduardPetraeus/ai-governance-framework/actions/workflows/tests.yml/badge.svg)](https://github.com/EduardPetraeus/ai-governance-framework/actions/workflows/tests.yml)
 
 > **Your AI agent is 15x faster. But is it building the right thing?**
 
