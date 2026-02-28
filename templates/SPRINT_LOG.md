@@ -1,125 +1,138 @@
 # SPRINT_LOG.md
 
-Sprint-level tracking for AI-assisted development. Each sprint has its own entry with
-committed tasks, completed tasks, velocity metrics, blockers, and a retrospective.
+Sprint-level tracking for AI-assisted development. Each sprint has a goal, committed tasks, velocity metrics, blockers, and a retrospective.
 
-**Why this matters:** Velocity data from past sprints is the only reliable way to estimate
-future sprints. Without it, every sprint is a guess. With it, you can see trends: are
-sessions getting more productive? Are certain task types consistently taking longer than
-estimated?
+**Why this matters:** Velocity data from past sprints is the only reliable way to estimate future sprints. Without it, every commitment is a guess. With it, you can see trends: are sessions getting more productive? Are certain task types consistently underestimated? Is governance overhead increasing or decreasing?
 
-**Update cadence:** At the end of each sprint (typically weekly or at a milestone).
-The /end-session command handles session-level tracking; this file handles sprint-level.
+**Update cadence:** One entry at the end of each sprint (typically weekly or at a milestone). The `on_session_end` protocol handles session-level tracking in CHANGELOG.md; this file handles the sprint-level view.
+
+**Entries are newest-first.**
 
 ---
 
-## Sprint 002 — 2025-03-08 to 2025-03-15
+## Sprint 002 -- 2025-03-08 to 2025-03-15
 
 **Sprint goal:** Build payment integration and notification foundation
-**Sessions this sprint:** 3
+**Sessions planned:** 3
 **Sessions used:** 2
 
-### Committed tasks
+### Committed Tasks
 
-| Task | Estimated | Status | Sessions Used |
-|------|-----------|--------|---------------|
-| Implement Stripe connector | 1 session | ✅ Complete | 1 |
-| Write integration tests for Stripe | 30 min | ✅ Complete | 0.5 (done with connector) |
-| Build notification event system | 1 session | ✅ Complete | 1 |
-| Add webhook signature verification | 30 min | 🔵 Carried over | 0 |
+| Task | Estimated | Actual | Status | Notes |
+|------|-----------|--------|--------|-------|
+| Implement Stripe connector | 1 session | 1 session | Complete | Matched estimate. Base class made this fast. |
+| Write integration tests for Stripe | 30 min | 20 min | Complete | Done in same session as connector |
+| Build notification event system | 1 session | 1.5 sessions | Complete | Schema design took longer than expected |
+| Add webhook signature verification | 30 min | -- | Carried over | Lower priority, no blocker created |
 
-### Committed vs. completed
+### Committed vs. Completed
 
-- Committed: 4 tasks
-- Completed: 3 tasks
-- Carried over: 1 task (webhook verification — lower priority, no blocker)
+- **Committed:** 4 tasks
+- **Completed:** 3 tasks
+- **Carried over:** 1 task (webhook verification -- deprioritized, not blocked)
+- **Completion rate:** 75%
 
-### Velocity metrics
+### Velocity Metrics
 
 | Metric | This Sprint | Sprint 001 | Trend |
 |--------|-------------|------------|-------|
-| Tasks per session | 1.5 | 1.2 | +25% ↑ |
-| Files changed per session | 4.5 | 5.2 | -13% ↓ |
-| Tests added per session | 6 | 0 | (infrastructure sprint vs feature sprint) |
-| Estimated vs. actual (avg) | 90% | 75% | +15% ↑ (estimates improving) |
+| Tasks completed per session | 1.5 | 1.2 | +25% (improving) |
+| Files changed per session | 4.5 | 5.2 | -13% (more focused) |
+| Tests added per session | 6 | 0 | n/a (infrastructure sprint vs. feature sprint) |
+| Estimate accuracy (actual/estimated) | 90% | 75% | +15% (estimates improving) |
+| Governance overhead (min per session) | 18 | 25 | -28% (protocol becoming habitual) |
 
-### Blockers encountered
+### Blocker Log
 
-- ADR-002 (payment provider selection) took 30 minutes to write before Stripe work could
-  start. This delay was not in the sprint estimate. Add "ADR if needed" to task estimates
-  when the decision is not yet made.
+| Blocker | Duration | Resolution | Prevention |
+|---------|----------|------------|------------|
+| ADR-002 (payment provider) not written | 30 min delay | Wrote ADR at session start before coding | Add "ADR needed?" check to task estimation |
 
 ### Retrospective
 
 **What worked:**
-- Writing tests alongside the connector (not after) made the integration test session fast
-- The base connector's `validate_schema()` method caught a Stripe API response change
-  immediately — would have been a silent bug otherwise
-- Model routing: used Sonnet for connector code, brief Opus session for the ADR. Right calls.
+- Writing tests alongside the connector (not in a separate session) made testing fast and caught issues early. The schema validation test caught a Stripe API response field that was not in the documentation.
+- Model routing: Sonnet for connector code, brief Opus session for the ADR. Correct allocation -- ADR trade-off analysis was materially better with Opus.
+- Base connector pattern is paying dividends. Stripe connector took half the expected time because auth, retry, and rate limiting were already handled.
 
-**What didn't work:**
-- Underestimated the notification system scope. What looked like one session became 1.5.
-  The event schema design required more thought than expected.
-- The carried-over webhook verification task created pressure at sprint end. Better to
-  commit fewer tasks and finish them all.
+**What did not work:**
+- Notification system scope was underestimated. Event schema design required more architectural thought than expected. A 10-minute design discussion at session start would have revealed this.
+- Carried-over webhook task created end-of-sprint pressure. Better to commit fewer tasks and complete them all.
 
-**What to try next sprint:**
-- Buffer 20% of sprint capacity for discovered tasks (this sprint had 3 discovered tasks)
-- Write the ADR for message queue technology before starting Sprint 003 notification work
+**Experiment for next sprint:**
+- Buffer 20% of sprint capacity for discovered tasks. This sprint had 2 discovered tasks; zero buffer meant they could not be absorbed without dropping committed work.
+- Write ADRs for open decisions at sprint start, not at task start. Eliminates mid-session delays.
 
 ---
 
-## Sprint 001 — 2025-03-01 to 2025-03-08
+## Sprint 001 -- 2025-03-01 to 2025-03-08
 
-**Sprint goal:** Foundation — project structure, tooling, base infrastructure
-**Sessions this sprint:** 3
+**Sprint goal:** Foundation -- project structure, tooling, base infrastructure
+**Sessions planned:** 3
 **Sessions used:** 2
 
-### Committed tasks
+### Committed Tasks
 
-| Task | Estimated | Status | Sessions Used |
-|------|-----------|--------|---------------|
-| Set up project structure | 30 min | ✅ Complete | 0.5 |
-| Configure Python tooling (ruff, mypy, pytest) | 30 min | ✅ Complete | 0.5 |
-| Implement base connector class | 1 session | ✅ Complete | 1 |
-| Set up local development environment | 30 min | ✅ Complete | 0.5 |
-| Add governance files (CLAUDE.md, PROJECT_PLAN.md) | 30 min | ✅ Complete | 0.5 |
-| Implement authentication framework | 1 session | ⬜ Carried over | 0 |
+| Task | Estimated | Actual | Status | Notes |
+|------|-----------|--------|--------|-------|
+| Set up project structure | 30 min | 30 min | Complete | Clean match |
+| Configure Python tooling (ruff, mypy, pytest) | 30 min | 45 min | Complete | mypy strict mode required extra config |
+| Implement base connector class | 1 session | 1 session | Complete | Solid foundation, retry logic well-tested |
+| Set up local development environment | 30 min | 1 hour | Complete | Docker volume mount permissions on macOS |
+| Add governance files (CLAUDE.md, PROJECT_PLAN.md) | 30 min | 30 min | Complete | Templates made this fast |
+| Implement authentication framework | 1 session | -- | Carried over | Deprioritized for base connector work |
 
-### Committed vs. completed
+### Committed vs. Completed
 
-- Committed: 6 tasks
-- Completed: 5 tasks
-- Carried over: 1 task (auth framework — deprioritized in favor of getting connector base ready)
+- **Committed:** 6 tasks
+- **Completed:** 5 tasks
+- **Carried over:** 1 task (auth framework -- deprioritized, not blocked)
+- **Completion rate:** 83%
 
-### Velocity metrics
+### Velocity Metrics
 
 | Metric | This Sprint | Baseline | Notes |
 |--------|-------------|----------|-------|
-| Tasks per session | 1.2 | n/a | First sprint, calibrating |
-| Files per session | 5.2 | n/a | Infrastructure-heavy |
-| Tests added per session | 0 | n/a | No features yet to test |
-| Estimate accuracy | 75% | n/a | Infrastructure always surprises |
+| Tasks completed per session | 1.2 | n/a | First sprint, establishing baseline |
+| Files changed per session | 5.2 | n/a | Infrastructure-heavy, expected to be high |
+| Tests added per session | 0 | n/a | Infrastructure sprint -- no features to test yet |
+| Estimate accuracy | 75% | n/a | Infrastructure tasks consistently underestimated |
 
-### Blockers encountered
+### Blocker Log
 
-- Docker Compose setup took 2x the estimated time due to volume mount permission issues
-  on macOS. Add OS-specific notes to setup documentation.
+| Blocker | Duration | Resolution | Prevention |
+|---------|----------|------------|------------|
+| Docker volume mount permissions on macOS | 45 min | Added `:delegated` flag and documented | Add OS-specific notes to setup docs |
 
 ### Retrospective
 
 **What worked:**
-- Starting with governance files before any code was the right call. Session 002 benefited
-  immediately from having CLAUDE.md and PROJECT_PLAN.md in place.
-- The base connector pattern is solid. Stripe connector in Sprint 002 took half the expected
-  time because the base class handled so much.
+- Starting with governance files before any code was the right call. Session 002 benefited immediately from CLAUDE.md and PROJECT_PLAN.md being in place. The agent arrived with context and produced consistent output.
+- The base connector pattern is solid. Sprint 002's Stripe connector took half the expected time because the base class handled auth, retry, and rate limiting.
 
-**What didn't work:**
-- Auth framework was carried over. It was estimated at 1 session but wasn't started because
-  infrastructure took priority. Should have been lower in the committed list.
+**What did not work:**
+- Auth framework was carried over. It was estimated at 1 session but was never started because infrastructure took priority. Should have been lower in the committed list (priority order, not dependency order).
+- Infrastructure setup estimates were too optimistic. Docker permissions, mypy configuration, and pyproject.toml setup all took longer than estimated. Add 50% buffer for infrastructure tasks.
 
-**What to try next sprint:**
-- Put most important tasks first in committed list (priority order, not dependency order)
-- Establish the estimate-calibration habit: when a task is done, record actual time in the table
+**Experiment for next sprint:**
+- Order committed tasks by priority, not dependency. The most important task should be done first, even if it has dependencies that are "supposed" to come first.
+- Record actual time alongside estimates in the task table. Build calibration data for future estimation.
+
+---
+
+## Velocity Trend
+
+<!-- This table summarizes velocity across all sprints for quick reference.
+     Update it when adding a new sprint entry. -->
+
+| Sprint | Tasks Committed | Tasks Completed | Completion Rate | Tasks/Session | Estimate Accuracy |
+|--------|----------------|-----------------|-----------------|---------------|-------------------|
+| 001 | 6 | 5 | 83% | 1.2 | 75% |
+| 002 | 4 | 3 | 75% | 1.5 | 90% |
+
+**Trend notes:**
+- Tasks per session improving (+25% sprint over sprint)
+- Estimate accuracy improving (+15% sprint over sprint)
+- Commit fewer tasks: 4 is closer to actual capacity than 6
 
 <!-- Add new sprints above this line -->
