@@ -2,6 +2,10 @@
 
 Four automated enforcement layers that catch governance violations, security issues, and convention problems before they reach production. Each layer catches different things at different stages of the development workflow.
 
+> **Two locations, one purpose.** The `ci-cd/` directory contains the reusable workflow templates — copy these into your own project. The `.github/workflows/` directory at the root of this repository contains the live copies that actually run on this repo. If you modify a workflow, update both.
+
+
+
 ## The four workflows
 
 | Workflow | File | Trigger | What it blocks | What it catches that humans miss |

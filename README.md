@@ -146,20 +146,11 @@ See [docs/self-updating-framework.md](docs/self-updating-framework.md) and [docs
 
 ## Real Results
 
-The framework was extracted from a real implementation — not designed in theory and tested later.
+The framework was built and battle-tested on a real health data platform project — not designed in theory and tested later.
 
-| Metric | Value |
-|--------|-------|
-| Total commits | 137 |
-| Measured velocity increase | 16x |
-| Specialized agents deployed | 12 |
-| Slash commands implemented | 11 |
-| Architecture Decision Records | 4 |
-| Governance maturity progression | Level 0 → Level 3 in 2 weeks |
-| Session protocol compliance | 100% (enforced by CLAUDE.md) |
-| Secrets committed to git | 0 |
+It was used from the first line of code. Every pattern, agent definition, and command in this repository was either extracted from that implementation or created to address a gap discovered during it. The session protocol eliminated context loss between sessions. ADRs stopped re-litigation of closed decisions. CI enforcement made CHANGELOG compliance automatic rather than optional. The case study in [docs/case-studies/health-reporting.md](docs/case-studies/health-reporting.md) documents the full progression, including what did not work and why.
 
-16x velocity is the byproduct, not the goal. The goal is a team that knows what it is building and has automated the discipline to build it correctly. Speed follows from alignment.
+Governance does not slow development down. It redirects a small fraction of velocity into structure so the remainder builds the right thing consistently.
 
 ## Who Is This For
 

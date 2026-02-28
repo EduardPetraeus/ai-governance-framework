@@ -1,6 +1,6 @@
 # Case Study: HealthReporting -- Level 0 to Level 3 in 2 Weeks
 
-> Real numbers, honest assessment, no hand-waving. This is what governance looks like in practice.
+> This case study documents how the framework was applied to a real personal health data platform. No actual health data, measurements, or personal values appear anywhere in this document — only architecture descriptions, governance methodology, and process metrics. It is included to demonstrate the framework in a real production context.
 
 ---
 

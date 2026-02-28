@@ -370,9 +370,9 @@ org-governance-repo/
 │   ├── output-contracts.md
 │   └── [other patterns]
 └── automation/
-    ├── framework-updater.py
-    ├── best-practice-scanner.py
-    └── health-score-calculator.py
+    ├── framework_updater.py
+    ├── best_practice_scanner.py
+    └── health_score_calculator.py
 ```
 
 ### What You Can Measure

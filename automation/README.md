@@ -4,16 +4,16 @@ This directory contains three scripts that automate recurring governance tasks f
 
 | Script | Purpose |
 |--------|---------|
-| `framework-updater.py` | Checks for new framework releases and shows available updates |
-| `best-practice-scanner.py` | Scans configured sources for new AI governance insights |
-| `health-score-calculator.py` | Calculates a governance health score (0-100) for a repository |
+| `framework_updater.py` | Checks for new framework releases and shows available updates |
+| `best_practice_scanner.py` | Scans configured sources for new AI governance insights |
+| `health_score_calculator.py` | Calculates a governance health score (0-100) for a repository |
 
 These scripts support the [self-updating framework architecture](../docs/self-updating-framework.md) by gathering data that feeds into Layer 7 (Evolution). They surface information for human review — none of them automatically modify `CLAUDE.md`, security rules, or any governance configuration.
 
 ## Prerequisites
 
 - Python 3.10+
-- `requests` library (required by `framework-updater.py` and `best-practice-scanner.py`)
+- `requests` library (required by `framework_updater.py` and `best_practice_scanner.py`)
 
 ```bash
 pip install requests
@@ -23,13 +23,13 @@ pip install requests
 
 ```bash
 # Check for framework updates
-python automation/framework-updater.py --repo-path .
+python automation/framework_updater.py --repo-path .
 
 # Scan for new AI governance insights from the last 14 days
-python automation/best-practice-scanner.py --days 14
+python automation/best_practice_scanner.py --days 14
 
 # Calculate governance health score for the current repo
-python automation/health-score-calculator.py .
+python automation/health_score_calculator.py .
 ```
 
 ## CI/CD Integration
@@ -53,9 +53,9 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install requests
-      - run: python automation/health-score-calculator.py . --threshold 40
-      - run: python automation/framework-updater.py --check-only
-      - run: python automation/best-practice-scanner.py --days 7 --output-file governance-insights.json
+      - run: python automation/health_score_calculator.py . --threshold 40
+      - run: python automation/framework_updater.py --check-only
+      - run: python automation/best_practice_scanner.py --days 7 --output-file governance-insights.json
       - uses: actions/upload-artifact@v4
         with:
           name: governance-insights
