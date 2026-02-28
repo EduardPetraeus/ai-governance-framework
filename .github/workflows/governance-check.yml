@@ -81,6 +81,38 @@ jobs:
 
           echo "CHANGELOG.md updated — governance check passed."
 
+  inheritance-validation:
+    name: Validate CLAUDE.md constitutional inheritance
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check if CLAUDE.md has inherits_from
+        id: has-inheritance
+        run: |
+          if grep -q "inherits_from" CLAUDE.md 2>/dev/null; then
+            echo "has_inheritance=true" >> $GITHUB_OUTPUT
+            echo "CLAUDE.md defines inherits_from — running inheritance validator."
+          else
+            echo "has_inheritance=false" >> $GITHUB_OUTPUT
+            echo "No inherits_from section in CLAUDE.md — inheritance validation skipped."
+          fi
+
+      - name: Validate constitutional inheritance
+        if: steps.has-inheritance.outputs.has_inheritance == 'true'
+        run: |
+          python3 automation/inherits_from_validator.py CLAUDE.md --threshold strict
+          echo "Constitutional inheritance validation passed."
+
   claude-md-change-requires-review:
     name: CLAUDE.md changes require a second reviewer
     runs-on: ubuntu-latest
