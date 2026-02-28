@@ -1,97 +1,115 @@
 # Contributing to AI Governance Framework
 
-Thank you for your interest in contributing. This framework exists to solve real problems in AI-assisted software development. Contributions that improve its practical usefulness are welcome.
-
----
+Contributions that improve the practical usefulness of this framework are welcome. Every file in this repository is meant to be used in production by real engineering teams. Contributions are held to that standard.
 
 ## Code of Conduct
 
-This project follows the [Contributor Covenant](https://www.contributor-covenant.org/version/2/1/code_of_conduct/) Code of Conduct. Be direct, be constructive, and assume good intent.
-
----
+This project follows the [Contributor Covenant v2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct/). Be direct, be constructive, assume good intent.
 
 ## Development Setup
 
-No build tools required. The framework consists of Markdown files, YAML workflows, and Python scripts.
-
-**Requirements:**
-- Git
-- A text editor
-- Python 3.10+ (for scripts only — no installation needed to contribute templates or docs)
+No build tools required. The framework is Markdown files, YAML workflows, and Python scripts.
 
 ```bash
-git clone https://github.com/your-org/ai-governance-framework.git
+git clone https://github.com/clauseduardpetraeus/ai-governance-framework.git
 cd ai-governance-framework
 ```
 
-That is it.
+**Requirements:** Git, a text editor, and Python 3.10+ (for scripts only — not needed for template or docs contributions).
 
----
+## Reporting Issues
 
-## How to Report Issues
+### Bugs
 
-**Bug reports** — use the GitHub issue tracker. Include:
-- Which file or template is affected
-- What the file currently says
-- What it should say (or what behavior is broken)
-- The context in which you encountered the problem (solo dev, small team, enterprise)
+Open a GitHub issue with:
 
-**Feature requests** — open an issue with the label `enhancement`. Describe:
+- **Which file or template** is affected
+- **What it currently says** (or does)
+- **What it should say** (or do)
+- **Context:** solo dev, small team, or enterprise — the correct fix may differ by scale
+
+### Feature Requests
+
+Open an issue with the `enhancement` label. Include:
+
 - The problem you are trying to solve
-- Which layer of the framework it belongs to (Layer 1–7)
-- Whether you have a concrete implementation idea or just the problem statement
+- Which layer of the framework it belongs to (Layer 1-7)
+- Whether you have a concrete implementation or just the problem statement
 
-**Questions** — use GitHub Discussions, not issues.
+### Documentation Gaps
 
----
+Open an issue with the `docs` label. If a cross-reference is broken, a code example does not work, or a concept is explained ambiguously — that is a bug, not a nice-to-have.
 
-## How to Suggest Improvements to Templates, Agents, or Commands
+### Questions
 
-Open an issue before submitting a PR for significant changes. This avoids wasted effort when a suggestion conflicts with the framework's design principles.
-
-For small improvements (fixing wording, correcting cross-references, improving examples), a PR without a prior issue is fine.
-
----
+Use GitHub Discussions, not issues.
 
 ## Pull Request Process
+
+### Before You Start
+
+Open an issue before submitting a PR for significant changes (new agents, new layers, structural reorganizations). This avoids wasted effort when a suggestion conflicts with the framework's design principles.
+
+Small improvements — fixing wording, correcting cross-references, improving examples — can go straight to a PR.
 
 ### Branch Naming
 
 ```
 feature/short-description     # New capability
 fix/short-description         # Correction to existing content
-docs/short-description        # Documentation only
+docs/short-description        # Documentation improvement
 agent/agent-name              # New agent definition
-command/command-name          # New slash command
-example/example-name          # New worked example
+command/command-name           # New slash command
+example/example-name           # New worked example
 ```
 
 ### PR Title Format
 
 ```
-[Layer N] Short description of what this changes
+[Layer N] Short description of the change
 ```
 
 Examples:
-- `[Layer 1] Add CLAUDE.md template for data engineering projects`
-- `[Layer 3] Add GitLab CI equivalent of AI PR review workflow`
-- `[Layer 5] Add ADR template for API design decisions`
 
-### What Reviewers Check
+```
+[Layer 1] Add CLAUDE.md template for data engineering projects
+[Layer 3] Add GitLab CI equivalent for AI PR review
+[Layer 5] Add ADR template for API versioning decisions
+[Docs] Fix broken cross-references in session-protocol.md
+```
+
+### PR Description
+
+Every PR description must include:
+
+1. **What this changes** — one paragraph, concrete
+2. **Why** — what problem does this solve, or what improvement does it make
+3. **Which layer** — Layer 1-7, or cross-cutting
+4. **How to verify** — what should a reviewer check to confirm the change is correct
+
+### Review Checklist
 
 Every PR is evaluated against these criteria:
 
-1. **No placeholders** — every field in a template must contain real, usable content. `[YOUR VALUE HERE]` is not acceptable. Write a realistic default or a concrete example.
-2. **Cross-references work** — if a file references another file, that file must exist and the relative path must be correct.
-3. **Layer alignment** — the contribution belongs to the layer it claims to address. A session protocol belongs in Layer 2, not Layer 3.
-4. **Quality bar** — the content is at the level a senior engineer would accept in a production project.
-5. **No secrets** — no real API keys, tokens, personal data, or credentials from any real project.
+| Criterion | Requirement |
+|-----------|-------------|
+| **No placeholders** | Every field contains real, usable content. `[YOUR VALUE HERE]` is never acceptable. Write a realistic default or a concrete example. |
+| **Cross-references resolve** | Every relative link points to a file that exists. Run a check before submitting. |
+| **Layer alignment** | The contribution belongs to the layer it claims. A session protocol change is Layer 2, not Layer 3. |
+| **Quality bar** | A senior engineer would accept this in a production project without edits. |
+| **No secrets** | No real API keys, tokens, passwords, PII, or credentials from any real project. |
+| **Code examples run** | Every code block is syntactically correct and copy-paste ready. |
 
----
+### Merge Criteria
 
-## How to Add a New Agent
+- At least one maintainer approval
+- All CI checks pass
+- No unresolved review comments
+- PR description is complete (not just a title)
 
-Agents live in `agents/`. Follow the existing structure:
+## Adding a New Agent
+
+Agents live in `agents/`. Follow the existing structure exactly:
 
 ```markdown
 # [Agent Name] Agent
@@ -100,79 +118,88 @@ Agents live in `agents/`. Follow the existing structure:
 One sentence: what this agent does and why it exists.
 
 ## Trigger
-When is this agent invoked? (manual slash command / CI/CD event / session protocol step)
+When is this agent invoked? (manual slash command / CI event / session protocol step)
 
 ## Input
-- What files or context does this agent read?
+What files or context does this agent read?
+- File 1 and what it extracts from it
+- File 2 and what it extracts from it
 
 ## Mandate
-- What can this agent do?
-- What can this agent NOT do? (write access restrictions, scope limits)
+What this agent CAN do:
+- Specific action 1
+- Specific action 2
 
-## Output format
-Describe the structured output: PASS/WARN/FAIL verdicts, comment format, log entries.
+What this agent CANNOT do:
+- Write access restriction
+- Scope boundary
+
+## Output Format
+Structured output specification: PASS/WARN/FAIL verdicts, comment format, log entries.
 
 ## Integration
-How does this agent connect to the rest of the framework? (which layer, which CI step, which slash command)
+Which layer, which CI step, which slash command invokes this agent.
 
-## Example prompt
-A real, copy-pasteable prompt that invokes this agent with correct context.
+## Example Prompt
+A real, copy-pasteable prompt that invokes this agent correctly.
 ```
 
-All agent definitions must specify write access constraints explicitly. An agent that has no write access to production branches must say so.
+**Requirements for agent definitions:**
 
----
+- Write access constraints must be stated explicitly. An agent with no write access to production branches says so.
+- The mandate section must include both CAN and CANNOT lists. Omitting CANNOT is not acceptable.
+- The example prompt must work without modification in a Claude Code session.
 
-## How to Add a New Slash Command
+## Adding a New Slash Command
 
-Commands live in `commands/`. Each command is a Markdown file that defines what the agent does when the command is invoked.
+Commands live in `commands/`. Each command is a self-contained Markdown file:
 
 ```markdown
 # /command-name
 
 ## Purpose
-What does this command do?
+What this command does in one sentence.
 
-## When to use
-Specific trigger conditions or workflow steps.
+## When to Use
+Specific trigger conditions or workflow steps where this command applies.
 
-## What the agent reads
-List of files the agent should load before executing.
+## What the Agent Reads
+- File 1: what it extracts
+- File 2: what it extracts
 
-## What the agent produces
-Exact output format — headers, structure, what each section contains.
+## What the Agent Produces
+Exact output format with headers, structure, and content specification.
 
-## Example output
-A real example of what a correct response looks like.
+## Example Output
+A complete, realistic example of correct output from this command.
 ```
 
-Commands must be self-contained: a developer should be able to copy the command definition into their `.claude/commands/` directory and have it work without additional setup.
+**Requirements:** A developer must be able to copy the command file into `.claude/commands/` and have it work without additional setup or external dependencies.
 
----
-
-## How to Add Templates or Examples
+## Adding Templates or Examples
 
 **Templates** (`templates/`) are generic starting points. They must:
+
 - Contain real default content, not empty sections
 - Include inline comments explaining what to customize and why
 - Work without modification for a reasonable default case
+- Follow the naming convention: `filename.md.template`
 
 **Examples** (`examples/`) are complete worked implementations. They must:
-- Be drawn from or consistent with real usage patterns
-- Use anonymized or synthetic data — no real personal data, credentials, or proprietary business logic
-- Include a brief `README` explaining what the example demonstrates and how to adapt it
 
----
+- Be drawn from or structurally consistent with real usage patterns
+- Use anonymized or synthetic data — no real PII, credentials, or proprietary logic
+- Include a brief README explaining what the example demonstrates and how to adapt it
 
-## Quality Standards Summary
+## Quality Standards
 
 | Standard | Requirement |
 |----------|-------------|
-| Placeholders | None. Write real content. |
-| Cross-references | All relative links must resolve to existing files. |
-| Secrets | Never. No API keys, tokens, passwords, PII. |
-| Code examples | Must be syntactically correct and runnable. |
+| Placeholders | None. Write real content or do not create the section. |
+| Cross-references | All relative links resolve to existing files. |
+| Secrets | Never. No API keys, tokens, passwords, PII, connection strings. |
+| Code examples | Syntactically correct and runnable. |
 | Tone | Professional and direct. No marketing language inside templates. |
-| Length | As long as needed, no longer. Remove padding. |
+| Length | As long as needed, no longer. If a sentence does not earn its place, remove it. |
 
-If you are unsure whether your contribution meets the quality bar, open a draft PR and ask.
+If you are unsure whether your contribution meets the quality bar, open a draft PR and ask for early feedback.
