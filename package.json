@@ -1,0 +1,48 @@
+{
+  "name": "ai-governance-framework",
+  "version": "1.1.0",
+  "description": "A 7-layer governance framework for AI agents in software development. One-command setup for CLAUDE.md, session protocols, ADRs, CI/CD enforcement, and self-updating best practices.",
+  "keywords": [
+    "ai-governance",
+    "claude-code",
+    "llm",
+    "agents",
+    "governance",
+    "developer-tools",
+    "claude",
+    "anthropic",
+    "session-protocol",
+    "adr"
+  ],
+  "homepage": "https://github.com/EduardPetraeus/ai-governance-framework#readme",
+  "bugs": {
+    "url": "https://github.com/EduardPetraeus/ai-governance-framework/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EduardPetraeus/ai-governance-framework.git"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Eduard Petraeus"
+  },
+  "bin": {
+    "ai-governance-init": "bin/ai-governance-init"
+  },
+  "files": [
+    "bin/",
+    "templates/",
+    "commands/",
+    "agents/",
+    "ci-cd/",
+    "scripts/",
+    "docs/",
+    "patterns/",
+    "examples/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

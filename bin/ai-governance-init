@@ -1,0 +1,502 @@
+#!/usr/bin/env node
+'use strict';
+
+/**
+ * ai-governance-init
+ * Interactive setup wizard for the AI Governance Framework.
+ * Zero external dependencies — Node.js stdlib only.
+ *
+ * Usage:
+ *   npx ai-governance-init
+ *   node bin/ai-governance-init
+ */
+
+const readline = require('readline');
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+// ──────────────────────────────────────────────────────────────────────────────
+// ANSI colour helpers
+// ──────────────────────────────────────────────────────────────────────────────
+
+const c = {
+  reset: '\x1b[0m',
+  bold:  '\x1b[1m',
+  dim:   '\x1b[2m',
+  green: '\x1b[32m',
+  cyan:  '\x1b[36m',
+  yellow:'\x1b[33m',
+  red:   '\x1b[31m',
+  blue:  '\x1b[34m',
+  magenta:'\x1b[35m',
+};
+
+const ok    = (s) => console.log(`${c.green}✓${c.reset} ${s}`);
+const info  = (s) => console.log(`${c.cyan}→${c.reset} ${s}`);
+const warn  = (s) => console.log(`${c.yellow}⚠${c.reset} ${s}`);
+const err   = (s) => console.error(`${c.red}✗${c.reset} ${s}`);
+const head  = (s) => console.log(`\n${c.bold}${c.blue}${s}${c.reset}`);
+const sub   = (s) => console.log(`${c.dim}  ${s}${c.reset}`);
+const blank = ()  => console.log('');
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Framework source resolution
+// ──────────────────────────────────────────────────────────────────────────────
+
+// When run via npx the script lives inside the package; when cloned it lives
+// at bin/ai-governance-init.  Either way, the repo root is one level up.
+const FRAMEWORK_ROOT = path.resolve(__dirname, '..');
+
+function frameworkFile(...parts) {
+  return path.join(FRAMEWORK_ROOT, ...parts);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// readline helpers
+// ──────────────────────────────────────────────────────────────────────────────
+
+function createRL() {
+  return readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+}
+
+function ask(rl, question) {
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => resolve(answer.trim()));
+  });
+}
+
+async function prompt(rl, question, defaultVal) {
+  const hint = defaultVal ? ` ${c.dim}[${defaultVal}]${c.reset}` : '';
+  const answer = await ask(rl, `${c.cyan}?${c.reset} ${question}${hint}: `);
+  return answer || defaultVal || '';
+}
+
+async function choose(rl, question, options) {
+  console.log(`${c.cyan}?${c.reset} ${question}`);
+  options.forEach((opt, i) => {
+    console.log(`  ${c.bold}${i + 1}.${c.reset} ${opt.label}${c.dim} — ${opt.desc}${c.reset}`);
+  });
+  const raw = await ask(rl, `  Enter number ${c.dim}[1]${c.reset}: `);
+  const idx = parseInt(raw, 10) - 1;
+  return options[Math.max(0, Math.min(options.length - 1, isNaN(idx) ? 0 : idx))];
+}
+
+async function confirm(rl, question, defaultYes = true) {
+  const hint = defaultYes ? 'Y/n' : 'y/N';
+  const answer = await ask(rl, `${c.cyan}?${c.reset} ${question} ${c.dim}[${hint}]${c.reset}: `);
+  if (answer === '') return defaultYes;
+  return /^y(es)?$/i.test(answer);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// File operations
+// ──────────────────────────────────────────────────────────────────────────────
+
+function ensureDir(dir) {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
+
+function copyFile(src, dest, overwrite = false) {
+  if (fs.existsSync(dest) && !overwrite) {
+    warn(`Skipped (exists): ${path.relative(process.cwd(), dest)}`);
+    return false;
+  }
+  ensureDir(path.dirname(dest));
+  fs.copyFileSync(src, dest);
+  ok(`Copied: ${path.relative(process.cwd(), dest)}`);
+  return true;
+}
+
+function writeFile(dest, content) {
+  ensureDir(path.dirname(dest));
+  fs.writeFileSync(dest, content, 'utf8');
+  ok(`Created: ${path.relative(process.cwd(), dest)}`);
+}
+
+function injectProjectContext(filePath, answers) {
+  let content = fs.readFileSync(filePath, 'utf8');
+
+  const replacements = {
+    '"[Your Project Name]"':    `"${answers.projectName}"`,
+    '"[What this project does — one sentence]"': `"${answers.description}"`,
+    '"[Primary languages, frameworks, databases, deployment target]"': `"${answers.stack}"`,
+    '"[Team name or individual]"': `"${answers.owner}"`,
+    '"[https://github.com/org/repo]"': `"${answers.repository}"`,
+    '"[Phase 1: Foundation | Phase 2: Core Features | Phase 3: Production]"':
+      '"Phase 1: Foundation"',
+  };
+
+  for (const [placeholder, value] of Object.entries(replacements)) {
+    content = content.split(placeholder).join(value);
+  }
+
+  fs.writeFileSync(filePath, content, 'utf8');
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Validation helpers
+// ──────────────────────────────────────────────────────────────────────────────
+
+function isGitRepo(dir) {
+  try {
+    execSync('git rev-parse --git-dir', { cwd: dir, stdio: 'pipe' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function hasFile(filename) {
+  return fs.existsSync(path.join(process.cwd(), filename));
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Banner
+// ──────────────────────────────────────────────────────────────────────────────
+
+function printBanner() {
+  console.log(`
+${c.bold}${c.blue}╔══════════════════════════════════════════════════════╗
+║         AI Governance Framework — Setup Wizard        ║
+║            npx ai-governance-init  v1.1.0             ║
+╚══════════════════════════════════════════════════════╝${c.reset}
+`);
+  console.log(`${c.dim}This wizard scaffolds governance files into your project.${c.reset}`);
+  console.log(`${c.dim}It reads from the framework and writes to your current directory.${c.reset}`);
+  blank();
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Pre-flight checks
+// ──────────────────────────────────────────────────────────────────────────────
+
+function preflight(targetDir) {
+  head('Pre-flight checks');
+
+  if (!isGitRepo(targetDir)) {
+    err('No git repository found in the current directory.');
+    err('Run "git init && git commit --allow-empty -m init" first, then re-run.');
+    process.exit(1);
+  }
+  ok('Git repository detected');
+
+  if (hasFile('CLAUDE.md')) {
+    warn('CLAUDE.md already exists — existing file will be kept (run with --overwrite to replace)');
+  }
+
+  const nodeVersion = process.versions.node.split('.').map(Number);
+  if (nodeVersion[0] < 14) {
+    err(`Node.js 14+ required (found ${process.version})`);
+    process.exit(1);
+  }
+  ok(`Node.js ${process.version}`);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Interactive Q&A
+// ──────────────────────────────────────────────────────────────────────────────
+
+async function gatherAnswers(rl, targetDir) {
+  head('Project information');
+  sub('These values are injected into CLAUDE.md and PROJECT_PLAN.md.');
+  blank();
+
+  const folderName = path.basename(targetDir);
+
+  const projectName = await prompt(rl, 'Project name', folderName);
+  const description = await prompt(rl, 'One-line description', 'A software project governed by the AI Governance Framework');
+  const stack       = await prompt(rl, 'Primary stack (languages/frameworks)', 'Python');
+  const owner       = await prompt(rl, 'Owner (team or individual)', 'engineering');
+  const repository  = await prompt(rl, 'Repository URL', `https://github.com/your-org/${projectName}`);
+
+  head('Team size');
+  const teamChoice = await choose(rl, 'Who will use this framework?', [
+    { label: 'Solo developer', desc: 'minimal setup, no team workflows',    key: 'solo' },
+    { label: 'Small team (2–20)', desc: 'team roles, shared governance',    key: 'small-team' },
+    { label: 'Enterprise (20+)', desc: 'full compliance, org inheritance',  key: 'enterprise' },
+  ]);
+
+  head('Tech stack extras');
+  const wantCI = await confirm(rl, 'Add GitHub Actions workflows?');
+  const wantGitLab = (teamChoice.key !== 'solo')
+    ? await confirm(rl, 'Also add GitLab CI equivalents?', false)
+    : false;
+  const wantPreCommit = await confirm(rl, 'Add .pre-commit-config.yaml?');
+  const wantADR       = await confirm(rl, 'Create docs/adr/ directory with ADR template?');
+  const wantCommands  = await confirm(rl, 'Copy slash commands to .claude/commands/?');
+
+  head('Optional files');
+  const wantArch = await confirm(rl, 'Create ARCHITECTURE.md?', teamChoice.key !== 'solo');
+  const wantMem  = await confirm(rl, 'Create MEMORY.md (cross-session agent memory)?', true);
+
+  return {
+    projectName,
+    description,
+    stack,
+    owner,
+    repository,
+    teamSize: teamChoice.key,
+    wantCI,
+    wantGitLab,
+    wantPreCommit,
+    wantADR,
+    wantCommands,
+    wantArch,
+    wantMem,
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Scaffold steps
+// ──────────────────────────────────────────────────────────────────────────────
+
+function scaffoldLevel1(answers, targetDir, overwrite) {
+  head('Scaffolding Level 1 — Constitution');
+
+  const level1 = ['CLAUDE.md', 'PROJECT_PLAN.md', 'CHANGELOG.md'];
+  for (const file of level1) {
+    const src  = frameworkFile('templates', file);
+    const dest = path.join(targetDir, file);
+    if (fs.existsSync(src)) {
+      copyFile(src, dest, overwrite);
+    } else {
+      warn(`Template not found: templates/${file}`);
+    }
+  }
+
+  // Inject project context into CLAUDE.md
+  const claudeMd = path.join(targetDir, 'CLAUDE.md');
+  if (fs.existsSync(claudeMd)) {
+    injectProjectContext(claudeMd, answers);
+    ok('Injected project context into CLAUDE.md');
+  }
+}
+
+function scaffoldOptionalFiles(answers, targetDir, overwrite) {
+  if (answers.wantArch) {
+    head('Scaffolding ARCHITECTURE.md');
+    const src  = frameworkFile('templates', 'ARCHITECTURE.md');
+    const dest = path.join(targetDir, 'ARCHITECTURE.md');
+    if (fs.existsSync(src)) copyFile(src, dest, overwrite);
+  }
+
+  if (answers.wantMem) {
+    head('Scaffolding MEMORY.md');
+    const src  = frameworkFile('templates', 'MEMORY.md');
+    const dest = path.join(targetDir, 'MEMORY.md');
+    if (fs.existsSync(src)) copyFile(src, dest, overwrite);
+  }
+}
+
+function scaffoldCI(answers, targetDir) {
+  if (!answers.wantCI) return;
+  head('Scaffolding GitHub Actions workflows');
+
+  const workflowSrc = frameworkFile('ci-cd');
+  const workflowDest = path.join(targetDir, '.github', 'workflows');
+
+  if (!fs.existsSync(workflowSrc)) {
+    warn('ci-cd/ directory not found in framework — skipping workflows');
+    return;
+  }
+
+  ensureDir(workflowDest);
+  const files = fs.readdirSync(workflowSrc).filter((f) => f.endsWith('.yml') || f.endsWith('.yaml'));
+  for (const file of files) {
+    const src  = path.join(workflowSrc, file);
+    const dest = path.join(workflowDest, file);
+    copyFile(src, dest, false);
+  }
+}
+
+function scaffoldPreCommit(answers, targetDir) {
+  if (!answers.wantPreCommit) return;
+  head('Scaffolding .pre-commit-config.yaml');
+
+  const content = `# .pre-commit-config.yaml
+# Pre-commit hooks for AI-governed development.
+# Install: pip install pre-commit && pre-commit install
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: detect-private-key
+      - id: check-merge-conflict
+
+  - repo: local
+    hooks:
+      - id: governance-guard
+        name: Governance guard
+        entry: scripts/hooks/pre-commit-guard.sh
+        language: script
+        always_run: true
+        pass_filenames: false
+`;
+
+  writeFile(path.join(targetDir, '.pre-commit-config.yaml'), content);
+}
+
+function scaffoldADR(answers, targetDir) {
+  if (!answers.wantADR) return;
+  head('Scaffolding docs/adr/');
+
+  const adrSrc  = frameworkFile('docs', 'adr');
+  const adrDest = path.join(targetDir, 'docs', 'adr');
+  ensureDir(adrDest);
+
+  if (fs.existsSync(adrSrc)) {
+    const files = fs.readdirSync(adrSrc);
+    for (const file of files) {
+      const src  = path.join(adrSrc, file);
+      const dest = path.join(adrDest, file);
+      copyFile(src, dest, false);
+    }
+  } else {
+    warn('docs/adr/ not found in framework — creating blank ADR template');
+    writeFile(path.join(adrDest, 'ADR-000-template.md'), adrTemplate());
+  }
+}
+
+function adrTemplate() {
+  return `# ADR-000: [Decision Title]
+
+**Date:** ${new Date().toISOString().slice(0, 10)}
+**Status:** Proposed | Accepted | Deprecated | Superseded by ADR-NNN
+
+## Context
+
+[What situation forced this decision? What constraints apply?]
+
+## Decision
+
+[What was decided?]
+
+## Consequences
+
+[What becomes easier or harder as a result?]
+
+## Alternatives considered
+
+[What else was evaluated and why was it not chosen?]
+`;
+}
+
+function scaffoldCommands(answers, targetDir) {
+  if (!answers.wantCommands) return;
+  head('Deploying slash commands');
+
+  const deployScript = frameworkFile('scripts', 'deploy_commands.sh');
+  if (fs.existsSync(deployScript)) {
+    try {
+      execSync(`bash "${deployScript}" "${targetDir}"`, { stdio: 'inherit' });
+    } catch {
+      warn('deploy_commands.sh failed — copying commands manually');
+      copyCommandsManually(targetDir);
+    }
+  } else {
+    copyCommandsManually(targetDir);
+  }
+}
+
+function copyCommandsManually(targetDir) {
+  const srcDir  = frameworkFile('commands');
+  const destDir = path.join(targetDir, '.claude', 'commands');
+
+  if (!fs.existsSync(srcDir)) {
+    warn('commands/ directory not found in framework — skipping');
+    return;
+  }
+
+  ensureDir(destDir);
+  const files = fs.readdirSync(srcDir).filter((f) => f.endsWith('.md'));
+  for (const file of files) {
+    if (file === 'README.md') continue;
+    const src  = path.join(srcDir, file);
+    const dest = path.join(destDir, file);
+    copyFile(src, dest, false);
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Next steps summary
+// ──────────────────────────────────────────────────────────────────────────────
+
+function printNextSteps(answers) {
+  blank();
+  console.log(`${c.bold}${c.green}╔══════════════════════════════════════════════════════╗
+║               Setup complete!                         ║
+╚══════════════════════════════════════════════════════╝${c.reset}`);
+  blank();
+
+  head('Next steps');
+
+  let step = 1;
+
+  console.log(`  ${c.bold}${step++}.${c.reset} Open CLAUDE.md and verify your project context looks correct.`);
+  console.log(`  ${c.bold}${step++}.${c.reset} Commit the governance files:`);
+  console.log(`     ${c.dim}git add CLAUDE.md PROJECT_PLAN.md CHANGELOG.md${c.reset}`);
+  console.log(`     ${c.dim}git commit -m "chore: add AI governance framework (Level 1)"${c.reset}`);
+
+  if (answers.wantCommands) {
+    console.log(`  ${c.bold}${step++}.${c.reset} Open Claude Code and run ${c.cyan}/plan-session${c.reset} to start your first governed session.`);
+  } else {
+    console.log(`  ${c.bold}${step++}.${c.reset} Open Claude Code — it reads CLAUDE.md automatically.`);
+  }
+
+  if (answers.wantPreCommit) {
+    console.log(`  ${c.bold}${step++}.${c.reset} Install pre-commit hooks:`);
+    console.log(`     ${c.dim}pip install pre-commit && pre-commit install${c.reset}`);
+  }
+
+  blank();
+  console.log(`${c.dim}Full documentation: https://github.com/EduardPetraeus/ai-governance-framework/blob/main/docs/getting-started.md${c.reset}`);
+  blank();
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Main
+// ──────────────────────────────────────────────────────────────────────────────
+
+async function main() {
+  const overwrite = process.argv.includes('--overwrite');
+  const targetDir = process.cwd();
+
+  printBanner();
+  preflight(targetDir);
+
+  const rl = createRL();
+
+  try {
+    const answers = await gatherAnswers(rl, targetDir);
+
+    blank();
+    head('Scaffolding files');
+
+    scaffoldLevel1(answers, targetDir, overwrite);
+    scaffoldOptionalFiles(answers, targetDir, overwrite);
+    scaffoldCI(answers, targetDir);
+    scaffoldPreCommit(answers, targetDir);
+    scaffoldADR(answers, targetDir);
+    scaffoldCommands(answers, targetDir);
+
+    printNextSteps(answers);
+  } finally {
+    rl.close();
+  }
+}
+
+main().catch((e) => {
+  err(`Unexpected error: ${e.message}`);
+  process.exit(1);
+});
