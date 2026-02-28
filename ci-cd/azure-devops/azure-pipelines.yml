@@ -1,0 +1,288 @@
+# AI Governance Framework — Azure DevOps Pipelines
+# Governance enforcement pipeline for Azure DevOps repositories.
+#
+# Copy this file to your repository root as azure-pipelines.yml
+# and connect it in Azure DevOps → Pipelines → New pipeline.
+#
+# Setup:
+#   1. Copy to your repository root as azure-pipelines.yml
+#   2. In Azure DevOps → Pipelines → Library → Variable groups, create
+#      a variable group named "governance-secrets" with:
+#      - ANTHROPIC_API_KEY (mark as secret)
+#      - AZURE_DEVOPS_TOKEN (PAT with Code Read + PR Comment permissions)
+#   3. Link the variable group to this pipeline in Pipeline → Variables → Variable groups
+#
+# Triggers: all pull requests and pushes to main.
+
+trigger:
+  branches:
+    include:
+      - main
+      - master
+
+pr:
+  branches:
+    include:
+      - '*'
+
+variables:
+  - group: governance-secrets
+  - name: pythonVersion
+    value: '3.12'
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Stages
+# ──────────────────────────────────────────────────────────────────────────────
+
+stages:
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Stage 1: Governance check
+  # ────────────────────────────────────────────────────────────────────────────
+
+  - stage: Governance
+    displayName: Governance enforcement
+    jobs:
+
+      - job: ChangelogCheck
+        displayName: CHANGELOG.md must be updated when code changes
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+
+          - checkout: self
+            fetchDepth: 0
+
+          - script: |
+              git fetch origin $(System.PullRequest.TargetBranch) 2>/dev/null || git fetch origin main || true
+
+              BASE=$(git rev-parse --abbrev-ref --symbolic-full-name origin/$(System.PullRequest.TargetBranch) 2>/dev/null || \
+                     git rev-parse --abbrev-ref --symbolic-full-name origin/main 2>/dev/null || \
+                     echo "HEAD~1")
+
+              CHANGED=$(git diff --name-only "$BASE"...HEAD 2>/dev/null || \
+                        git diff --name-only HEAD~1...HEAD)
+
+              CODE_FILES=$(echo "$CHANGED" | grep -E '\.(py|sql|ts|js|jsx|tsx|go|java|rb|rs|cs)$' || true)
+
+              if [ -z "$CODE_FILES" ]; then
+                echo "No source code files changed — governance check not required."
+                exit 0
+              fi
+
+              echo "Source code files changed:"
+              echo "$CODE_FILES"
+
+              CHANGELOG_CHANGED=$(echo "$CHANGED" | grep "^CHANGELOG\.md$" || true)
+
+              if [ -z "$CHANGELOG_CHANGED" ]; then
+                echo ""
+                echo "##[error]GOVERNANCE CHECK FAILED"
+                echo ""
+                echo "Source code files changed but CHANGELOG.md was not updated in this PR."
+                echo ""
+                echo "Required: Add a session entry to CHANGELOG.md before merging."
+                echo "Quick fix: Run /end-session in Claude Code, or add the entry"
+                echo "manually using the format in templates/CHANGELOG.md"
+                echo ""
+                exit 1
+              fi
+
+              echo "CHANGELOG.md updated — governance check passed."
+            displayName: Check CHANGELOG.md updated
+            condition: eq(variables['Build.Reason'], 'PullRequest')
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Stage 2: AI PR review
+  # ────────────────────────────────────────────────────────────────────────────
+
+  - stage: AIReview
+    displayName: AI PR review
+    dependsOn: Governance
+    condition: and(succeeded(), eq(variables['Build.Reason'], 'PullRequest'))
+    jobs:
+
+      - job: ClaudeReview
+        displayName: Review PR against CLAUDE.md governance rules
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+
+          - checkout: self
+            fetchDepth: 0
+
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '$(pythonVersion)'
+            displayName: Set Python version
+
+          - script: |
+              git fetch origin $(System.PullRequest.TargetBranch) 2>/dev/null || git fetch origin main || true
+
+              BASE=$(git rev-parse --abbrev-ref --symbolic-full-name \
+                     origin/$(System.PullRequest.TargetBranch) 2>/dev/null || \
+                     echo "HEAD~1")
+
+              DIFF=$(git diff "$BASE"...HEAD | head -c 15000)
+              DIFF_LINES=$(git diff "$BASE"...HEAD | wc -l)
+              FILES_CHANGED=$(git diff --name-only "$BASE"...HEAD | wc -l)
+
+              if [ -f "CLAUDE.md" ]; then
+                CLAUDE_MD=$(head -c 5000 CLAUDE.md)
+              else
+                CLAUDE_MD="No CLAUDE.md found. Review against general best practices."
+              fi
+
+              export DIFF="$DIFF"
+              export CLAUDE_MD="$CLAUDE_MD"
+              export FILES_CHANGED="$FILES_CHANGED"
+              export DIFF_LINES="$DIFF_LINES"
+
+              python3 << 'PYEOF'
+              import urllib.request, json, os, sys
+
+              api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+              if not api_key:
+                  print("ANTHROPIC_API_KEY not set — skipping AI review.")
+                  sys.exit(0)
+
+              diff = os.environ.get("DIFF", "")
+              claude_md = os.environ.get("CLAUDE_MD", "")
+              files_changed = os.environ.get("FILES_CHANGED", "?")
+              diff_lines = os.environ.get("DIFF_LINES", "?")
+
+              # Azure DevOps PR metadata
+              organization = os.environ.get("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI", "").rstrip("/")
+              project = os.environ.get("SYSTEM_TEAMPROJECT", "")
+              repo_id = os.environ.get("BUILD_REPOSITORY_ID", "")
+              pr_id = os.environ.get("SYSTEM_PULLREQUEST_PULLREQUESTID", "")
+              ado_token = os.environ.get("AZURE_DEVOPS_TOKEN", os.environ.get("SYSTEM_ACCESSTOKEN", ""))
+              pr_title = os.environ.get("SYSTEM_PULLREQUEST_PULLREQUESTTITLE", "")
+
+              prompt = f"""You are a code reviewer for an AI-assisted software project.
+
+              ## Governance rules (CLAUDE.md)
+              {claude_md}
+
+              ## PR: {pr_title} (#{pr_id})
+
+              ## Diff
+              {diff}
+
+              Review for: naming conventions, architecture compliance, scope, security, documentation.
+
+              Format:
+              **Verdict: PASS** or **Verdict: WARN** or **Verdict: FAIL**
+
+              - [FAIL/WARN/PASS] `file:line` — description
+
+              **Required actions (FAIL items):**
+              1. ...
+
+              Be concise and direct."""
+
+              payload = {
+                  "model": "claude-sonnet-4-6",
+                  "max_tokens": 1500,
+                  "messages": [{"role": "user", "content": prompt}]
+              }
+
+              req = urllib.request.Request(
+                  "https://api.anthropic.com/v1/messages",
+                  data=json.dumps(payload).encode("utf-8"),
+                  method="POST"
+              )
+              req.add_header("Content-Type", "application/json")
+              req.add_header("x-api-key", api_key)
+              req.add_header("anthropic-version", "2023-06-01")
+
+              try:
+                  with urllib.request.urlopen(req, timeout=60) as resp:
+                      data = json.load(resp)
+                      review_text = data["content"][0]["text"]
+              except Exception as e:
+                  print(f"API error: {e}")
+                  sys.exit(0)
+
+              verdict = "FAIL" if "**Verdict: FAIL**" in review_text else \
+                        "WARN" if "**Verdict: WARN**" in review_text else "PASS"
+
+              print(f"\nAI Review — {verdict}")
+              print(review_text)
+
+              # Post as Azure DevOps PR thread comment
+              if ado_token and organization and project and repo_id and pr_id:
+                  import base64
+                  comment_body = f"## AI PR Review — {verdict}\n\n> claude-sonnet-4-6 | Files: {files_changed} | Lines: {diff_lines}\n\n{review_text}\n\n---\n*Automated review. Supplements, not replaces, human review.*"
+
+                  # Azure DevOps REST API for PR threads
+                  url = f"{organization}/{project}/_apis/git/repositories/{repo_id}/pullRequests/{pr_id}/threads?api-version=7.1"
+
+                  thread_payload = {
+                      "comments": [{"parentCommentId": 0, "content": comment_body, "commentType": 1}],
+                      "status": 1
+                  }
+
+                  credentials = base64.b64encode(f":{ado_token}".encode()).decode()
+                  thread_req = urllib.request.Request(
+                      url,
+                      data=json.dumps(thread_payload).encode("utf-8"),
+                      method="POST"
+                  )
+                  thread_req.add_header("Authorization", f"Basic {credentials}")
+                  thread_req.add_header("Content-Type", "application/json")
+
+                  try:
+                      with urllib.request.urlopen(thread_req) as r:
+                          print(f"Review comment posted: HTTP {r.status}")
+                  except Exception as e:
+                      print(f"Failed to post PR thread: {e}")
+
+              if verdict == "FAIL":
+                  print("##vso[task.logissue type=error]AI review verdict: FAIL. Fix violations before merging.")
+                  sys.exit(1)
+              PYEOF
+            displayName: Run AI governance review
+            env:
+              ANTHROPIC_API_KEY: $(ANTHROPIC_API_KEY)
+              AZURE_DEVOPS_TOKEN: $(AZURE_DEVOPS_TOKEN)
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Stage 3: Tests
+  # ────────────────────────────────────────────────────────────────────────────
+
+  - stage: Tests
+    displayName: Test suite
+    jobs:
+
+      - job: PythonTests
+        displayName: Run pytest
+        pool:
+          vmImage: ubuntu-latest
+        strategy:
+          matrix:
+            Python310:
+              pythonVersion: '3.10'
+            Python311:
+              pythonVersion: '3.11'
+            Python312:
+              pythonVersion: '3.12'
+        steps:
+
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '$(pythonVersion)'
+            displayName: Set Python $(pythonVersion)
+
+          - script: pip install -r requirements-dev.txt
+            displayName: Install dependencies
+
+          - script: python -m pytest tests/ --cov=automation --cov=scripts --cov-fail-under=80 -v --junitxml=test-results.xml
+            displayName: Run tests (Python $(pythonVersion))
+
+          - task: PublishTestResults@2
+            inputs:
+              testResultsFormat: JUnit
+              testResultsFiles: test-results.xml
+            condition: succeededOrFailed()
+            displayName: Publish test results
