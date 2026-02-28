@@ -1,75 +1,83 @@
 # Agents
 
-This directory contains specialized agent definitions for the AI Governance Framework.
-Each agent is a focused system prompt that turns a Claude Code session into a domain expert
-for a specific task type.
+Agents are specialized system prompts that transform a Claude Code session into a domain expert. Each file in this directory contains a complete, ready-to-use system prompt for a specific type of work: security review, code review, documentation, testing, or simplification.
 
-## What agents are
+## What agents are in Claude Code
 
-Agents in this framework are Claude Code sub-agents: markdown files containing a detailed
-system prompt that defines a specific role, expertise, and output format. When you invoke
-an agent, you are giving the model a specialized context that makes it significantly more
-effective for that type of work than a generic session.
+An agent is a sub-session with a targeted system prompt. When you invoke an agent, the model stops being a generalist and becomes an expert with:
 
-An agent definition specifies:
-- What the agent is expert at
-- What it will and will not do
-- What format its output takes
-- How to use it correctly
+- A defined role and adversarial or analytical stance
+- An explicit scope boundary (what it will and will not do)
+- A structured output format (so output is consistent and machine-parseable)
+- Domain-specific checklists that prevent gaps in coverage
+
+The result is repeatable, high-quality output for that domain. A security review from the security-reviewer agent is consistently thorough because the system prompt encodes dozens of specific patterns to check. A general session might miss half of them.
+
+## Three ways to use agents
+
+### 1. Copy the system prompt into a new conversation (best results)
+
+Open a new Claude Code session. Copy the complete content of the agent's **System Prompt** section and paste it as your first message. Then provide the input described in the **Input** section.
+
+This is the highest-quality option because the agent's system prompt gets the model's full context window without competing with an existing conversation.
+
+### 2. Reference from CLAUDE.md as a named agent
+
+Add the agent to your CLAUDE.md:
+
+```yaml
+agents:
+  security_review: agents/security-reviewer.md
+  code_review: agents/code-reviewer.md
+```
+
+Then in a session, say: "Run the security review agent on the current diff." The model reads the agent file and follows the system prompt within the current session.
+
+This is convenient but slightly less effective than a dedicated session -- the agent's context competes with the session's existing conversation.
+
+### 3. Invoke via slash command
+
+Some agents have corresponding slash commands (e.g., `/security-review` invokes a lightweight version of the security-reviewer agent). Slash commands run inside the current session and are designed for quick checks, not deep analysis.
 
 ## Agents vs. slash commands
 
-| | Agents | Slash commands |
-|-|--------|---------------|
-| **What they are** | Specialized expertise | Workflow steps |
-| **How to use** | Copy system prompt, start new session | Type /command-name in current session |
-| **Best for** | Domain-specific work (security, code review) | Process automation (session start/end, status) |
-| **Session** | Usually a dedicated session | Within the current session |
-| **Example** | "Review this PR for security issues" | "/end-session" to close and commit |
+These are different tools for different purposes:
 
-Use agents when a task requires deep domain knowledge and benefits from focused context.
-Use slash commands for workflow automation within a session.
+| | Agents | Slash Commands |
+|---|--------|---------------|
+| **What they are** | Specialized expertise that replaces the model's persona | Workflow steps the current agent follows |
+| **Depth** | Deep, thorough, adversarial | Quick, procedural, surface-level |
+| **Session** | Best in a dedicated session | Within the current session |
+| **Output** | Domain-specific analysis with structured findings | Structured status or action reports |
+| **When to use** | Security review, PR review, test generation | Session start/end, status checks, prioritization |
+| **Analogy** | Calling in a specialist | Following a checklist |
 
-## How to use agents
-
-### Option 1: Paste as system prompt (recommended)
-
-1. Open a new Claude Code session
-2. Copy the contents of the agent's `## System Prompt` section
-3. Paste it as your first message, or set it as the system prompt if your client supports it
-4. Then provide the input described in the agent's `## Input` section
-
-### Option 2: Reference from main session
-
-In an active session, you can say:
-"Act as the security reviewer agent defined in agents/security-reviewer.md. Here is the input: [input]"
-
-This works but is less effective than a dedicated session because the agent's context competes
-with the existing session context.
-
-### Option 3: Automated via CI/CD
-
-The CI/CD workflows in `../ci-cd/` invoke agents automatically (the AI PR review workflow
-uses the code-reviewer system prompt). See `../ci-cd/README.md` for setup.
-
-## How to create new agents
-
-1. Copy any existing agent file as a starting point
-2. Define: purpose, when to use, system prompt, input format, output format
-3. Write the system prompt to be opinionated and specific — vague agents produce vague results
-4. Include an example showing real input and the expected output format
-5. Document what teams typically customize
-
-**Key principle:** An agent should refuse to do things outside its scope. A security reviewer
-that also writes features is not a security reviewer — it's just another general session.
-Tight scope = consistent, trustworthy output.
+**Rule of thumb:** If the task requires expertise and judgment, use an agent. If the task requires reading files and following a procedure, use a command.
 
 ## Included agents
 
-| Agent | Purpose | When to use |
-|-------|---------|-------------|
-| [security-reviewer.md](security-reviewer.md) | Scans code for secrets, PII, vulnerabilities | Before every PR merge |
-| [code-reviewer.md](code-reviewer.md) | Reviews PRs against conventions and ADRs | Every PR before human review |
-| [documentation-writer.md](documentation-writer.md) | Writes and updates docs to match code | After features, architectural decisions |
-| [test-writer.md](test-writer.md) | Generates tests for AI-generated code | After new features, before PR merge |
-| [code-simplifier.md](code-simplifier.md) | Reduces complexity without changing behavior | After multi-session refactoring |
+| Agent | Purpose | When to invoke |
+|-------|---------|----------------|
+| [security-reviewer](security-reviewer.md) | Adversarial scan for secrets, PII, injection, insecure defaults | Before every PR merge, after adding integrations |
+| [code-reviewer](code-reviewer.md) | PR review against CLAUDE.md conventions and ADR compliance | Every PR before human review |
+| [documentation-writer](documentation-writer.md) | Writes and updates documentation to match actual code | After features, after architectural decisions |
+| [test-writer](test-writer.md) | Generates tests targeting AI-specific failure modes | After new features, before merging PRs lacking coverage |
+| [code-simplifier](code-simplifier.md) | Reduces complexity without changing behavior | After multi-file sessions, when code feels over-engineered |
+
+## How to create a new agent
+
+Follow this structure (every existing agent uses it):
+
+1. **Purpose** -- one paragraph explaining why this agent exists as a specialist rather than relying on the main session's general knowledge.
+2. **When to use** -- specific triggers, not vague guidance. "Before every PR merge" is good. "When appropriate" is not.
+3. **System prompt** -- the complete, immediately usable prompt. This is the core of the agent. It should be opinionated, specific, and include explicit rules for edge cases.
+4. **Input** -- what to provide (diff, file path, directory, context files).
+5. **Output** -- the structured format the agent produces.
+6. **Example** -- a realistic example showing real input and the complete output. Not a sketch.
+7. **Customization** -- what teams typically adjust and how.
+
+### The quality bar
+
+An agent file is not a placeholder. It is a production system prompt. The system prompt section should be detailed enough that copying it into a blank session produces expert-level output on the first try. If the system prompt says "check for security issues" without listing specific patterns, it is not an agent -- it is a wish.
+
+Test your agent by pasting the system prompt into a new session with realistic input. If the output is vague, generic, or misses obvious findings, the system prompt needs more specificity.
