@@ -1,161 +1,173 @@
 # Templates
 
-This directory contains the core governance templates for the AI Governance Framework. Copy these files into your project and customize them according to your maturity level.
-
-## Maturity Levels
-
-Your maturity level determines which files to copy. Start at Level 1 and add files as your project grows. Do not skip levels — each level depends on the previous one being functional.
-
-### Quick-start table
-
-| Level | Name | Files to copy | Time to set up | Who it's for |
-|-------|------|---------------|----------------|--------------|
-| **1** | Foundation | `CLAUDE.md`, `PROJECT_PLAN.md`, `CHANGELOG.md` | 15 minutes | Solo dev, new project |
-| **2** | Memory | Level 1 + `MEMORY.md`, `DECISIONS.md` | 30 minutes | Any project past the prototype phase |
-| **3** | Tracking | Level 2 + `SPRINT_LOG.md`, `COST_LOG.md` | 45 minutes | Teams or cost-conscious solo devs |
-| **4** | Full | Level 3 + `ARCHITECTURE.md` + CI/CD + agents | 2 hours | Teams shipping to production |
+Copy these files into your project and customize them. Each file is a governance building block. Your maturity level determines which ones you need.
 
 ---
 
-## Level 1: Foundation (15 minutes)
+## Maturity-Level Pickup Guide
+
+Start at Level 1. Add files as your project grows. Do not skip levels -- each level depends on the previous one being functional.
+
+| Level | Name | Files to Copy | Setup Time | Who It Is For |
+|-------|------|---------------|------------|---------------|
+| **1** | Foundation | `CLAUDE.md`, `PROJECT_PLAN.md`, `CHANGELOG.md` | 10 minutes | Solo dev, any new project |
+| **2** | Memory | Level 1 + `MEMORY.md`, `DECISIONS.md`, `ARCHITECTURE.md` | 30 minutes | Any project past the prototype phase |
+| **3** | Tracking | Level 2 + `SPRINT_LOG.md`, `COST_LOG.md` | 45 minutes | Teams, or solo devs tracking velocity and cost |
+| **4** | Enforced | Level 3 + CI/CD workflows + pre-commit hooks + agents | 2 hours | Teams shipping to production |
+
+---
+
+## Level 1: Foundation (10 Minutes)
 
 **Files to copy:**
 
 ```
-CLAUDE.md          → repo root (required — agents read this first)
-PROJECT_PLAN.md    → repo root (required — session protocol reads this)
-CHANGELOG.md       → repo root (required — session protocol writes this)
+templates/CLAUDE.md        -> repo root/CLAUDE.md
+templates/PROJECT_PLAN.md  -> repo root/PROJECT_PLAN.md
+templates/CHANGELOG.md     -> repo root/CHANGELOG.md
 ```
 
-**What you get at Level 1:**
-- Agents follow consistent naming conventions
+**What you get immediately:**
+- Agents follow consistent naming conventions across sessions
 - Session start/end protocol prevents context loss
 - Security rules prevent accidental secret commits
-- Changelog tracks what changed across sessions
+- Changelog tracks what changed and why, session by session
 
-**Minimum viable setup:**
+**The 10-minute setup:**
 
 ```bash
+# Copy the three files
 cp templates/CLAUDE.md .
 cp templates/PROJECT_PLAN.md .
 cp templates/CHANGELOG.md .
+
+# Open CLAUDE.md and fill in the project_context section (5 minutes)
+# Open PROJECT_PLAN.md and replace Phase 1 tasks with your actual tasks (5 minutes)
+# That's it. Start your first governed session.
 ```
 
-Then open `CLAUDE.md` and fill in the `project_context` section (5 minutes). That's it.
+Open `CLAUDE.md` and search for `# CUSTOMIZE:` markers. The `project_context` section is the only part that requires replacement before your first session. Everything else works with default values.
 
 ---
 
-## Level 2: Memory (30 minutes)
+## Level 2: Memory (30 Minutes)
 
-**Files to copy (in addition to Level 1):**
+**Add these files on top of Level 1:**
 
 ```
-MEMORY.md          → repo root (cross-session knowledge persistence)
-DECISIONS.md       → repo root (decision log, prevents decision loops)
+templates/MEMORY.md        -> repo root/MEMORY.md
+templates/DECISIONS.md     -> repo root/DECISIONS.md
+templates/ARCHITECTURE.md  -> repo root/ARCHITECTURE.md
 ```
 
-**What you get at Level 2:**
-- Agents remember confirmed patterns and anti-patterns
-- Decisions are logged so they're not re-litigated
-- Open questions are tracked (not lost in chat history)
-- Team preferences are documented for consistent agent behavior
+**What you get:**
+- Agents remember confirmed patterns and anti-patterns across sessions
+- Decisions are documented so they are not re-litigated
+- Architecture is explicit so agents build consistently
+- Open questions are tracked, not lost in chat history
 
 **When to move to Level 2:**
-- When you've had 5+ sessions on the same project
-- When you notice agents repeating mistakes from previous sessions
-- When you've made architectural decisions that shouldn't be reversed
+- You have had 5+ sessions on the same project
+- You notice agents repeating mistakes from previous sessions
+- You have made architectural decisions that should not be reversed without discussion
+- You need a second developer (human or AI) to understand the project from files alone
 
 ---
 
-## Level 3: Tracking (45 minutes)
+## Level 3: Tracking (45 Minutes)
 
-**Files to copy (in addition to Level 2):**
+**Add these files on top of Level 2:**
 
 ```
-SPRINT_LOG.md      → repo root (sprint velocity and retrospectives)
-COST_LOG.md        → repo root (AI cost per session)
+templates/SPRINT_LOG.md    -> repo root/SPRINT_LOG.md
+templates/COST_LOG.md      -> repo root/COST_LOG.md
 ```
 
-**What you get at Level 3:**
-- Sprint velocity tracking (tasks per session over time)
-- AI cost visibility (know what each session costs)
-- Retrospective data to improve the process
-- Budget alerts before costs get out of control
+**What you get:**
+- Sprint velocity tracking (tasks per session over time, trend analysis)
+- AI cost visibility (cost per session, cost per task, model routing optimization)
+- Retrospective data to improve the process each sprint
+- Budget alerting before costs surprise you
 
 **When to move to Level 3:**
-- When you want to measure velocity improvement
-- When AI costs start to matter (team usage, frequent sessions)
-- When you need to justify AI spend to stakeholders
+- You want to measure whether AI is actually making you faster
+- AI costs are material (team usage, frequent sessions, expensive models)
+- You need to justify AI spending to stakeholders or leadership
+- You want data for sprint planning (historical velocity for estimation)
 
 ---
 
-## Level 4: Full (2 hours)
+## Level 4: Enforced (2 Hours)
 
-**Files to copy (in addition to Level 3):**
+**What to add on top of Level 3:**
+- CI/CD workflows from `../ci-cd/` (GitHub Actions for linting, testing, AI review, governance checks)
+- Pre-commit hooks (gitleaks, naming validation, file structure checks)
+- Agent definitions from `../agents/` (specialized review agents)
+- Branch protection rules on main (require PR, require CI pass, require approval)
 
-```
-ARCHITECTURE.md    → repo root
-```
-
-**Plus:** Set up the CI/CD workflows in `../ci-cd/` and copy agents from `../agents/` and commands from `../commands/`.
-
-**What you get at Level 4:**
-- Architecture is documented and enforced
+**What you get:**
 - Every PR is reviewed by an AI agent before human review
-- Pre-commit hooks catch secrets and naming violations locally
-- Full agent library for specialized tasks
+- Governance file updates are enforced (code changes without CHANGELOG update = CI failure)
+- Security scanning runs automatically on every commit
+- Architecture compliance is checked programmatically, not just by convention
 
 **When to move to Level 4:**
-- When you have multiple contributors (human or AI agents on multiple branches)
-- When you're shipping to production
-- When governance needs to be enforced, not just encouraged
+- Multiple contributors work on the repository (human or AI)
+- Code ships to production
+- Governance must be enforced, not merely encouraged
+- You need an audit trail for compliance
 
 ---
 
-## How to customize CLAUDE.md
+## What to Customize vs. What to Keep
 
-### What to change
+Every template uses comment markers to indicate what to change:
 
-**The `project_context` section** — Replace all placeholder values with your actual project details. This is the only section where everything must be replaced.
+| Marker | Meaning | Action |
+|--------|---------|--------|
+| `# CUSTOMIZE:` | Replace with your project-specific values | Must change before use |
+| `# KEEP:` | Core governance mechanism -- do not modify | Leave as-is |
+| `# OPTIONAL:` | Can be removed at lower maturity levels | Remove if not needed yet |
+| `<!-- CUSTOMIZE: -->` | HTML comment with customization instructions | Replace content, keep structure |
 
-```yaml
-project_context:
-  project_name: "HealthReporting"          # Your actual project name
-  description: "Personal health data pipeline from wearables to dashboard"
-  stack: "Python, DuckDB, Databricks, dbt"
-  owner: "Platform Team"
-  repository: "https://github.com/org/health-reporting"
-```
+### What to always change
 
-**The `conventions` section** — Add your domain-specific naming rules. For example, if you use a data warehouse, add layer prefixes (`stg_`, `dim_`, `fct_`). If you use a specific API naming style, document it here.
+**`project_context` in CLAUDE.md** -- Replace every placeholder with your actual project name, stack, owner, and phase.
 
-**The `model_routing` section** — Adjust the model names if you use a different AI provider (OpenAI, Gemini, local models). The task categories are universal; only the model names need changing.
+**Phase tasks in PROJECT_PLAN.md** -- Replace example tasks with your actual tasks. Keep the table structure (agents parse it).
 
-### What NOT to change
+**Technology decisions in ARCHITECTURE.md** -- Replace placeholder technologies with your actual stack. Fill in the "Why" and "ADR" columns.
 
-**`mandatory_session_protocol`** — This is the core governance mechanism. Changing the session start/end protocol defeats the purpose of the framework. If you need to adjust verbosity, do it in `MEMORY.md` as a team preference.
+### What to never change
 
-**`security_protocol`** — The never-commit list and scan triggers are non-negotiable. You can add to them but not remove items. If a rule is too strict for your use case, file an issue on the framework repository rather than weakening your local copy.
+**`mandatory_session_protocol` in CLAUDE.md** -- This is the core governance mechanism. Modifying the session start/end protocol defeats the purpose of the framework.
 
-**`mandatory_task_reporting`** — The reason this exists is to prevent agents from silently doing large amounts of work without accountability. If you disable it, you lose the primary protection against scope creep.
+**`security_protocol` in CLAUDE.md** -- The never-commit list and scan triggers are non-negotiable. Add to them, but do not remove items.
 
-**`verification`** — Agents skipping verification is the root cause of most "but it worked in my head" bugs. Keep this section intact.
+**`mandatory_task_reporting` in CLAUDE.md** -- This prevents agents from silently doing large amounts of work without accountability. Disabling it loses the primary defense against scope creep.
 
-### What is marked OPTIONAL
-
-The `model_routing` section is marked `# OPTIONAL`. At Level 1, remove it entirely — it adds complexity without value for a single developer using one model. Implement it at Level 2 or 3 once you're paying attention to which tasks need deeper reasoning.
+**`verification` in CLAUDE.md** -- Agents skipping verification is the root cause of most "it worked in my head" bugs.
 
 ---
 
-## File descriptions
+## File Reference
 
-| File | Purpose | Updated |
-|------|---------|---------|
-| `CLAUDE.md` | Agent constitution — rules agents must follow | Rarely (monthly review) |
-| `PROJECT_PLAN.md` | Sprint planning and task tracking | Every session |
-| `CHANGELOG.md` | Session-level history of what changed | Every session (auto) |
-| `MEMORY.md` | Cross-session knowledge that agents accumulate | Ongoing |
-| `DECISIONS.md` | Permanent log of decisions made and why | When decisions are made |
-| `SPRINT_LOG.md` | Sprint velocity and retrospectives | Per sprint |
-| `COST_LOG.md` | AI cost per session and model | Per session |
-| `ARCHITECTURE.md` | System design and technology decisions | When architecture changes |
+| File | Purpose | Updated When | Read By Agent At |
+|------|---------|-------------|-----------------|
+| `CLAUDE.md` | Agent constitution -- rules agents must follow | Monthly review, or when rules change | Every session start |
+| `PROJECT_PLAN.md` | Phases, tasks, sprint goals, discovered tasks | Every session end | Every session start |
+| `CHANGELOG.md` | Session-level history of what changed and why | Every session end (append) | Every session start (last 10) |
+| `MEMORY.md` | Cross-session knowledge: patterns, anti-patterns, preferences | When agent learns something persistent | Every session start |
+| `DECISIONS.md` | Permanent log of architectural and process decisions | When decisions are made | When related topics arise |
+| `ARCHITECTURE.md` | System design, technology choices, component structure | When architecture changes | Every session start |
+| `SPRINT_LOG.md` | Sprint velocity, retrospectives, trend analysis | At sprint boundaries | At sprint planning |
+| `COST_LOG.md` | AI cost per session, model routing optimization | Every session end | Monthly review |
+
+---
+
+## Cross-References
+
+- For a detailed explanation of each maturity level: [Maturity Model](../docs/maturity-model.md)
+- For a worked example of going from Level 0 to Level 3: [Case Study: HealthReporting](../docs/case-studies/health-reporting.md)
+- For the full getting started walkthrough: [Getting Started](../docs/getting-started.md)
+- For rollback procedures when things go wrong: [Rollback and Recovery](../docs/rollback-recovery.md)
