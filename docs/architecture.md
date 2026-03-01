@@ -213,12 +213,22 @@ The second reason: governance only works if it is universal. If one developer me
 - Integration tests
 - Data validation tests
 
-**Tier 3 — AI review (slower, probabilistic):**
+**Tier 3 — MCP enforcement (real-time, deterministic):**
+- Least-privilege allowlist: agents connect only to servers declared for their role
+- Environment gate: validates MCP server URLs against declared environment before any tool call
+- Rate limiting: per-server and per-session call limits halt runaway tool use
+- Audit logging: every MCP call logged with arguments and outcome before committing
+- Kill switch: six specific triggers halt all MCP calls and wait for human instruction
+- Real-time disable: feature flags (e.g., Unleash) enable zero-deployment server kill switch
+
+MCP enforcement applies Layer 3 principles to the agent's tool surface: MCP calls produce real-world side effects at AI speed, making deterministic pre-call gates more critical than post-hoc review. See [docs/mcp-governance.md](mcp-governance.md) for the full specification and [patterns/mcp-governance.md](../patterns/mcp-governance.md) for the implementation pattern.
+
+**Tier 4 — AI review (slower, probabilistic):**
 - AI code reviewer checks the PR diff against `CLAUDE.md` and `ARCHITECTURE.md`
 - Posts structured feedback: PASS / WARN / FAIL with specific line comments
 - See [`ci-cd/github-actions/ai-pr-review.yml`](../ci-cd/github-actions/ai-pr-review.yml)
 
-**Tier 4 — Human review (final gate):**
+**Tier 5 — Human review (final gate):**
 - Human reviews with agent comments as input
 - Final approval requires human judgment, not rubber-stamping
 
@@ -253,14 +263,16 @@ Enforcement **validates** the Constitution (Layer 1) — comparing code against 
 - [ ] GitHub Actions workflow triggers on all PRs to main
 - [ ] Tier 1 checks (lint, type check, secret scan) configured and blocking
 - [ ] Tier 2 checks (tests) configured and blocking
+- [ ] Tier 3 MCP enforcement: allowlist, environment gate, audit log, kill switch triggers defined
 - [ ] Governance file update check: code changes require CHANGELOG update
 - [ ] Branch protection: no direct pushes to main, CI pass required, human approval required
 
 ### Common Mistakes
 
-- **AI review (Tier 3) as a blocker before Tiers 1-2 are solid.** AI review is probabilistic. It catches nuanced issues but also generates false positives. Run it in advisory mode first.
+- **AI review as a blocker before Tiers 1-2 are solid.** AI review is probabilistic. It catches nuanced issues but also generates false positives. Run it in advisory mode first.
 - **Not testing pre-commit hooks.** After installing, intentionally add `secret = "abc123"` and verify the hook rejects it. Untested hooks silently fail.
 - **Governance checks that are too strict.** A check that fails on documentation-only PRs will train developers to resent it. Scope it: if Python or SQL files changed, require a CHANGELOG update.
+- **MCP servers without an allowlist.** Agents given access to all available MCP servers will use them all. Define an explicit allowlist per agent role. Default is deny.
 
 ---
 
