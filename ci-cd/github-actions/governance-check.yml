@@ -147,3 +147,25 @@ jobs:
           else
             echo "CLAUDE.md change has been approved by a second reviewer."
           fi
+
+  validate-output-contract:
+    name: Validate output contract if present
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate output_contract.json
+        # The output contract is optional — agents that produce one must have it pass.
+        # Sessions that do not produce an output contract skip this check (L1 behaviour).
+        # To require output contracts on all PRs, remove the conditional.
+        if: hashFiles('output_contract.json') != ''
+        run: |
+          python automation/output_contract_validator.py output_contract.json \
+            --confidence-ceiling 85
