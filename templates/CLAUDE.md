@@ -320,6 +320,31 @@ when_uncertain:
 
 ---
 
+## conciseness
+# OPTIONAL: Add at Level 1+.
+# WHY: Verbose sessions fill the context window faster. When context overflows,
+# late-session output contradicts early-session decisions the agent can no longer see.
+# Conciseness is not a style preference — it is a governance control.
+
+concise_responses:
+  - No preamble, no restating what was asked, no closing summary
+  - Show output, not process. Maximum 3 sentences of explanation before code or decision.
+  - If the user asked for code, lead with code. If the user asked for a decision, lead with the decision.
+
+session_time_limits:
+  - Maximum 60-90 minutes per session (hard cap)
+  - At 60 minutes: surface a concise session summary and recommend a clean stopping point
+  - Long sessions produce context window overflow (see [failure mode 4](../docs/known-failure-modes.md))
+  # WHY: After 90 minutes, the context window contains too much noise to produce reliable output.
+
+prioritize_reading_state:
+  - At session start: read state files before any other action
+  - Reading PROJECT_PLAN.md, CHANGELOG.md, ARCHITECTURE.md is not optional overhead — it is the first 3 minutes of every session
+  - Agents that skip state reads produce speculative output (see [failure mode 1](../docs/known-failure-modes.md))
+  # WHY: State files are the agent's memory. Without them, every session starts from zero.
+
+---
+
 ## confidence_scoring
 # OPTIONAL: Add at Level 3+.
 # WHY: Agents are confident about everything. Without explicit confidence scoring,
