@@ -78,6 +78,22 @@ When reporting review results:
 - Never imply that AI approval = no human review needed
 ```
 
+### Domain Guidance
+
+| Domain | Recommended Ceiling | Rationale |
+|--------|-------------------|-----------|
+| Safety-critical (medical, financial, security) | 80% | High cost of automation bias |
+| Standard development | 85-90% | Default range, balanced oversight |
+| Low-risk (docs, UI, config) | 90-95% | Lower bias risk, faster iteration |
+
+Configure in your repo's CLAUDE.md under `confidence_scoring.ceiling`. See [ADR-003](../docs/adr/ADR-003-85-percent-confidence-ceiling.md) for full decision rationale.
+
+The ceiling enforces:
+```
+reported_confidence = min(raw_confidence, ceiling)
+must_list: ["What was NOT verified", "Assumptions made", "Edge cases not tested"]
+```
+
 ### Step 3: Mandatory Human Judgment Labels
 
 Define the categories that AI cannot approve. These categories require human sign-off

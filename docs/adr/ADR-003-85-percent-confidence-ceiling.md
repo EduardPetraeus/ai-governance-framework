@@ -112,6 +112,11 @@ The agent definition templates in `agents/` include a system prompt instruction 
 
 The automation script `automation/governance_dashboard.py` reads the configured ceiling from `CLAUDE.md` (defaulting to 85 if absent) and validates that agent output in CI logs does not exceed it.
 
+## Cross-References
+
+- [patterns/automation-bias-defense.md](../../patterns/automation-bias-defense.md) — implementation pattern for this decision
+- [patterns/friction-budget.md](../../patterns/friction-budget.md) — ceiling interacts with friction budget calibration
+
 ## Review Date
 
 2027-03-01
