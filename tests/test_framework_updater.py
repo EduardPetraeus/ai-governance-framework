@@ -4,6 +4,7 @@ Tests pure functions without network calls. GitHub API interactions
 are tested with mocked responses.
 """
 
+import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -123,3 +124,242 @@ class TestRun:
         (tmp_path / fu.VERSION_FILE).write_text("v1.0.0", encoding="utf-8")
         code = fu.run(tmp_path)
         assert code == 0
+
+
+# ---------------------------------------------------------------------------
+# fetch_releases — mocked API
+# ---------------------------------------------------------------------------
+
+class TestFetchReleases:
+    """Tests for the fetch_releases function with mocked HTTP requests."""
+
+    @patch("framework_updater.requests.get")
+    def test_fetches_and_sorts_valid_releases(self, mock_get):
+        """Test that valid releases are sorted by version ascending."""
+        mock_response = MagicMock()
+        mock_response.json.return_value = [
+            {"tag_name": "v2.0.0", "body": "Major release"},
+            {"tag_name": "v1.0.0", "body": "Initial"},
+            {"tag_name": "v1.1.0", "body": "Minor update"},
+        ]
+        mock_response.raise_for_status = MagicMock()
+        mock_get.return_value = mock_response
+
+        releases = fu.fetch_releases()
+        assert len(releases) == 3
+        assert releases[0]["tag_name"] == "v1.0.0"
+        assert releases[-1]["tag_name"] == "v2.0.0"
+
+    @patch("framework_updater.requests.get")
+    def test_skips_invalid_version_tags(self, mock_get):
+        """Test that releases with invalid version tags are filtered out."""
+        mock_response = MagicMock()
+        mock_response.json.return_value = [
+            {"tag_name": "v1.0.0", "body": "Valid"},
+            {"tag_name": "nightly-2025", "body": "Invalid"},
+            {"tag_name": "v2.0.0", "body": "Valid too"},
+        ]
+        mock_response.raise_for_status = MagicMock()
+        mock_get.return_value = mock_response
+
+        releases = fu.fetch_releases()
+        assert len(releases) == 2
+
+
+# ---------------------------------------------------------------------------
+# show_apply_diff
+# ---------------------------------------------------------------------------
+
+class TestShowApplyDiff:
+    """Tests for the show_apply_diff function."""
+
+    def test_shows_release_info(self):
+        """Test that show_apply_diff includes release tag and URL."""
+        updates = [
+            {
+                "tag_name": "v1.1.0",
+                "assets": [{"name": "archive.tar.gz", "size": 1024}],
+                "html_url": "https://github.com/owner/repo/releases/v1.1.0",
+            },
+        ]
+        output = fu.show_apply_diff(updates)
+        assert "v1.1.0" in output
+        assert "archive.tar.gz" in output
+        assert "1024 bytes" in output
+
+    def test_no_assets_shows_source_archive_msg(self):
+        """Test that releases with no assets show source archive message."""
+        updates = [
+            {
+                "tag_name": "v2.0.0",
+                "assets": [],
+                "html_url": "https://github.com/owner/repo/releases/v2.0.0",
+            },
+        ]
+        output = fu.show_apply_diff(updates)
+        assert "Source archive" in output
+
+    def test_includes_manual_review_note(self):
+        """Test that the output includes the manual review reminder."""
+        output = fu.show_apply_diff([{
+            "tag_name": "v1.0.1", "assets": [], "html_url": ""
+        }])
+        assert "manual" in output.lower()
+
+
+# ---------------------------------------------------------------------------
+# format_text — additional branches
+# ---------------------------------------------------------------------------
+
+class TestFormatTextExtended:
+    """Extended tests for format_text covering body truncation and check_only."""
+
+    def _release(self, tag, body="Short notes.", published_at="2025-06-01T00:00:00Z"):
+        return {"tag_name": tag, "body": body, "published_at": published_at, "assets": []}
+
+    def test_long_body_is_truncated(self):
+        """Test that release notes longer than 300 chars are truncated with '...'."""
+        long_body = "A" * 400
+        updates = [self._release("v1.1.0", body=long_body)]
+        text = fu.format_text("v1.0.0", "v1.1.0", updates, check_only=False)
+        assert "..." in text
+
+    def test_check_only_with_updates_does_not_show_details(self):
+        """Test that check_only mode does not show detailed release notes."""
+        updates = [self._release("v1.1.0")]
+        text = fu.format_text("v1.0.0", "v1.1.0", updates, check_only=True)
+        assert "Release notes" not in text
+        assert "Updates available: 1" in text
+
+    def test_null_body_uses_fallback(self):
+        """Test that None body falls back to 'No release notes available.'."""
+        updates = [self._release("v1.1.0", body=None)]
+        text = fu.format_text("v1.0.0", "v1.1.0", updates, check_only=False)
+        assert "No release notes available" in text
+
+
+# ---------------------------------------------------------------------------
+# format_json
+# ---------------------------------------------------------------------------
+
+class TestFormatJson:
+    """Tests for the format_json function."""
+
+    def test_output_is_valid_json(self):
+        """Test that format_json returns valid JSON."""
+        updates = [{"tag_name": "v1.1.0", "published_at": "2025-06-01", "body": "Notes", "html_url": ""}]
+        output = fu.format_json("v1.0.0", "v1.1.0", updates)
+        parsed = json.loads(output)
+        assert parsed["current_version"] == "v1.0.0"
+        assert parsed["latest_version"] == "v1.1.0"
+
+    def test_truncates_long_release_notes(self):
+        """Test that release notes in JSON are truncated to 300 chars."""
+        long_notes = "B" * 500
+        updates = [{"tag_name": "v2.0.0", "published_at": "", "body": long_notes, "html_url": ""}]
+        output = fu.format_json("v1.0.0", "v2.0.0", updates)
+        parsed = json.loads(output)
+        assert len(parsed["updates"][0]["release_notes"]) <= 300
+
+
+# ---------------------------------------------------------------------------
+# run — error handling and output format branches
+# ---------------------------------------------------------------------------
+
+class TestRunExtended:
+    """Extended tests for run() covering error handling and output format branches."""
+
+    @patch("framework_updater.fetch_releases")
+    def test_run_connection_error(self, mock_fetch, tmp_path, capsys):
+        """Test that ConnectionError returns exit code 1."""
+        import requests
+        mock_fetch.side_effect = requests.ConnectionError("Network unreachable")
+        code = fu.run(tmp_path)
+        assert code == 1
+        captured = capsys.readouterr()
+        assert "Could not connect" in captured.err
+
+    @patch("framework_updater.fetch_releases")
+    def test_run_timeout_error(self, mock_fetch, tmp_path, capsys):
+        """Test that Timeout returns exit code 1."""
+        import requests
+        mock_fetch.side_effect = requests.Timeout("Request timed out")
+        code = fu.run(tmp_path)
+        assert code == 1
+        captured = capsys.readouterr()
+        assert "timed out" in captured.err
+
+    @patch("framework_updater.fetch_releases")
+    def test_run_http_error(self, mock_fetch, tmp_path, capsys):
+        """Test that HTTPError returns exit code 1."""
+        import requests
+        mock_fetch.side_effect = requests.HTTPError("403 Forbidden")
+        code = fu.run(tmp_path)
+        assert code == 1
+        captured = capsys.readouterr()
+        assert "error" in captured.err.lower()
+
+    @patch("framework_updater.fetch_releases")
+    def test_run_json_format_output(self, mock_fetch, tmp_path, capsys):
+        """Test run() with output_format='json'."""
+        mock_fetch.return_value = [
+            {"tag_name": "v1.0.0", "body": "", "published_at": "2025-01-01", "assets": [], "html_url": ""},
+            {"tag_name": "v1.1.0", "body": "Update.", "published_at": "2025-06-01", "assets": [], "html_url": ""},
+        ]
+        (tmp_path / fu.VERSION_FILE).write_text("v1.0.0", encoding="utf-8")
+        code = fu.run(tmp_path, output_format="json")
+        assert code == 0
+        captured = capsys.readouterr()
+        parsed = json.loads(captured.out)
+        assert parsed["updates_available"] == 1
+
+    @patch("framework_updater.fetch_releases")
+    def test_run_with_apply_flag(self, mock_fetch, tmp_path, capsys):
+        """Test run() with apply=True shows apply diff."""
+        mock_fetch.return_value = [
+            {"tag_name": "v1.0.0", "body": "", "published_at": "2025-01-01", "assets": [], "html_url": ""},
+            {"tag_name": "v1.1.0", "body": "New stuff.", "published_at": "2025-06-01", "assets": [], "html_url": "https://github.com/x/y/releases/v1.1.0"},
+        ]
+        (tmp_path / fu.VERSION_FILE).write_text("v1.0.0", encoding="utf-8")
+        code = fu.run(tmp_path, apply=True)
+        assert code == 0
+        captured = capsys.readouterr()
+        assert "Apply preview" in captured.out
+
+    @patch("framework_updater.fetch_releases")
+    def test_run_empty_releases(self, mock_fetch, tmp_path, capsys):
+        """Test run() when no releases exist on GitHub."""
+        mock_fetch.return_value = []
+        code = fu.run(tmp_path)
+        assert code == 0
+
+
+# ---------------------------------------------------------------------------
+# build_parser
+# ---------------------------------------------------------------------------
+
+class TestBuildParser:
+    """Tests for the CLI argument parser builder."""
+
+    def test_build_parser_returns_parser(self):
+        """Test that build_parser returns a valid ArgumentParser."""
+        parser = fu.build_parser()
+        assert parser is not None
+
+    def test_parser_defaults(self):
+        """Test parser default values."""
+        parser = fu.build_parser()
+        args = parser.parse_args([])
+        assert args.repo_path == Path(".")
+        assert args.check_only is False
+        assert args.output_format == "text"
+        assert args.apply is False
+
+    def test_parser_with_all_args(self):
+        """Test parser with all arguments supplied."""
+        parser = fu.build_parser()
+        args = parser.parse_args(["--repo-path", "/tmp/repo", "--check-only", "--format", "json", "--apply"])
+        assert args.repo_path == Path("/tmp/repo")
+        assert args.check_only is True
+        assert args.output_format == "json"
+        assert args.apply is True
