@@ -232,6 +232,7 @@ ai-governance-framework/
 | [patterns/friction-budget.md](patterns/friction-budget.md) | Measure and limit governance overhead per session |
 | [patterns/constitutional-inheritance.md](patterns/constitutional-inheritance.md) | Cascade org-level rules down to team and repo |
 | [patterns/mcp-governance.md](patterns/mcp-governance.md) | Govern MCP tool access: least-privilege, kill switch, audit logging, rate limits |
+| [patterns/operator-playbook.md](patterns/operator-playbook.md) | Step-by-step procedures: onboarding agents, incident response, quarterly audit, governance rollout |
 
 ### Templates (16)
 
@@ -253,6 +254,7 @@ ai-governance-framework/
 | [templates/copilot-instructions.md](templates/copilot-instructions.md) | Governance rules for GitHub Copilot |
 | [templates/windsurf-rules.md](templates/windsurf-rules.md) | Governance rules for Windsurf IDE |
 | [templates/aider-conventions.md](templates/aider-conventions.md) | Governance conventions for Aider |
+| [templates/risk-register.md](templates/risk-register.md) | AI governance risk register — 10 pre-filled risks with controls, ownership, and status tracking |
 
 ### Automation Scripts (8)
 
@@ -345,6 +347,8 @@ See [docs/quality-control-patterns.md](docs/quality-control-patterns.md) for the
 **Teams (5-20 developers)** — Multiple agents running, each following the nearest instruction instead of the shared plan. PRs land without architectural consistency checks. Start at Core Edition, add Layer 3 enforcement within a sprint. See [examples/small-team/CLAUDE.md](examples/small-team/CLAUDE.md).
 
 **Enterprise (50+ developers)** — AI adoption is happening whether governance exists or not. You need compliance audit trails, role-based agent access, and cross-repo consistency. Start at Layers 2-3, target Level 5. See [examples/enterprise/CLAUDE.md](examples/enterprise/CLAUDE.md) and [docs/enterprise-playbook.md](docs/enterprise-playbook.md). For mapping to NIST AI RMF, ISO 42001, and the EU AI Act, see [docs/compliance-mapping.md](docs/compliance-mapping.md).
+
+**Engineering managers and CISOs** — You need accountability structures, measurable metrics, and a quarterly review process. See [docs/governance-for-leaders.md](docs/governance-for-leaders.md) for roles (Owner, Steward, Operator, Auditor), the six metrics that reveal whether governance is working (AI LOC ratio, rejection rate, incident count, MTTR, friction ratio, coverage), and a quarterly checklist. The [risk register template](templates/risk-register.md) pre-fills ten risks from known AI failure modes with controls and ownership structure. The [operator playbook](patterns/operator-playbook.md) provides step-by-step procedures for onboarding agents, responding to incidents, running audits, and rolling out governance to new teams.
 
 ## Built With This Framework
 

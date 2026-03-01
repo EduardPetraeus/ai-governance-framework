@@ -147,3 +147,5 @@ Detectable at Level 2 (Structured) when memory files are first introduced; contr
 - [Governance fatigue](governance-fatigue.md) — diagnostic criteria and intervention strategies for governance overhead
 - [Knowledge lifecycle](knowledge-lifecycle.md) — full specification for memory entry lifecycle management
 - [Patterns directory](../patterns/) — all governance patterns referenced as controls in this document
+- [Risk register](../templates/risk-register.md) — pre-filled risk register with all seven failure modes plus additional risks, controls, and ownership structure
+- [Governance for leaders](governance-for-leaders.md) — roles and quarterly checklist for managing the risks described in this document
