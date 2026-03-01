@@ -4,6 +4,30 @@ Session-level history for the AI Governance Framework. Newest first.
 
 ---
 
+## v0.3.0 — Release — 2026-03-01
+
+**Final verification: 859 tests passing, 94% coverage, 0 broken links.**
+
+### Summary of v0.3.0 additions (Sessions 010–013)
+
+- `docs/self-validation-checklist.md` — six-dimension framework self-audit checklist
+- `docs/enforcement-hardening.md` — advanced CI/CD enforcement patterns
+- `docs/compliance-guide.md` — governance guide for GRC and compliance teams
+- `docs/governance-flow.md` — end-to-end pipeline: CLAUDE.md → AGENTS.md → MCP → CI → Prod
+- `docs/integration-compatibility.md` — migration paths from competing tools
+- `patterns/operator-playbook.md` — step-by-step operator procedures
+- `v030_build_logs/self_validation_results.md` — dogfooding results
+- `automation/health_score_calculator.py` updated to v0.3.0 (max score 110: +5 AGENTS.md, +5 self-validation)
+- Pre-commit hooks hardened (`scripts/hooks/pre_commit_guard.sh`, `scripts/hooks/post_commit.sh`)
+- `ARCHITECTURE.md` ADR links corrected to match actual ADR files
+- Test suite expanded to 859 tests across 16 files (was 273 across 13)
+- CONTEXT.md updated to v0.3.0
+
+### Health score
+Pre-v0.3.0: 63/100 (Enforced) → Post: 98/110 (Self-optimizing)
+
+---
+
 ## v0.3.0 — Session 013 — 2026-03-01
 
 **Scope:** Self-validation, dogfooding, health score update
