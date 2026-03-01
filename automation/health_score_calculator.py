@@ -35,7 +35,7 @@ MATURITY_LEVELS = [
     (40, 60, 2, "Structured"),
     (60, 80, 3, "Enforced"),
     (80, 95, 4, "Measured"),
-    (95, 101, 5, "Self-optimizing"),
+    (95, 10000, 5, "Self-optimizing"),
 ]
 
 
@@ -127,6 +127,16 @@ def check_gitignore_has_env(repo: Path) -> bool:
 def check_agents_dir(repo: Path) -> bool:
     """Check for agent definitions in .claude/agents/ or agents/."""
     return check_dir_has_files(repo, ".claude/agents") or check_dir_has_files(repo, "agents")
+
+
+def check_agents_md(repo: Path) -> bool:
+    """Check for AGENTS.md portable governance bridge at repo root."""
+    return check_file_exists(repo, "AGENTS.md")
+
+
+def check_self_validation_checklist(repo: Path) -> bool:
+    """Check for a self-validation checklist in docs/."""
+    return check_file_exists(repo, "docs/self-validation-checklist.md")
 
 
 def check_commands_dir(repo: Path) -> bool:
@@ -249,6 +259,20 @@ def calculate_score(repo: Path) -> Dict[str, Any]:
         "points": 5,
     })
 
+    # v0.3.0 — AGENTS.md portable governance bridge: +5
+    checks.append({
+        "name": "AGENTS.md portable governance bridge",
+        "passed": check_agents_md(repo),
+        "points": 5,
+    })
+
+    # v0.3.0 — Self-validation checklist: +5
+    checks.append({
+        "name": "Self-validation checklist (docs/self-validation-checklist.md)",
+        "passed": check_self_validation_checklist(repo),
+        "points": 5,
+    })
+
     score = sum(c["points"] for c in checks if c["passed"])
     max_score = sum(c["points"] for c in checks)
     level_num, level_label = get_maturity_level(score)
@@ -296,7 +320,7 @@ def format_text(report: Dict[str, Any]) -> str:
     lines.append("  40-59:  Level 2 (Structured)")
     lines.append("  60-79:  Level 3 (Enforced)")
     lines.append("  80-94:  Level 4 (Measured)")
-    lines.append("  95-100: Level 5 (Self-optimizing)")
+    lines.append("  95+:    Level 5 (Self-optimizing)")
     lines.append("")
     lines.append("To improve your score, see: docs/maturity-model.md")
 
