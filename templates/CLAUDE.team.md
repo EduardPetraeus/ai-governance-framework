@@ -35,20 +35,25 @@ repos: "[list of repos or link to team's GitHub org]"
 ---
 
 ## team_rules
-# These rules EXTEND org rules.
-# They cannot weaken, remove, or create exceptions to org rules.
-# They add team-specific requirements that all team repos share.
+# These rules EXTEND org rules using the hybrid inheritance model (ADR-004):
+# - Safety rules: higher level always wins. Cannot weaken org safety rules.
+# - Configurable rules: more specific (lower level) wins. Team config overrides org defaults.
+# - Legal obligations: override all internal rules at all levels.
+# For governance emergencies requiring a temporary safety rule override,
+# see patterns/break-glass.md.
 
 ### model_routing
+# INHERITANCE: configurable — specific-wins (except security_review: safety — higher-wins)
 # CUSTOMIZE: Team-specific model routing preferences.
 # EXTEND: Org requires Opus for security. You can require Opus for additional task types.
-# DO NOT: Lower model requirements below what org specifies.
+# DO NOT: Lower security_review model requirement below what org specifies.
 
 routing_table:
-  # Inherited from org (cannot change):
+  # INHERITANCE: safety — higher-wins (cannot change):
   security_review: opus
 
-  # CUSTOMIZE: Team-specific additions
+  # INHERITANCE: configurable — specific-wins (team overrides org defaults for these):
+  # CUSTOMIZE: Adjust to match team workload and cost requirements.
   architecture_decisions: opus
   code_review: sonnet
   code_generation: sonnet
@@ -69,6 +74,7 @@ on_pr:
   # CUSTOMIZE: Add team-specific PR review agents
 
 ### workflow
+# INHERITANCE: configurable — specific-wins for additions; safety — higher-wins for removals.
 # CUSTOMIZE: Team-specific session protocol adjustments.
 # EXTEND: You can add steps. You cannot remove required org steps.
 
@@ -86,6 +92,8 @@ session_protocol_extensions:
     # Example: - Post session summary to team Slack channel
 
 ### naming
+# INHERITANCE: safety — higher-wins for baseline scheme inherited from org.
+# INHERITANCE: configurable — specific-wins for extensions (prefixes, domain rules).
 # CUSTOMIZE: Team-specific naming extensions.
 # EXTEND: Add more specific rules. Do not contradict org naming rules.
 
@@ -99,15 +107,18 @@ extensions:
 ---
 
 ## team_security
-# EXTEND: Add team-specific security rules beyond org requirements.
+# INHERITANCE: safety — higher-wins. Rules here extend (never weaken) org security rules.
 # Do not repeat or modify org security rules — they are inherited automatically.
+# CUSTOMIZE: Add team-specific security rules beyond org requirements.
 
 data_handling:
+  # INHERITANCE: safety — higher-wins (extends org never_commit list)
   - Never include production data samples in test fixtures
   - All new tables or data models must be reviewed for PII fields before merge
   # CUSTOMIZE: Add domain-specific data handling rules
 
 credential_handling:
+  # INHERITANCE: safety — higher-wins (stricter than org default where applicable)
   - Rotate any accidentally committed credentials within 1 hour (not 24 hours)
   # CUSTOMIZE: Add team-specific credential rotation or access rules
 
@@ -127,10 +138,12 @@ required_files:
 ---
 
 ## team_quality
+# INHERITANCE: configurable — specific-wins for thresholds (team may raise org floor).
+# INHERITANCE: safety — higher-wins for minimums (team cannot go below org floor).
 # CUSTOMIZE: Team-specific quality thresholds.
 # EXTEND: Set higher thresholds than org minimums. Do not set lower.
 
-test_coverage_minimum: 70     # Adjust upward if org sets a minimum
+test_coverage_minimum: 70     # Adjust upward if org sets a minimum; never below org floor
 pr_review_required_from: tech_lead_or_senior
   # CUSTOMIZE: Options: any_team_member | senior | tech_lead_or_senior | tech_lead_only
 
