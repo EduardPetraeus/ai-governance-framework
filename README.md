@@ -129,6 +129,8 @@ See [docs/getting-started.md](docs/getting-started.md) for the full walkthrough,
 
 Each layer builds on the one below. Implement bottom-up.
 
+For the complete governance flow from constitution to production, see [docs/governance-flow.md](docs/governance-flow.md).
+
 ## vs. Other Approaches
 
 | Feature | This Framework | SuperClaude | Governor | THEOS | GRC Plugin |
@@ -148,6 +150,8 @@ Each layer builds on the one below. Implement bottom-up.
 
 SuperClaude = productivity enhancement layer; Governor = policy-file governance; THEOS = template orchestration system; GRC Plugin = compliance tooling for specific IDEs.
 
+For detailed migration paths and folder mapping, see [docs/integration-compatibility.md](docs/integration-compatibility.md).
+
 ## Directory Structure
 
 ```
@@ -165,7 +169,9 @@ ai-governance-framework/
 ├── commands/          # 10 slash command definitions for Claude Code
 ├── docs/              # Framework documentation organized by topic
 │   ├── adr/           # Architecture Decision Records
-│   └── case-studies/  # Real-world implementation case studies
+│   ├── case-studies/  # Real-world implementation case studies
+│   ├── governance-flow.md        # Complete governance pipeline: CLAUDE.md → AGENTS.md → MCP → CI → Prod
+│   └── integration-compatibility.md  # Migration paths from Fr-e-d, AI Governor, claude-code-config
 ├── examples/          # Production-ready configurations for 4 use cases
 │   ├── core-edition/  # Minimum viable governance — start here (10 min)
 │   ├── solo-developer/

@@ -161,6 +161,8 @@ If the human requests something outside the current sprint scope, the agent flag
 Which do you prefer?"
 ```
 
+For state drift detection during an active session, see [docs/governance-flow.md#state-drift](governance-flow.md#state-drift).
+
 ---
 
 ## Phase 2: During Session
