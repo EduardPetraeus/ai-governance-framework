@@ -21,7 +21,7 @@ is unreliable.
 | `conventions` section present | Naming rules, file structure documented |
 | `mandatory_session_protocol` section present | Phase 1–3 defined with concrete steps |
 | `security_protocol` section present | No-commit rules explicitly listed |
-| No placeholder text | No `[YOUR VALUE HERE]`, no `TODO`, no `...` in non-template files |
+| No placeholder text | No `N/A`, no `TODO`, no `...` in non-template files |
 | Last modified < 90 days OR used in most recent sprint | File modification date or CHANGELOG reference |
 | All cross-references resolve | Every relative link in CLAUDE.md points to an existing file |
 
