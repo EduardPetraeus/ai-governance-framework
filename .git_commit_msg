@@ -1,0 +1,7 @@
+release: v0.3.0
+
+- Fix ARCHITECTURE.md ADR links (4 broken, correct file names)
+- Add v0.3.0 release entry to CHANGELOG.md (859 tests, 94% coverage)
+- Update CONTEXT.md: v0.3.0 stats, v0.4.0 preview
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
