@@ -223,6 +223,15 @@ The second reason: governance only works if it is universal. If one developer me
 
 MCP enforcement applies Layer 3 principles to the agent's tool surface: MCP calls produce real-world side effects at AI speed, making deterministic pre-call gates more critical than post-hoc review. See [docs/mcp-governance.md](mcp-governance.md) for the full specification and [patterns/mcp-governance.md](../patterns/mcp-governance.md) for the implementation pattern.
 
+**Tier 3.5 — Structured output validation (medium, deterministic):**
+- Agent produces `output_contract.json` at session end with required fields: `status`,
+  `files_changed`, `confidence`, `not_verified`, `architectural_impact`, `requires_review`
+- CI validates the contract against the schema before merge is permitted
+- Confidence ceiling enforced: values above the configured threshold (default: 85) are rejected
+- See [`patterns/structured-output-contracts.md`](../patterns/structured-output-contracts.md)
+  for the schema and [`automation/output_contract_validator.py`](../automation/output_contract_validator.py)
+  for the validator
+
 **Tier 4 — AI review (slower, probabilistic):**
 - AI code reviewer checks the PR diff against `CLAUDE.md` and `ARCHITECTURE.md`
 - Posts structured feedback: PASS / WARN / FAIL with specific line comments
@@ -251,6 +260,13 @@ repos:
 ```
 
 **Governance file check** — the uniquely important gate. If code files changed in a PR but `CHANGELOG.md` was not updated, the check fails. This enforces the session end protocol at the merge gate. The rule: no merge without a `docs: update project state` commit alongside code changes.
+
+### Enforcement Hardening
+
+The enforcement tiers above represent the core model. For a detailed upgrade path across three
+hardening levels — Core (L1), Standard (L2), and Enterprise (L3) — including policy engine
+integration, runtime guardrails for MCP tool access, and governance health gates, see
+[docs/enforcement-hardening.md](enforcement-hardening.md).
 
 ### How It Connects
 
