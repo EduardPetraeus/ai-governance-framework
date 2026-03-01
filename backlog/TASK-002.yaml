@@ -1,0 +1,34 @@
+id: TASK-002
+title: "Fix CLAUDE.md drift in HealthReporting and indie-products"
+description: |
+  drift_detector.py found missing sections in two repos:
+  - HealthReporting: 2 missing sections vs governance template
+  - indie-products: 4 missing sections vs governance template
+  Run drift_detector.py to identify exact missing sections, then update
+  both repos' CLAUDE.md files to align with the governance template.
+
+status: ready
+priority: medium
+agent: docs
+review: agent-review
+assignee: null
+sprint: null
+
+depends_on: []
+blocks: []
+
+definition_of_done:
+  - "drift_detector.py reports ALIGNED for HealthReporting"
+  - "drift_detector.py reports ALIGNED for indie-products"
+  - "No content lost — only sections added"
+
+tags: [governance, drift, alignment]
+estimate: s
+
+actual_tokens: null
+actual_duration_minutes: null
+completed: null
+
+created: 2026-03-01
+updated: 2026-03-01
+notes: "Found during 2026-03-01 verification run."

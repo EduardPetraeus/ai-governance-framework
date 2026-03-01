@@ -1,0 +1,34 @@
+id: TASK-001
+title: "Test GitHub Actions governance gate in real PR workflow"
+description: |
+  Validate the governance gate (templates/ci-cd/github-actions-governance-gate.yml)
+  in HealthReporting by creating a test PR and verifying the gate runs correctly.
+  This is the real-world validation step — confirm that drift detection, content
+  quality checks, and CLAUDE.md validation work in an actual CI pipeline.
+
+status: ready
+priority: high
+agent: code
+review: human-review
+assignee: null
+sprint: null
+
+depends_on: []
+blocks: []
+
+definition_of_done:
+  - "GitHub Actions workflow added to HealthReporting repo"
+  - "Test PR triggers the governance gate"
+  - "Gate correctly reports drift and quality scores"
+  - "Gate blocks merge if critical issues found"
+
+tags: [ci-cd, validation, github-actions]
+estimate: m
+
+actual_tokens: null
+actual_duration_minutes: null
+completed: null
+
+created: 2026-03-01
+updated: 2026-03-01
+notes: "From AI review backlog — real-world validation of governance tooling."
