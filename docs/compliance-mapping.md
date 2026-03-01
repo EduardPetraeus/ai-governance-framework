@@ -24,7 +24,7 @@ The NIST AI RMF organizes AI risk management into four core functions.
 | **MAP** — dependency and context mapping | Context boundaries pattern | [patterns/context-boundaries.md](../patterns/context-boundaries.md) |
 | **MEASURE** — governance health score | Health score calculator | [automation/health_score_calculator.py](../automation/health_score_calculator.py) |
 | **MEASURE** — AI output quality metrics | Quality gate agent | [agents/quality-gate-agent.md](../agents/quality-gate-agent.md) |
-| **MEASURE** — confidence ceiling (85%) | Automation bias defense | [patterns/automation-bias-defense.md](../patterns/automation-bias-defense.md) |
+| **MEASURE** — confidence ceiling (configurable, default: 85%) | Automation bias defense | [patterns/automation-bias-defense.md](../patterns/automation-bias-defense.md) |
 | **MANAGE** — session-level control | Session protocol | [docs/session-protocol.md](session-protocol.md) |
 | **MANAGE** — emergency stop | Kill switch | [docs/kill-switch.md](kill-switch.md) |
 | **MANAGE** — rollback and recovery | Rollback guide | [docs/rollback-recovery.md](rollback-recovery.md) |

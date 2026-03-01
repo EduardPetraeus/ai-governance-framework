@@ -315,7 +315,7 @@ project-root/
 
 **Session replay**: enable `.session-logs/` generation at session end. Post-incident investigation becomes tractable when session logs capture the decision chain, context used, and confidence scores. See [docs/session-replay.md](session-replay.md).
 
-**Automation bias defense**: with multiple validation agents active, configure explicit uncertainty surfacing (agents list what they did NOT check), enforce the 85% confidence ceiling, and establish periodic unassisted review sessions. See [docs/automation-bias.md](automation-bias.md).
+**Automation bias defense**: with multiple validation agents active, configure explicit uncertainty surfacing (agents list what they did NOT check), enforce the confidence ceiling (configurable, default: 85%), and establish periodic unassisted review sessions. See [docs/automation-bias.md](automation-bias.md) and [ADR-003](adr/ADR-003-85-percent-confidence-ceiling.md) for ceiling configuration guidance.
 
 ### How to Upgrade to Level 5
 

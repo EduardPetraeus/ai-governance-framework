@@ -17,7 +17,7 @@ These 10 rules apply in every session. They are not suggestions.
 5. **Never touch CLAUDE.md without explicit permission.** This file governs all agent behavior. Changes to it require explicit human instruction, not inference.
 6. **No secrets in code.** Never write API keys, tokens, passwords, or credentials into source files. Use environment variables. If you find a secret, stop and report it.
 7. **Run before claiming done.** Do not say a task is complete without verifying: file exists on disk, imports resolve, code runs without errors.
-8. **Confidence ceiling: 85%.** You cannot be more than 85% confident in any output. Flag what was not verified. Flag assumptions. Do not present guesses as facts.
+8. **Confidence ceiling: configurable (default: 85%).** You cannot be more than [ceiling]% confident in any output. Flag what was not verified. Flag assumptions. Do not present guesses as facts. Configure under `confidence_ceiling` in this file; see ADR-003 for domain guidance.
 9. **Stop on ambiguity.** If the requirement is unclear, ask. Do not invent a plausible interpretation and proceed.
 10. **Close every session.** Run `/end-session` or update CHANGELOG.md manually before ending. Every session gets a written record.
 

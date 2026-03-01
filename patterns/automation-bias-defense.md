@@ -13,9 +13,9 @@ creates.
 ## Solution
 
 Enforce explicit uncertainty surfacing from every AI validation agent. Cap overall confidence
-at 85%. Maintain developer judgment through periodic unassisted sessions. Track human review
-quality as a proxy metric for automation bias. Label categories that AI cannot verify as
-requiring mandatory human judgment.
+at the configured ceiling (default: 85%, range 80–95%). Maintain developer judgment through
+periodic unassisted sessions. Track human review quality as a proxy metric for automation
+bias. Label categories that AI cannot verify as requiring mandatory human judgment.
 
 ## When to Use
 
@@ -52,7 +52,7 @@ and what it did not. Template:
 - Correctness of domain-specific calculations
 - Whether requirements were interpreted correctly
 
-### Confidence: [N]% (capped at 85%)
+### Confidence: [N]% (capped at configured ceiling, default: 85%)
 AI review is complete. Items in NOT VERIFIED require human sign-off before merge.
 ```
 
@@ -68,8 +68,9 @@ End every review with the confidence ceiling reminder.
 ```markdown
 ## confidence_ceiling
 
-Maximum overall confidence from AI validation: 85%
+Maximum overall confidence from AI validation: configurable (default: 85%, range 80–95%)
 This ceiling applies regardless of how many agents approved.
+Configure in CLAUDE.md under `confidence_ceiling`. See ADR-003 for guidance by domain.
 
 When reporting review results:
 - State confidence as: [N]% of mechanically verifiable properties
@@ -134,10 +135,13 @@ PRs, automation bias is likely active.
 The human needs to know what was not checked. Removing the section creates the false impression
 of complete verification.
 
-**Raising the confidence ceiling** — "85% seems too conservative, our agent is better than that."
-The 85% ceiling is not about this specific agent's accuracy. It is about the categories of
-correctness that AI systems structurally cannot verify (business logic, requirement
-interpretation). These categories are not covered regardless of model capability.
+**Raising the confidence ceiling without governance** — "85% seems too conservative, our
+agent is better than that." The ceiling is not about this specific agent's accuracy. It is
+about the categories of correctness that AI systems structurally cannot verify (business
+logic, requirement interpretation). These categories are not covered regardless of model
+capability. The ceiling is configurable (80–95%), but changes require a CHANGELOG entry with
+rationale and retrospective review. See [ADR-003](../docs/adr/ADR-003-85-percent-confidence-ceiling.md)
+and [patterns/friction-budget.md](friction-budget.md) for calibration guidance.
 
 **Skipping unassisted sessions because the AI is doing well** — the unassisted session is most
 valuable when AI governance is working. That is when skill atrophy is silently accumulating.
@@ -165,7 +169,7 @@ NOT VERIFIED — requires human judgment:
 ⚠️ Data model: new PurchaseEvent entity — correct abstraction for this domain?
 ⚠️ Performance: no load testing in scope
 
-Confidence: 72% (capped at 85% — AI validation is never complete)
+Confidence: 72% (capped at configured ceiling, default 85% — AI validation is never complete)
 
 Your review should focus on the NOT VERIFIED items above.
 The VERIFIED items have been checked; the NOT VERIFIED items have not.

@@ -212,9 +212,10 @@ Security scan: clean. Naming: compliant. Business logic: NOT VERIFIED — requir
 domain judgment. The human reviewer cannot assume completeness when gaps are explicitly listed.
 
 **Confidence ceiling**: regardless of how many agents approve, the overall confidence is
-capped at 85%. This ceiling is accurate — AI systems structurally cannot verify business
-logic correctness, requirement interpretation, or domain-specific correctness. Representing
-AI validation as complete would be false.
+capped at the configured ceiling (default: 85%, range 80–95%). This ceiling is accurate —
+AI systems structurally cannot verify business logic correctness, requirement interpretation,
+or domain-specific correctness. Representing AI validation as complete would be false.
+Configure in `CLAUDE.md` under `confidence_ceiling`; see ADR-003 for domain guidance.
 
 **Periodic unassisted sessions**: once a month, run a session without AI review agents.
 Pure human review. This maintains the developer's independent verification skill and reveals
