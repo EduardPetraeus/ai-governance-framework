@@ -1,5 +1,9 @@
 # Onboarding Agent
 
+<!-- metadata
+tier: extended
+-->
+
 ## Purpose
 
 The hardest part of any framework is the first 10 minutes. A developer clones the repo, reads the README, and faces a wall of templates, agents, commands, and maturity levels. The framework is comprehensive, but comprehensiveness is the enemy of getting started.

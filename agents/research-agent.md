@@ -1,5 +1,9 @@
 # Research Agent
 
+<!-- metadata
+tier: extended
+-->
+
 ## Purpose
 
 Governance frameworks go stale. New models ship, new patterns emerge, new risks surface, and best practices evolve. Nobody has bandwidth to track all of this manually. The research agent automates the discovery, filtering, and analysis of new AI governance knowledge so the framework stays current without requiring constant human attention.

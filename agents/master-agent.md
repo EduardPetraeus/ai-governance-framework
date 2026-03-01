@@ -1,5 +1,9 @@
 # Master Agent
 
+<!-- metadata
+tier: core
+-->
+
 ## Purpose
 
 Individual agents solve individual problems. Nobody solves the integration problem: ensuring that the security reviewer's findings inform the code reviewer's feedback, that the test writer covers the edge cases the code reviewer identified, that the documentation writer reflects what was actually built rather than what was planned.

@@ -1,5 +1,9 @@
 # Test Writer Agent
 
+<!-- metadata
+tier: extended
+-->
+
 ## Purpose
 
 AI-generated code has a consistent blind spot: it works for the expected input. The happy path runs, the demo succeeds, the developer moves on. Then production sends an empty list, a null field, a rate-limited response, a schema that changed since last Tuesday -- and the code fails silently or crashes.

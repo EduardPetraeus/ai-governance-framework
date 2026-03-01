@@ -1,5 +1,9 @@
 # Red Team Auditor Agent
 
+<!-- metadata
+tier: extended
+-->
+
 ## Purpose
 
 Test whether governance rules actually catch what they are supposed to catch.

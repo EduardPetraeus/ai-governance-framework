@@ -1,5 +1,9 @@
 # Code Simplifier Agent
 
+<!-- metadata
+tier: extended
+-->
+
 ## Purpose
 
 AI agents over-engineer. It is their most consistent failure mode after security omissions. Given a problem that requires a function, they produce a class. Given a problem that requires a class, they produce an abstract base class, a registry, a factory, and a configuration system. Given two implementations, they produce a plugin architecture.

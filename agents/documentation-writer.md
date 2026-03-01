@@ -1,5 +1,9 @@
 # Documentation Writer Agent
 
+<!-- metadata
+tier: extended
+-->
+
 ## Purpose
 
 Documentation drifts from code the moment it is written. A function gets a new parameter, the docstring is not updated. A new integration is added, ARCHITECTURE.md still shows last month's diagram. An architectural decision is made in a session, never recorded, and the next session makes the opposite decision.

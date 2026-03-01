@@ -1,5 +1,9 @@
 # Code Reviewer Agent
 
+<!-- metadata
+tier: core
+-->
+
 ## Purpose
 
 Human code review is expensive. A senior engineer reviewing a PR for 20 minutes costs the organization far more than the AI review that catches the naming convention violation, the missing test, and the CHANGELOG omission before the human ever opens the PR.

@@ -1,5 +1,9 @@
 # Drift Detector Agent
 
+<!-- metadata
+tier: extended
+-->
+
 ## Purpose
 
 Governance files are written with good intentions and abandoned through neglect. A project adopts the framework, configures CLAUDE.md, sets up the session protocol, and runs well for three weeks. Then a deadline hits. Sessions end without CHANGELOG updates. A new agent is referenced in CLAUDE.md but never created. The .gitignore falls behind the security constitution. Each omission is small. Collectively, they erode governance until the framework exists in name only.

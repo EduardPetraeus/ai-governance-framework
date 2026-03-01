@@ -1,5 +1,9 @@
 # Quality Gate Agent
 
+<!-- metadata
+tier: core
+-->
+
 ## Purpose
 
 Agents produce output. Humans approve it. Between those two steps, nothing verifies that the output actually meets the project's standards. The code reviewer checks conventions. The security reviewer checks for vulnerabilities. But nobody checks whether the aggregate output — code, tests, documentation, governance updates — forms a coherent, complete, standards-compliant deliverable.
