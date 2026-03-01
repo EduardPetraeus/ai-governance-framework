@@ -184,8 +184,9 @@ The practical advantage is twofold. First, bounded agents produce changes with f
 
 ## Related Patterns
 
-- [Blast Radius Control](blast-radius-control.md) — limits what the agent writes; context boundaries limit what it reads
-- [Output Contracts](output-contracts.md) — contracts define the write boundary for a specific task
+- **[Blast Radius Control](blast-radius-control.md)** — Limits scope of changes; context boundaries limit scope of awareness
+- **[Automation Bias Defense](automation-bias-defense.md)** — Confidence ceiling accounts for information outside context boundaries
+- **[Output Contracts](output-contracts.md)** — Defines expected outputs, enforcing write boundaries
 - [Human-in-the-Loop](human-in-the-loop.md) — boundary violations trigger human review
 - [Progressive Trust](progressive-trust.md) — higher trust levels can allow broader context boundaries
 - [Quality Control Patterns](../docs/quality-control-patterns.md) — context boundaries prevent errors by reducing the opportunity space

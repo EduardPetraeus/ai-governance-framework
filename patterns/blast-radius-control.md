@@ -214,8 +214,10 @@ The specific advantage of explicit limits (rather than guidelines) is that they 
 
 ## Related Patterns
 
+- **[Context Boundaries](context-boundaries.md)** — Defines what agents can read/write, complementing blast radius limits on how much they change
+- **[Automation Bias Defense](automation-bias-defense.md)** — Confidence ceiling prevents over-trust in high-blast-radius changes
+- **[Kill Switch](kill-switch.md)** — Emergency stop when blast radius limits are breached
 - [Output Contracts](output-contracts.md) — contracts specify the blast radius for a specific task
 - [Progressive Trust](progressive-trust.md) — higher trust levels can allow larger blast radii for trusted domains
-- [Context Boundaries](context-boundaries.md) — limits what the agent reads; blast radius limits what it writes
 - [Human-in-the-Loop](human-in-the-loop.md) — high blast radius triggers mandatory human confirmation
 - [Quality Control Patterns](../docs/quality-control-patterns.md) — blast radius control enables effective review at Layer 4

@@ -50,6 +50,18 @@ Each pattern primarily serves one or more layers of the [governance architecture
 | [Constitutional Inheritance](constitutional-inheritance.md) | Cascade governance rules from organization to team to repo level with explicit override controls. |
 | [MCP Governance](mcp-governance.md) | Govern MCP tool access with least-privilege allowlists, kill switch triggers, audit logging, environment segregation, and rate limits. |
 
+## Pattern Groups
+
+Related patterns that work together as a system:
+
+| Group | Patterns | Purpose |
+|-------|----------|---------|
+| **Scope Control** | Blast Radius Control, Context Boundaries, Output Contracts | Limit what agents can see, change, and produce |
+| **Trust Calibration** | Automation Bias Defense, Progressive Trust, Confidence Scoring | Prevent over-reliance on AI output |
+| **Safety Net** | Kill Switch, Human in the Loop | Emergency stops and human override |
+| **Verification** | Dual Model Validation, Semantic Verification, Session Replay | Validate correctness through independent checks |
+| **Governance Evolution** | Constitutional Inheritance, Knowledge Decay, Friction Budget | Maintain and evolve governance over time |
+
 ## Further Reading
 
 - [Quality Control Patterns](../docs/quality-control-patterns.md) — how all patterns layer into a defense-in-depth stack

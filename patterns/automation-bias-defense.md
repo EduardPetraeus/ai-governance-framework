@@ -179,7 +179,10 @@ The human now knows exactly where to focus. They cannot assume the AI covered ev
 
 ## Related Patterns
 
+- **[Blast Radius Control](blast-radius-control.md)** — Limits damage when confidence is miscalibrated
+- **[Context Boundaries](context-boundaries.md)** — Unverified areas outside boundaries should lower confidence
+- **[Human in the Loop](human-in-the-loop.md)** — Human review is the ultimate automation bias defense
+- **[Dual Model Validation](dual-model-validation.md)** — Second model review reduces single-model bias
 - [docs/automation-bias.md](../docs/automation-bias.md) — full specification and theory
 - [docs/adversarial-audit.md](../docs/adversarial-audit.md) — testing governance effectiveness
-- [patterns/human-in-the-loop.md](human-in-the-loop.md) — defining human checkpoints
 - [docs/quality-control-patterns.md](../docs/quality-control-patterns.md) — quality control stack
