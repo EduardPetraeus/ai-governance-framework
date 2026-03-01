@@ -203,6 +203,8 @@ A toggle in the feature flag dashboard immediately stops all sessions from acces
 ## Related Patterns
 
 - [docs/mcp-governance.md](../docs/mcp-governance.md) — complete MCP governance specification with Unleash example and implementation checklist
+- [patterns/agent-identity.md](agent-identity.md) — agent identity enforcement that defines which MCP servers each registered agent is authorized to access; MCP governance enforces the per-agent tool allowlist declared in AGENT_REGISTRY.md
+- [docs/agent-registry.md](../docs/agent-registry.md) — registry schema for `tools.mcp_servers` and `tools.denied_servers` that MCP governance reads per agent before each tool call
 - [patterns/kill-switch.md](kill-switch.md) — session-level kill switch; MCP kill switch extends trigger 3 (blast radius) with tool-specific triggers
 - [patterns/blast-radius-control.md](blast-radius-control.md) — MCP rate limits and call limits are blast radius control applied to tool access
 - [patterns/context-boundaries.md](context-boundaries.md) — controls what the agent can read; MCP governance controls what it can do
