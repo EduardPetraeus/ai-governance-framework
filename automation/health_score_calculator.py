@@ -132,7 +132,9 @@ def check_gitignore_has_env(repo: Path) -> bool:
 
 def check_agents_dir(repo: Path) -> bool:
     """Check for agent definitions in .claude/agents/ or agents/."""
-    return check_dir_has_files(repo, ".claude/agents") or check_dir_has_files(repo, "agents")
+    return check_dir_has_files(repo, ".claude/agents") or check_dir_has_files(
+        repo, "agents"
+    )
 
 
 def check_agents_md(repo: Path) -> bool:
@@ -147,7 +149,9 @@ def check_self_validation_checklist(repo: Path) -> bool:
 
 def check_commands_dir(repo: Path) -> bool:
     """Check for command definitions in .claude/commands/ or commands/."""
-    return check_dir_has_files(repo, ".claude/commands") or check_dir_has_files(repo, "commands")
+    return check_dir_has_files(repo, ".claude/commands") or check_dir_has_files(
+        repo, "commands"
+    )
 
 
 def calculate_score(repo: Path) -> Dict[str, Any]:
@@ -157,127 +161,161 @@ def calculate_score(repo: Path) -> Dict[str, Any]:
 
     # CLAUDE.md exists: +10
     claude_exists = check_file_exists(repo, "CLAUDE.md")
-    checks.append({
-        "name": "CLAUDE.md exists",
-        "passed": claude_exists,
-        "points": 10,
-    })
+    checks.append(
+        {
+            "name": "CLAUDE.md exists",
+            "passed": claude_exists,
+            "points": 10,
+        }
+    )
 
     # CLAUDE.md has required sections: +2 each (max 10)
     found_sections = check_claude_sections(repo)
     for section in REQUIRED_CLAUDE_SECTIONS:
         present = section in found_sections
-        checks.append({
-            "name": f"CLAUDE.md section: {section}",
-            "passed": present,
-            "points": 2,
-        })
+        checks.append(
+            {
+                "name": f"CLAUDE.md section: {section}",
+                "passed": present,
+                "points": 2,
+            }
+        )
 
     # PROJECT_PLAN.md exists: +5
-    checks.append({
-        "name": "PROJECT_PLAN.md exists",
-        "passed": check_file_exists(repo, "PROJECT_PLAN.md"),
-        "points": 5,
-    })
+    checks.append(
+        {
+            "name": "PROJECT_PLAN.md exists",
+            "passed": check_file_exists(repo, "PROJECT_PLAN.md"),
+            "points": 5,
+        }
+    )
 
     # CHANGELOG.md exists with at least 3 entries: +10
     changelog_count = count_changelog_entries(repo)
-    checks.append({
-        "name": "CHANGELOG.md with 3+ entries",
-        "passed": changelog_count >= 3,
-        "points": 10,
-    })
+    checks.append(
+        {
+            "name": "CHANGELOG.md with 3+ entries",
+            "passed": changelog_count >= 3,
+            "points": 10,
+        }
+    )
 
     # ARCHITECTURE.md exists: +5
-    checks.append({
-        "name": "ARCHITECTURE.md exists",
-        "passed": check_file_exists(repo, "ARCHITECTURE.md"),
-        "points": 5,
-    })
+    checks.append(
+        {
+            "name": "ARCHITECTURE.md exists",
+            "passed": check_file_exists(repo, "ARCHITECTURE.md"),
+            "points": 5,
+        }
+    )
 
     # MEMORY.md exists: +5
-    checks.append({
-        "name": "MEMORY.md exists",
-        "passed": check_file_exists(repo, "MEMORY.md"),
-        "points": 5,
-    })
+    checks.append(
+        {
+            "name": "MEMORY.md exists",
+            "passed": check_file_exists(repo, "MEMORY.md"),
+            "points": 5,
+        }
+    )
 
     # At least 1 ADR in docs/adr/: +5
-    checks.append({
-        "name": "At least 1 ADR in docs/adr/",
-        "passed": check_dir_has_files(repo, "docs/adr"),
-        "points": 5,
-    })
+    checks.append(
+        {
+            "name": "At least 1 ADR in docs/adr/",
+            "passed": check_dir_has_files(repo, "docs/adr"),
+            "points": 5,
+        }
+    )
 
     # .pre-commit-config.yaml exists: +10
-    checks.append({
-        "name": ".pre-commit-config.yaml exists",
-        "passed": check_file_exists(repo, ".pre-commit-config.yaml"),
-        "points": 10,
-    })
+    checks.append(
+        {
+            "name": ".pre-commit-config.yaml exists",
+            "passed": check_file_exists(repo, ".pre-commit-config.yaml"),
+            "points": 10,
+        }
+    )
 
     # .github/workflows/ has at least 1 file: +5
-    checks.append({
-        "name": "GitHub Actions workflow exists",
-        "passed": check_dir_has_files(repo, ".github/workflows"),
-        "points": 5,
-    })
+    checks.append(
+        {
+            "name": "GitHub Actions workflow exists",
+            "passed": check_dir_has_files(repo, ".github/workflows"),
+            "points": 5,
+        }
+    )
 
     # AI review workflow: +10
-    checks.append({
-        "name": "AI review workflow (anthropic/claude)",
-        "passed": check_ai_review_workflow(repo),
-        "points": 10,
-    })
+    checks.append(
+        {
+            "name": "AI review workflow (anthropic/claude)",
+            "passed": check_ai_review_workflow(repo),
+            "points": 10,
+        }
+    )
 
     # At least 1 agent: +5
-    checks.append({
-        "name": "Agent definition exists",
-        "passed": check_agents_dir(repo),
-        "points": 5,
-    })
+    checks.append(
+        {
+            "name": "Agent definition exists",
+            "passed": check_agents_dir(repo),
+            "points": 5,
+        }
+    )
 
     # At least 1 command: +5
-    checks.append({
-        "name": "Command definition exists",
-        "passed": check_commands_dir(repo),
-        "points": 5,
-    })
+    checks.append(
+        {
+            "name": "Command definition exists",
+            "passed": check_commands_dir(repo),
+            "points": 5,
+        }
+    )
 
     # patterns/ directory with at least 1 file: +5
-    checks.append({
-        "name": "patterns/ directory with files",
-        "passed": check_dir_has_files(repo, "patterns"),
-        "points": 5,
-    })
+    checks.append(
+        {
+            "name": "patterns/ directory with files",
+            "passed": check_dir_has_files(repo, "patterns"),
+            "points": 5,
+        }
+    )
 
     # automation/ directory exists: +5
-    checks.append({
-        "name": "automation/ directory exists",
-        "passed": (repo / "automation").is_dir(),
-        "points": 5,
-    })
+    checks.append(
+        {
+            "name": "automation/ directory exists",
+            "passed": (repo / "automation").is_dir(),
+            "points": 5,
+        }
+    )
 
     # .gitignore contains .env: +5
-    checks.append({
-        "name": ".gitignore includes .env",
-        "passed": check_gitignore_has_env(repo),
-        "points": 5,
-    })
+    checks.append(
+        {
+            "name": ".gitignore includes .env",
+            "passed": check_gitignore_has_env(repo),
+            "points": 5,
+        }
+    )
 
     # v0.3.0 — AGENTS.md portable governance bridge: +5
-    checks.append({
-        "name": "AGENTS.md portable governance bridge",
-        "passed": check_agents_md(repo),
-        "points": 5,
-    })
+    checks.append(
+        {
+            "name": "AGENTS.md portable governance bridge",
+            "passed": check_agents_md(repo),
+            "points": 5,
+        }
+    )
 
     # v0.3.0 — Self-validation checklist: +5
-    checks.append({
-        "name": "Self-validation checklist (docs/self-validation-checklist.md)",
-        "passed": check_self_validation_checklist(repo),
-        "points": 5,
-    })
+    checks.append(
+        {
+            "name": "Self-validation checklist (docs/self-validation-checklist.md)",
+            "passed": check_self_validation_checklist(repo),
+            "points": 5,
+        }
+    )
 
     raw_score = sum(c["points"] for c in checks if c["passed"])
     max_score = sum(c["points"] for c in checks)
@@ -320,10 +358,14 @@ def format_text(report: Dict[str, Any]) -> str:
 
     for check in report["checks"]:
         if not check["passed"]:
-            lines.append(f"  \u274c {check['name']}: +{check['points']} points if implemented")
+            lines.append(
+                f"  \u274c {check['name']}: +{check['points']} points if implemented"
+            )
 
     lines.append("")
-    lines.append(f"Checklist completion level: Level {report['level']} ({report['level_label']})")
+    lines.append(
+        f"Checklist completion level: Level {report['level']} ({report['level_label']})"
+    )
     lines.append("")
     lines.append("Level thresholds (checklist completion %):")
     lines.append("  0-19%:  Level 0 (Ad-hoc)")

@@ -24,6 +24,7 @@ SCRIPT_PATH = Path(__file__).parent.parent / "scripts" / "ai_security_review.py"
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def make_diff(filename: str, added_lines: list[str]) -> str:
     """Build a minimal unified diff that adds the given lines to filename."""
     header = (
@@ -39,6 +40,7 @@ def make_diff(filename: str, added_lines: list[str]) -> str:
 # ---------------------------------------------------------------------------
 # parse_diff_lines
 # ---------------------------------------------------------------------------
+
 
 class TestParseDiffLines:
     def test_returns_added_lines_only(self):
@@ -79,11 +81,16 @@ class TestParseDiffLines:
 # scan_diff — CRITICAL patterns
 # ---------------------------------------------------------------------------
 
+
 class TestScanDiffCritical:
     def test_detects_anthropic_api_key(self):
-        diff = make_diff("config.py", ["KEY = 'sk-ant-api03-ABCDEFGHIJKLMNOPQRSTUVWXYZabcde'"])
+        diff = make_diff(
+            "config.py", ["KEY = 'sk-ant-api03-ABCDEFGHIJKLMNOPQRSTUVWXYZabcde'"]
+        )
         findings = asr.scan_diff(diff)
-        assert any(f.severity == "CRITICAL" and "anthropic" in f.pattern for f in findings)
+        assert any(
+            f.severity == "CRITICAL" and "anthropic" in f.pattern for f in findings
+        )
 
     def test_detects_aws_access_key(self):
         diff = make_diff("aws.py", ["AWS_KEY = 'AKIAIOSFODNN7EXAMPLE'"])
@@ -101,7 +108,9 @@ class TestScanDiffCritical:
         assert any(f.pattern == "hardcoded_password" for f in findings)
 
     def test_detects_connection_string_with_credentials(self):
-        diff = make_diff("db.py", ["DB_URL = 'postgresql://admin:hunter2@db.internal/prod'"])
+        diff = make_diff(
+            "db.py", ["DB_URL = 'postgresql://admin:hunter2@db.internal/prod'"]
+        )
         findings = asr.scan_diff(diff)
         assert any(f.pattern == "connection_string_with_credentials" for f in findings)
 
@@ -109,6 +118,7 @@ class TestScanDiffCritical:
 # ---------------------------------------------------------------------------
 # scan_diff — HIGH patterns
 # ---------------------------------------------------------------------------
+
 
 class TestScanDiffHigh:
     def test_detects_internal_ip_10_x(self):
@@ -131,11 +141,14 @@ class TestScanDiffHigh:
 # scan_diff — MEDIUM patterns
 # ---------------------------------------------------------------------------
 
+
 class TestScanDiffMedium:
     def test_detects_email_address(self):
         diff = make_diff("data.py", ["contact = 'john.doe@example.com'"])
         findings = asr.scan_diff(diff)
-        assert any(f.severity == "MEDIUM" and f.pattern == "email_address" for f in findings)
+        assert any(
+            f.severity == "MEDIUM" and f.pattern == "email_address" for f in findings
+        )
 
     def test_detects_ssn_pattern(self):
         diff = make_diff("records.py", ["ssn = '123-45-6789'"])
@@ -146,6 +159,7 @@ class TestScanDiffMedium:
 # ---------------------------------------------------------------------------
 # scan_diff — LOW patterns
 # ---------------------------------------------------------------------------
+
 
 class TestScanDiffLow:
     def test_detects_debug_mode_enabled(self):
@@ -163,16 +177,20 @@ class TestScanDiffLow:
 # Clean diff produces no CRITICAL findings
 # ---------------------------------------------------------------------------
 
+
 class TestCleanDiff:
     def test_clean_diff_has_no_critical_findings(self, sample_diff_clean):
         findings = asr.scan_diff(sample_diff_clean)
         assert not any(f.severity == "CRITICAL" for f in findings)
 
     def test_clean_python_function_returns_empty(self):
-        diff = make_diff("math.py", [
-            "def add(a: int, b: int) -> int:",
-            "    return a + b",
-        ])
+        diff = make_diff(
+            "math.py",
+            [
+                "def add(a: int, b: int) -> int:",
+                "    return a + b",
+            ],
+        )
         findings = asr.scan_diff(diff)
         assert findings == []
 
@@ -180,6 +198,7 @@ class TestCleanDiff:
 # ---------------------------------------------------------------------------
 # build_summary
 # ---------------------------------------------------------------------------
+
 
 class TestBuildSummary:
     def test_empty_findings_all_zeros(self):
@@ -203,6 +222,7 @@ class TestBuildSummary:
 # ---------------------------------------------------------------------------
 # run — JSON output and exit codes
 # ---------------------------------------------------------------------------
+
 
 class TestRun:
     def test_clean_diff_exits_zero(self, sample_diff_clean, capsys):
@@ -231,7 +251,9 @@ class TestRun:
         for key in ("critical", "high", "medium", "low"):
             assert key in summary
 
-    def test_critical_finding_is_included_in_json(self, sample_diff_with_api_key, capsys):
+    def test_critical_finding_is_included_in_json(
+        self, sample_diff_with_api_key, capsys
+    ):
         asr.run(sample_diff_with_api_key)
         parsed = json.loads(capsys.readouterr().out)
         assert parsed["summary"]["critical"] >= 1
@@ -240,6 +262,7 @@ class TestRun:
 # ---------------------------------------------------------------------------
 # build_parser — CLI argument parser (lines 281-295)
 # ---------------------------------------------------------------------------
+
 
 class TestBuildParser:
     def test_returns_argument_parser(self):
@@ -258,12 +281,15 @@ class TestBuildParser:
 
     def test_parser_has_description(self):
         parser = asr.build_parser()
-        assert "git diff" in parser.description or "security" in parser.description.lower()
+        assert (
+            "git diff" in parser.description or "security" in parser.description.lower()
+        )
 
 
 # ---------------------------------------------------------------------------
 # __main__ block — CLI entry point via subprocess (lines 299-318)
 # ---------------------------------------------------------------------------
+
 
 class TestCLIMain:
     """Integration tests for the __main__ block executed via subprocess."""
@@ -290,7 +316,12 @@ class TestCLIMain:
 
     def test_nonexistent_file_exits_one_with_error_message(self, tmp_path):
         result = subprocess.run(
-            [sys.executable, str(SCRIPT_PATH), "--file", str(tmp_path / "missing.diff")],
+            [
+                sys.executable,
+                str(SCRIPT_PATH),
+                "--file",
+                str(tmp_path / "missing.diff"),
+            ],
             capture_output=True,
             text=True,
         )
@@ -357,6 +388,7 @@ class TestCLIMain:
             assert "No input provided" in result.stderr or "--help" in result.stderr
         finally:
             import os
+
             os.close(master_fd)
             os.close(slave_fd)
 
@@ -364,6 +396,7 @@ class TestCLIMain:
 # ---------------------------------------------------------------------------
 # __main__ block — in-process coverage via runpy (lines 299-318)
 # ---------------------------------------------------------------------------
+
 
 class TestMainBlockRunpy:
     """Run the __main__ block in-process with runpy to get coverage tracking."""
@@ -396,9 +429,7 @@ class TestMainBlockRunpy:
         assert code == 1
 
     def test_stdin_clean_diff_exits_zero(self, sample_diff_clean):
-        code = self._run_main(
-            ["ai_security_review.py"], stdin_text=sample_diff_clean
-        )
+        code = self._run_main(["ai_security_review.py"], stdin_text=sample_diff_clean)
         assert code == 0
 
     def test_stdin_critical_diff_exits_one(self, sample_diff_with_api_key):
@@ -408,7 +439,5 @@ class TestMainBlockRunpy:
         assert code == 1
 
     def test_stdin_is_tty_exits_one(self, capsys):
-        code = self._run_main(
-            ["ai_security_review.py"], stdin_is_tty=True
-        )
+        code = self._run_main(["ai_security_review.py"], stdin_is_tty=True)
         assert code == 1

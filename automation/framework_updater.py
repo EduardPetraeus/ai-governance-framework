@@ -86,9 +86,7 @@ def fetch_releases(owner: str = GITHUB_OWNER, repo: str = GITHUB_REPO) -> List[D
     Pre-releases (e.g. v1.2.3-beta) are logged and skipped.
     Pagination via Link header is followed automatically.
     """
-    url: Optional[str] = (
-        f"{GITHUB_API_BASE}/repos/{owner}/{repo}/releases?per_page=100"
-    )
+    url: Optional[str] = f"{GITHUB_API_BASE}/repos/{owner}/{repo}/releases?per_page=100"
     headers = {"Accept": "application/vnd.github+json"}
     all_releases: List[Dict] = []
 
@@ -129,7 +127,9 @@ def get_available_updates(releases: List[Dict], current_version: str) -> List[Di
     return updates
 
 
-def format_text(current_version: str, latest_version: str, updates: List[Dict], check_only: bool) -> str:
+def format_text(
+    current_version: str, latest_version: str, updates: List[Dict], check_only: bool
+) -> str:
     """Format the update summary as human-readable text."""
     lines = [
         "AI Governance Framework Updater",
@@ -149,7 +149,10 @@ def format_text(current_version: str, latest_version: str, updates: List[Dict], 
     for release in updates:
         tag = release["tag_name"]
         published = release.get("published_at", "unknown")[:10]
-        body = release.get("body", "No release notes available.") or "No release notes available."
+        body = (
+            release.get("body", "No release notes available.")
+            or "No release notes available."
+        )
         excerpt = body[:300]
         if len(body) > 300:
             excerpt += "..."
@@ -158,7 +161,9 @@ def format_text(current_version: str, latest_version: str, updates: List[Dict], 
         lines.append("")
 
     lines.append("Run with --apply to see what files would be added or updated.")
-    lines.append("Note: CLAUDE.md and security configuration changes always require manual review.")
+    lines.append(
+        "Note: CLAUDE.md and security configuration changes always require manual review."
+    )
     return "\n".join(lines)
 
 
@@ -198,12 +203,21 @@ def show_apply_diff(updates: List[Dict]) -> str:
             lines.append("    - Source archive available via GitHub release page")
         lines.append(f"    Release URL: {release.get('html_url', 'N/A')}")
     lines.append("")
-    lines.append("To apply updates, download the release and manually review all changes.")
-    lines.append("CLAUDE.md and security configuration changes always require manual review.")
+    lines.append(
+        "To apply updates, download the release and manually review all changes."
+    )
+    lines.append(
+        "CLAUDE.md and security configuration changes always require manual review."
+    )
     return "\n".join(lines)
 
 
-def run(repo_path: Path, check_only: bool = False, output_format: str = "text", apply: bool = False) -> int:
+def run(
+    repo_path: Path,
+    check_only: bool = False,
+    output_format: str = "text",
+    apply: bool = False,
+) -> int:
     """Run the framework updater and return an exit code (0 = success)."""
     current_version = read_local_version(repo_path)
 
@@ -215,9 +229,14 @@ def run(repo_path: Path, check_only: bool = False, output_format: str = "text", 
     except (urllib.error.URLError, OSError, socket.timeout) as exc:
         reason = str(exc)
         if isinstance(exc, socket.timeout) or "timed out" in reason.lower():
-            print("Error: GitHub API request timed out. Try again later.", file=sys.stderr)
+            print(
+                "Error: GitHub API request timed out. Try again later.", file=sys.stderr
+            )
         else:
-            print("Error: Could not connect to GitHub API. Check your network connection.", file=sys.stderr)
+            print(
+                "Error: Could not connect to GitHub API. Check your network connection.",
+                file=sys.stderr,
+            )
         return 1
 
     updates = get_available_updates(releases, current_version)

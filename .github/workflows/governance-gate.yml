@@ -1,0 +1,169 @@
+# Governance Gate — self-governing instance
+# This repo (ai-governance-framework) uses its own governance gate template
+# to validate PRs. The self-governing principle: the framework governs itself.
+#
+# Adapted from: templates/ci-cd/github-actions-governance-gate.yml
+# Change: requirements.txt -> requirements-dev.txt (this repo uses -dev)
+#
+# 4 jobs: lint, test, security-scan, governance-check
+
+name: Governance Gate
+
+on:
+  pull_request:
+    branches: [main, master]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install linting tools
+        run: pip install ruff
+
+      - name: Run ruff linter
+        run: ruff check .
+
+      - name: Run ruff formatter check
+        run: ruff format --check .
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-dev.txt
+          pip install pytest
+
+      - name: Run tests
+        run: python -m pytest tests/ -v --tb=short
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for secrets in diff
+        run: |
+          # Scan for common secret patterns in changed files
+          PATTERNS=(
+            'AKIA[0-9A-Z]{16}'                    # AWS Access Key
+            'sk-[a-zA-Z0-9]{48}'                   # OpenAI API Key
+            'sk-ant-[a-zA-Z0-9\-]{80,}'            # Anthropic API Key
+            'ghp_[a-zA-Z0-9]{36}'                  # GitHub Personal Access Token
+            'password\s*=\s*["\x27][^"\x27]+'      # Hardcoded passwords
+            'secret\s*=\s*["\x27][^"\x27]+'        # Hardcoded secrets
+            'token\s*=\s*["\x27][^"\x27]+'         # Hardcoded tokens
+          )
+
+          FOUND=0
+          for pattern in "${PATTERNS[@]}"; do
+            if git diff origin/main...HEAD -- . ':(exclude)*.yml' ':(exclude)*.yaml' | grep -qPi "$pattern"; then
+              echo "SECURITY: Potential secret detected matching pattern: $pattern"
+              FOUND=1
+            fi
+          done
+
+          if [ "$FOUND" -eq 1 ]; then
+            echo ""
+            echo "Secrets detected in the PR diff. Remove them before merging."
+            exit 1
+          fi
+          echo "No secrets detected in diff."
+
+      - name: Check .gitignore includes .env
+        run: |
+          if [ -f .gitignore ]; then
+            if grep -qE '^\s*\.env\s*$|^\s*\.env\*|^\s*\.env/' .gitignore; then
+              echo ".gitignore includes .env entries."
+            else
+              echo "WARNING: .gitignore does not include .env — secrets may be committed."
+              exit 1
+            fi
+          else
+            echo "WARNING: No .gitignore found."
+            exit 1
+          fi
+
+  governance-check:
+    name: Governance Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-dev.txt
+
+      - name: Verify CLAUDE.md exists
+        run: |
+          if [ ! -f CLAUDE.md ]; then
+            echo "GOVERNANCE FAIL: CLAUDE.md not found at repository root."
+            echo "Copy the template from ai-governance-framework/templates/CLAUDE.md"
+            exit 1
+          fi
+          echo "CLAUDE.md found."
+
+      - name: Run content quality check
+        run: |
+          if [ -f automation/content_quality_checker.py ]; then
+            python automation/content_quality_checker.py . --format json
+          else
+            echo "content_quality_checker.py not found — skipping quality check."
+            echo "Copy from ai-governance-framework/automation/content_quality_checker.py"
+          fi
+
+      - name: Run drift detection
+        run: |
+          if [ -f automation/drift_detector.py ] && [ -f templates/CLAUDE.md ]; then
+            python automation/drift_detector.py \
+              --template templates/CLAUDE.md \
+              --target CLAUDE.md \
+              --format json
+          elif [ -f automation/drift_detector.py ]; then
+            echo "Drift detection skipped — no governance template found at templates/CLAUDE.md"
+          else
+            echo "drift_detector.py not found — skipping drift detection."
+            echo "Copy from ai-governance-framework/automation/drift_detector.py"
+          fi
+
+      - name: Verify no secrets in CLAUDE.md
+        run: |
+          PATTERNS=(
+            'AKIA[0-9A-Z]{16}'
+            'sk-[a-zA-Z0-9]{48}'
+            'password\s*=\s*["\x27][^"\x27]+'
+          )
+          for pattern in "${PATTERNS[@]}"; do
+            if grep -qPi "$pattern" CLAUDE.md; then
+              echo "SECURITY: CLAUDE.md contains a potential secret."
+              exit 1
+            fi
+          done
+          echo "No secrets found in CLAUDE.md."

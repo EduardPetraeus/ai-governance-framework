@@ -24,10 +24,9 @@ import json
 import re
 import subprocess
 import sys
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List
 
 # Calibration constants. These are tuned for typical Claude Code sessions.
 # Average tokens per line of code (including context, prompts, and output).
@@ -140,7 +139,9 @@ def parse_changelog_sessions(changelog_path: Path) -> List[SessionInfo]:
         scope_match = re.search(
             r"###\s+Scope\s+confirmed\s*\n(.+?)(?:\n|$)", body, re.IGNORECASE
         )
-        summary = scope_match.group(1).strip() if scope_match else f"Session {session_id}"
+        summary = (
+            scope_match.group(1).strip() if scope_match else f"Session {session_id}"
+        )
 
         sessions.append(
             SessionInfo(
@@ -216,7 +217,9 @@ def parse_existing_log_sessions(cost_log_path: Path) -> set[str]:
         return set()
     # Match session rows in the table: | 003 | ...
     # Normalize to zfill(3) to match parse_changelog_sessions() format.
-    return set(m.zfill(3) for m in re.findall(r"^\|\s*(\d+)\s*\|", content, re.MULTILINE))
+    return set(
+        m.zfill(3) for m in re.findall(r"^\|\s*(\d+)\s*\|", content, re.MULTILINE)
+    )
 
 
 def format_cost_log_row(estimate: TokenEstimate) -> str:
@@ -256,9 +259,7 @@ def append_to_cost_log(cost_log_path: Path, rows: List[str]) -> None:
 
     # Find the table header row and insert new rows after the header separator.
     # The table header is: | Session | Date | Model | ...
-    table_header = re.search(
-        r"(\|\s*Session\s*\|[^\n]+\n\|[-| ]+\|[^\n]+\n)", content
-    )
+    table_header = re.search(r"(\|\s*Session\s*\|[^\n]+\n\|[-| ]+\|[^\n]+\n)", content)
     if not table_header:
         print(
             "Warning: Could not locate the Session Cost Log table in COST_LOG.md. "
@@ -333,7 +334,11 @@ def run(
 
     if not estimates:
         if output_format == "json":
-            print(json.dumps({"message": "All sessions already logged.", "new_entries": 0}))
+            print(
+                json.dumps(
+                    {"message": "All sessions already logged.", "new_entries": 0}
+                )
+            )
         else:
             print("All sessions are already recorded in COST_LOG.md. Nothing to add.")
         return 0

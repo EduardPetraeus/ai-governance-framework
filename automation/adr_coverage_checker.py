@@ -26,7 +26,7 @@ import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Set
 
 # Minimum number of significant keywords two texts must share to be considered
 # covering the same decision.
@@ -37,11 +37,47 @@ MIN_KEYWORD_LENGTH = 4
 
 # Common stop-words to exclude from keyword matching.
 STOP_WORDS: Set[str] = {
-    "with", "this", "that", "from", "have", "will", "been", "were", "they",
-    "also", "more", "some", "such", "when", "then", "than", "what", "which",
-    "each", "into", "over", "used", "uses", "make", "made", "using",
-    "because", "before", "after", "session", "agent", "code", "file", "files",
-    "project", "team", "approach", "pattern", "option", "current", "change",
+    "with",
+    "this",
+    "that",
+    "from",
+    "have",
+    "will",
+    "been",
+    "were",
+    "they",
+    "also",
+    "more",
+    "some",
+    "such",
+    "when",
+    "then",
+    "than",
+    "what",
+    "which",
+    "each",
+    "into",
+    "over",
+    "used",
+    "uses",
+    "make",
+    "made",
+    "using",
+    "because",
+    "before",
+    "after",
+    "session",
+    "agent",
+    "code",
+    "file",
+    "files",
+    "project",
+    "team",
+    "approach",
+    "pattern",
+    "option",
+    "current",
+    "change",
 }
 
 # Patterns in CHANGELOG.md that indicate an architectural decision was made.
@@ -98,10 +134,7 @@ class CoverageResult:
 def extract_keywords(text: str) -> Set[str]:
     """Extract significant lowercase words from a text block."""
     words = re.findall(r"[a-zA-Z]+", text.lower())
-    return {
-        w for w in words
-        if len(w) >= MIN_KEYWORD_LENGTH and w not in STOP_WORDS
-    }
+    return {w for w in words if len(w) >= MIN_KEYWORD_LENGTH and w not in STOP_WORDS}
 
 
 def keyword_overlap(text_a: str, text_b: str) -> int:
@@ -164,7 +197,11 @@ def parse_changelog_decisions(path: Path) -> List[Decision]:
     for i, session_match in enumerate(session_matches):
         session_id = session_match.group(1).zfill(3)
         start = session_match.start()
-        end = session_matches[i + 1].start() if i + 1 < len(session_matches) else len(content)
+        end = (
+            session_matches[i + 1].start()
+            if i + 1 < len(session_matches)
+            else len(content)
+        )
         session_body = content[start:end]
 
         # Find the "Decisions made" subsection.
@@ -262,7 +299,10 @@ def check_coverage(
                     re.IGNORECASE,
                 )
             )
-            if explicit_ref or keyword_overlap(decision_text, adr_text) >= KEYWORD_MATCH_THRESHOLD:
+            if (
+                explicit_ref
+                or keyword_overlap(decision_text, adr_text) >= KEYWORD_MATCH_THRESHOLD
+            ):
                 covering.append(adr.number)
 
         covered = len(covering) > 0
@@ -350,8 +390,7 @@ def run(
     # Merge, deduplicating by title (DECISIONS.md is authoritative).
     decisions_md_titles = {d.title.lower() for d in decisions_md_entries}
     changelog_unique = [
-        d for d in changelog_decisions
-        if d.title.lower() not in decisions_md_titles
+        d for d in changelog_decisions if d.title.lower() not in decisions_md_titles
     ]
     all_decisions = decisions_md_entries + changelog_unique
 
@@ -382,7 +421,8 @@ def run(
                     "identifier": r.decision.identifier,
                     "covering_adrs": [f"ADR-{n}" for n in r.covering_adrs],
                 }
-                for r in results if r.covered
+                for r in results
+                if r.covered
             ],
         }
         print(json.dumps(output, indent=2))

@@ -37,8 +37,9 @@ REQUIRED_TEMPLATE_FILES = [
 class TestTemplateFilesExist:
     @pytest.mark.parametrize("filename", REQUIRED_TEMPLATE_FILES)
     def test_required_template_exists(self, filename):
-        assert (TEMPLATES_DIR / filename).is_file(), \
+        assert (TEMPLATES_DIR / filename).is_file(), (
             f"Required template templates/{filename} is missing"
+        )
 
 
 class TestClaudeMdTemplate:
@@ -60,11 +61,14 @@ class TestClaudeMdTemplate:
 
     def test_contains_no_placeholder_text(self):
         for pattern in PLACEHOLDER_PATTERNS:
-            assert not re.search(pattern, self._content, re.IGNORECASE), \
+            assert not re.search(pattern, self._content, re.IGNORECASE), (
                 f"Placeholder found in CLAUDE.md: {pattern}"
+            )
 
     def test_starts_with_heading(self):
-        assert self._content.startswith("#"), "CLAUDE.md template must start with a Markdown heading"
+        assert self._content.startswith("#"), (
+            "CLAUDE.md template must start with a Markdown heading"
+        )
 
 
 class TestClaudeOrgMdTemplate:
@@ -78,12 +82,15 @@ class TestClaudeOrgMdTemplate:
 
     def test_has_naming_or_conventions_section(self):
         # CLAUDE.org.md uses "org_naming" for conventions
-        assert "naming" in self._content.lower() or "conventions" in self._content.lower()
+        assert (
+            "naming" in self._content.lower() or "conventions" in self._content.lower()
+        )
 
     def test_contains_no_placeholder_text(self):
         for pattern in PLACEHOLDER_PATTERNS:
-            assert not re.search(pattern, self._content, re.IGNORECASE), \
+            assert not re.search(pattern, self._content, re.IGNORECASE), (
                 f"Placeholder found in CLAUDE.org.md: {pattern}"
+            )
 
     def test_has_nonempty_content(self):
         assert len(self._content.strip()) > 100
@@ -112,11 +119,13 @@ class TestAllTemplatesHaveContent:
     def test_template_has_no_placeholder_text(self, filename):
         content = (TEMPLATES_DIR / filename).read_text(encoding="utf-8")
         for pattern in PLACEHOLDER_PATTERNS:
-            assert not re.search(pattern, content, re.IGNORECASE), \
+            assert not re.search(pattern, content, re.IGNORECASE), (
                 f"Placeholder '{pattern}' found in templates/{filename}"
+            )
 
     @pytest.mark.parametrize("filename", REQUIRED_TEMPLATE_FILES)
     def test_template_starts_with_markdown_heading(self, filename):
         content = (TEMPLATES_DIR / filename).read_text(encoding="utf-8")
-        assert content.lstrip().startswith("#"), \
+        assert content.lstrip().startswith("#"), (
             f"templates/{filename} does not start with a Markdown heading"
+        )

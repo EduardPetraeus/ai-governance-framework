@@ -9,9 +9,8 @@ point including all argument combinations and error paths.
 All git subprocess calls are mocked — no real git operations are performed.
 """
 
-from collections import Counter
 from datetime import date, datetime, timedelta
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -21,6 +20,7 @@ import productivity_tracker as pt
 # ---------------------------------------------------------------------------
 # Helper: build synthetic commit dicts matching get_commits() output
 # ---------------------------------------------------------------------------
+
 
 def make_commit(
     hash_="abc12345",
@@ -54,6 +54,7 @@ def make_commit(
 # _bar
 # ---------------------------------------------------------------------------
 
+
 class TestBar:
     def test_full_bar(self):
         result = pt._bar(10, 10, width=10)
@@ -85,6 +86,7 @@ class TestBar:
 # parse_date
 # ---------------------------------------------------------------------------
 
+
 class TestParseDate:
     def test_valid_date_returned_unchanged(self):
         assert pt.parse_date("2025-01-15") == "2025-01-15"
@@ -108,6 +110,7 @@ class TestParseDate:
 # ---------------------------------------------------------------------------
 # run_git
 # ---------------------------------------------------------------------------
+
 
 class TestRunGit:
     def test_successful_command_returns_stripped_stdout(self):
@@ -139,6 +142,7 @@ class TestRunGit:
 # ---------------------------------------------------------------------------
 # verify_git_repo
 # ---------------------------------------------------------------------------
+
 
 class TestVerifyGitRepo:
     def test_valid_repo_does_not_exit(self):
@@ -244,6 +248,7 @@ class TestGetCommits:
 # section_overview
 # ---------------------------------------------------------------------------
 
+
 class TestSectionOverview:
     def test_returns_list_of_strings(self):
         commits = [make_commit()]
@@ -294,6 +299,7 @@ class TestSectionOverview:
 # section_velocity_chart
 # ---------------------------------------------------------------------------
 
+
 class TestSectionVelocityChart:
     def test_returns_list_of_strings(self):
         commits = [make_commit()]
@@ -337,6 +343,7 @@ class TestSectionVelocityChart:
 # section_hour_distribution
 # ---------------------------------------------------------------------------
 
+
 class TestSectionHourDistribution:
     def test_returns_list_of_strings(self):
         commits = [make_commit(hour=9)]
@@ -356,9 +363,7 @@ class TestSectionHourDistribution:
         assert "23:00" in joined
 
     def test_peak_hours_shown(self):
-        commits = [
-            make_commit(hash_=f"a{i}", hour=10) for i in range(5)
-        ]
+        commits = [make_commit(hash_=f"a{i}", hour=10) for i in range(5)]
         result = pt.section_hour_distribution(commits)
         joined = "\n".join(result)
         assert "Peak" in joined
@@ -370,13 +375,13 @@ class TestSectionHourDistribution:
         joined = "\n".join(result)
         assert "14:00" in joined
         # Active hours use bar chars, not dots
-        hour_line = [l for l in result if "14:00" in l][0]
+        hour_line = [line for line in result if "14:00" in line][0]
         assert "█" in hour_line
 
     def test_inactive_hour_has_dots(self):
         commits = [make_commit(hour=14)]
         result = pt.section_hour_distribution(commits)
-        zero_lines = [l for l in result if "00:00" in l]
+        zero_lines = [line for line in result if "00:00" in line]
         assert len(zero_lines) == 1
         assert "·" in zero_lines[0]
 
@@ -384,6 +389,7 @@ class TestSectionHourDistribution:
 # ---------------------------------------------------------------------------
 # section_commit_types
 # ---------------------------------------------------------------------------
+
 
 class TestSectionCommitTypes:
     def test_conventional_type_classified(self):
@@ -428,9 +434,24 @@ class TestSectionCommitTypes:
         assert "fix" in joined
 
     def test_all_conventional_types_supported(self):
-        types = ["feat", "fix", "docs", "refactor", "test", "chore", "perf",
-                 "security", "style", "ci", "build", "revert"]
-        commits = [make_commit(hash_=f"a{i}", message=f"{t}: something") for i, t in enumerate(types)]
+        types = [
+            "feat",
+            "fix",
+            "docs",
+            "refactor",
+            "test",
+            "chore",
+            "perf",
+            "security",
+            "style",
+            "ci",
+            "build",
+            "revert",
+        ]
+        commits = [
+            make_commit(hash_=f"a{i}", message=f"{t}: something")
+            for i, t in enumerate(types)
+        ]
         result = pt.section_commit_types(commits)
         joined = "\n".join(result)
         for t in types:
@@ -440,6 +461,7 @@ class TestSectionCommitTypes:
 # ---------------------------------------------------------------------------
 # section_most_changed_files
 # ---------------------------------------------------------------------------
+
 
 class TestSectionMostChangedFiles:
     def test_no_output_returns_no_file_data(self):
@@ -467,7 +489,7 @@ class TestSectionMostChangedFiles:
         files = "\n".join([f"file{i}.py" for i in range(15)])
         with patch.object(pt, "run_git", return_value=files):
             result = pt.section_most_changed_files("2025-01-01", None, None)
-        file_lines = [l for l in result if ".py" in l]
+        file_lines = [line for line in result if ".py" in line]
         assert len(file_lines) <= 10
 
     def test_until_passed_when_provided(self):
@@ -492,6 +514,7 @@ class TestSectionMostChangedFiles:
 # ---------------------------------------------------------------------------
 # section_per_author
 # ---------------------------------------------------------------------------
+
 
 class TestSectionPerAuthor:
     def test_single_author_returns_empty_list(self):
@@ -550,6 +573,7 @@ class TestSectionPerAuthor:
 # section_governance_score
 # ---------------------------------------------------------------------------
 
+
 class TestSectionGovernanceScore:
     def test_returns_list_of_strings(self):
         commits = [make_commit()]
@@ -584,8 +608,12 @@ class TestSectionGovernanceScore:
 
     def test_main_commits_reduce_no_main_score(self):
         commits = [
-            make_commit(hash_="a1", message="feat: something long enough", is_main=True),
-            make_commit(hash_="a2", message="feat: something long enough", is_main=True),
+            make_commit(
+                hash_="a1", message="feat: something long enough", is_main=True
+            ),
+            make_commit(
+                hash_="a2", message="feat: something long enough", is_main=True
+            ),
         ]
         with patch.object(pt, "run_git", return_value=""):
             result = pt.section_governance_score(commits)
@@ -593,7 +621,9 @@ class TestSectionGovernanceScore:
         assert "direct commits" in joined
 
     def test_no_main_commits_scores_15(self):
-        commits = [make_commit(message="feat: something long enough here", is_main=False)]
+        commits = [
+            make_commit(message="feat: something long enough here", is_main=False)
+        ]
         with patch.object(pt, "run_git", return_value=""):
             result = pt.section_governance_score(commits)
         joined = "\n".join(result)
@@ -686,6 +716,7 @@ class TestSectionGovernanceScore:
 # generate_report
 # ---------------------------------------------------------------------------
 
+
 class TestGenerateReport:
     def test_empty_commits_returns_no_commits_message(self):
         result = pt.generate_report([], "2025-01-01", None, None)
@@ -773,28 +804,35 @@ class TestGenerateReport:
 # main (CLI integration)
 # ---------------------------------------------------------------------------
 
+
 class TestMain:
     def test_days_flag_runs_without_error(self):
-        with patch.object(pt, "verify_git_repo"), \
-             patch.object(pt, "get_commits", return_value=[]), \
-             patch("sys.argv", ["productivity_tracker.py", "--days", "30"]), \
-             patch("builtins.print"):
+        with (
+            patch.object(pt, "verify_git_repo"),
+            patch.object(pt, "get_commits", return_value=[]),
+            patch("sys.argv", ["productivity_tracker.py", "--days", "30"]),
+            patch("builtins.print"),
+        ):
             pt.main()
 
     def test_all_flag_uses_epoch_date(self):
-        with patch.object(pt, "verify_git_repo"), \
-             patch.object(pt, "get_commits", return_value=[]) as mock_commits, \
-             patch("sys.argv", ["productivity_tracker.py", "--all"]), \
-             patch("builtins.print"):
+        with (
+            patch.object(pt, "verify_git_repo"),
+            patch.object(pt, "get_commits", return_value=[]) as mock_commits,
+            patch("sys.argv", ["productivity_tracker.py", "--all"]),
+            patch("builtins.print"),
+        ):
             pt.main()
         kwargs = mock_commits.call_args[1]
         assert kwargs["since"] == "1970-01-01"
 
     def test_since_flag_passes_date(self):
-        with patch.object(pt, "verify_git_repo"), \
-             patch.object(pt, "get_commits", return_value=[]) as mock_commits, \
-             patch("sys.argv", ["productivity_tracker.py", "--since", "2025-01-01"]), \
-             patch("builtins.print"):
+        with (
+            patch.object(pt, "verify_git_repo"),
+            patch.object(pt, "get_commits", return_value=[]) as mock_commits,
+            patch("sys.argv", ["productivity_tracker.py", "--since", "2025-01-01"]),
+            patch("builtins.print"),
+        ):
             pt.main()
         kwargs = mock_commits.call_args[1]
         assert kwargs["since"] == "2025-01-01"
@@ -805,23 +843,35 @@ class TestMain:
                 pt.main()
 
     def test_author_filter_passed_to_get_commits(self):
-        with patch.object(pt, "verify_git_repo"), \
-             patch.object(pt, "get_commits", return_value=[]) as mock_commits, \
-             patch("sys.argv", ["productivity_tracker.py", "--days", "30", "--author", "Alice"]), \
-             patch("builtins.print"):
+        with (
+            patch.object(pt, "verify_git_repo"),
+            patch.object(pt, "get_commits", return_value=[]) as mock_commits,
+            patch(
+                "sys.argv",
+                ["productivity_tracker.py", "--days", "30", "--author", "Alice"],
+            ),
+            patch("builtins.print"),
+        ):
             pt.main()
         kwargs = mock_commits.call_args[1]
         assert kwargs.get("author") == "Alice"
 
     def test_until_flag_passed_to_get_commits(self):
-        with patch.object(pt, "verify_git_repo"), \
-             patch.object(pt, "get_commits", return_value=[]) as mock_commits, \
-             patch("sys.argv", [
-                 "productivity_tracker.py",
-                 "--since", "2025-01-01",
-                 "--until", "2025-01-31",
-             ]), \
-             patch("builtins.print"):
+        with (
+            patch.object(pt, "verify_git_repo"),
+            patch.object(pt, "get_commits", return_value=[]) as mock_commits,
+            patch(
+                "sys.argv",
+                [
+                    "productivity_tracker.py",
+                    "--since",
+                    "2025-01-01",
+                    "--until",
+                    "2025-01-31",
+                ],
+            ),
+            patch("builtins.print"),
+        ):
             pt.main()
         kwargs = mock_commits.call_args[1]
         assert kwargs.get("until") == "2025-01-31"
@@ -832,18 +882,22 @@ class TestMain:
                 pt.main()
 
     def test_output_printed(self, capsys):
-        with patch.object(pt, "verify_git_repo"), \
-             patch.object(pt, "get_commits", return_value=[]), \
-             patch("sys.argv", ["productivity_tracker.py", "--days", "7"]):
+        with (
+            patch.object(pt, "verify_git_repo"),
+            patch.object(pt, "get_commits", return_value=[]),
+            patch("sys.argv", ["productivity_tracker.py", "--days", "7"]),
+        ):
             pt.main()
         output = capsys.readouterr().out
         assert "PRODUCTIVITY REPORT" in output
 
     def test_days_computes_since_date(self):
-        with patch.object(pt, "verify_git_repo"), \
-             patch.object(pt, "get_commits", return_value=[]) as mock_commits, \
-             patch("sys.argv", ["productivity_tracker.py", "--days", "7"]), \
-             patch("builtins.print"):
+        with (
+            patch.object(pt, "verify_git_repo"),
+            patch.object(pt, "get_commits", return_value=[]) as mock_commits,
+            patch("sys.argv", ["productivity_tracker.py", "--days", "7"]),
+            patch("builtins.print"),
+        ):
             pt.main()
         kwargs = mock_commits.call_args[1]
         # since should be 7 days ago in YYYY-MM-DD format

@@ -6,7 +6,6 @@ ADR loading, coverage checking, and the run() entry point.
 
 from pathlib import Path
 
-import pytest
 
 import adr_coverage_checker as acc
 
@@ -14,6 +13,7 @@ import adr_coverage_checker as acc
 # ---------------------------------------------------------------------------
 # extract_keywords
 # ---------------------------------------------------------------------------
+
 
 class TestExtractKeywords:
     def test_extracts_meaningful_words(self):
@@ -44,6 +44,7 @@ class TestExtractKeywords:
 # keyword_overlap
 # ---------------------------------------------------------------------------
 
+
 class TestKeywordOverlap:
     def test_identical_texts_have_high_overlap(self):
         text = "Use PostgreSQL database for persistent storage layer"
@@ -64,6 +65,7 @@ class TestKeywordOverlap:
 # ---------------------------------------------------------------------------
 # parse_decisions_md
 # ---------------------------------------------------------------------------
+
 
 class TestParseDecisionsMd:
     def test_parses_single_dec_entry(self, tmp_path):
@@ -95,6 +97,7 @@ class TestParseDecisionsMd:
 # load_adrs
 # ---------------------------------------------------------------------------
 
+
 class TestLoadAdrs:
     def test_loads_adr_files(self, tmp_path):
         adr_dir = tmp_path / "docs" / "adr"
@@ -123,6 +126,7 @@ class TestLoadAdrs:
 # ---------------------------------------------------------------------------
 # check_coverage
 # ---------------------------------------------------------------------------
+
 
 class TestCheckCoverage:
     def test_decision_with_matching_adr_is_covered(self):
@@ -164,6 +168,7 @@ class TestCheckCoverage:
 # ---------------------------------------------------------------------------
 # run — exit codes
 # ---------------------------------------------------------------------------
+
 
 class TestRun:
     def test_empty_repo_exits_zero(self, tmp_path):
@@ -223,6 +228,7 @@ class TestRun:
 # parse_changelog_decisions
 # ---------------------------------------------------------------------------
 
+
 class TestParseChangelogDecisions:
     """Tests for extracting decisions from CHANGELOG.md sessions."""
 
@@ -247,8 +253,7 @@ class TestParseChangelogDecisions:
     def test_session_without_decisions_section(self, tmp_path):
         """Test that sessions without 'Decisions made' are skipped."""
         (tmp_path / "CHANGELOG.md").write_text(
-            "## Session 001 -- 2025-01-01\n\n"
-            "### Scope confirmed\nSetup project.\n",
+            "## Session 001 -- 2025-01-01\n\n### Scope confirmed\nSetup project.\n",
             encoding="utf-8",
         )
         decisions = acc.parse_changelog_decisions(tmp_path / "CHANGELOG.md")
@@ -288,6 +293,7 @@ class TestParseChangelogDecisions:
 # load_adrs — fallback title
 # ---------------------------------------------------------------------------
 
+
 class TestLoadAdrsExtended:
     """Extended tests for load_adrs covering the fallback title path."""
 
@@ -320,6 +326,7 @@ class TestLoadAdrsExtended:
 # format_text
 # ---------------------------------------------------------------------------
 
+
 class TestFormatText:
     """Tests for the format_text function."""
 
@@ -333,7 +340,9 @@ class TestFormatText:
 
     def test_format_text_with_uncovered_decisions(self):
         """Test format_text shows uncovered decisions and recommendations."""
-        decision = acc.Decision("DECISIONS.md", "DEC-001", "Use Redis", "Cache layer for performance.")
+        decision = acc.Decision(
+            "DECISIONS.md", "DEC-001", "Use Redis", "Cache layer for performance."
+        )
         result = acc.CoverageResult(
             decision=decision,
             covered=False,
@@ -347,7 +356,9 @@ class TestFormatText:
 
     def test_format_text_with_covered_decisions(self):
         """Test format_text shows covered decisions with ADR references."""
-        decision = acc.Decision("DECISIONS.md", "DEC-001", "Use PostgreSQL", "Storage layer.")
+        decision = acc.Decision(
+            "DECISIONS.md", "DEC-001", "Use PostgreSQL", "Storage layer."
+        )
         result = acc.CoverageResult(
             decision=decision,
             covered=True,
@@ -370,6 +381,7 @@ class TestFormatText:
 # ---------------------------------------------------------------------------
 # check_coverage — explicit ADR reference
 # ---------------------------------------------------------------------------
+
 
 class TestCheckCoverageExtended:
     """Extended tests for check_coverage covering explicit ADR references."""
@@ -397,6 +409,7 @@ class TestCheckCoverageExtended:
 # build_parser
 # ---------------------------------------------------------------------------
 
+
 class TestBuildParser:
     """Tests for the CLI argument parser builder."""
 
@@ -416,7 +429,9 @@ class TestBuildParser:
     def test_parser_with_all_args(self):
         """Test parser with all arguments supplied."""
         parser = acc.build_parser()
-        args = parser.parse_args(["--repo-path", "/tmp/repo", "--threshold", "warn", "--format", "json"])
+        args = parser.parse_args(
+            ["--repo-path", "/tmp/repo", "--threshold", "warn", "--format", "json"]
+        )
         assert args.repo_path == Path("/tmp/repo")
         assert args.threshold == "warn"
         assert args.output_format == "json"

@@ -107,19 +107,29 @@ def parse_rss_date(date_string: str) -> Optional[datetime]:
     return None
 
 
-def fetch_rss(source: Dict[str, str], cutoff: datetime, keywords: List[str]) -> List[Dict[str, Any]]:
+def fetch_rss(
+    source: Dict[str, str], cutoff: datetime, keywords: List[str]
+) -> List[Dict[str, Any]]:
     """Fetch and parse an RSS/Atom feed, returning items published after cutoff."""
     findings: List[Dict[str, Any]] = []
     try:
-        text = _http_get(source["url"], headers={"User-Agent": "ai-governance-scanner/1.0"})
+        text = _http_get(
+            source["url"], headers={"User-Agent": "ai-governance-scanner/1.0"}
+        )
     except urllib.error.URLError as exc:
-        print(f"Warning: Could not fetch RSS source '{source['name']}': {exc}", file=sys.stderr)
+        print(
+            f"Warning: Could not fetch RSS source '{source['name']}': {exc}",
+            file=sys.stderr,
+        )
         return findings
 
     try:
         root = ET.fromstring(text)
     except ET.ParseError as exc:
-        print(f"Warning: Could not parse RSS from '{source['name']}': {exc}", file=sys.stderr)
+        print(
+            f"Warning: Could not parse RSS from '{source['name']}': {exc}",
+            file=sys.stderr,
+        )
         return findings
 
     namespaces = {
@@ -140,7 +150,11 @@ def fetch_rss(source: Dict[str, str], cutoff: datetime, keywords: List[str]) -> 
             or item.find("atom:published", namespaces)
             or item.find("atom:updated", namespaces)
         )
-        desc_el = item.find("description") or item.find("atom:summary", namespaces) or item.find("atom:content", namespaces)
+        desc_el = (
+            item.find("description")
+            or item.find("atom:summary", namespaces)
+            or item.find("atom:content", namespaces)
+        )
 
         title = (title_el.text or "").strip() if title_el is not None else "Untitled"
 
@@ -163,19 +177,23 @@ def fetch_rss(source: Dict[str, str], cutoff: datetime, keywords: List[str]) -> 
         combined_text = f"{title} {description}"
         relevance = calculate_relevance(combined_text, keywords)
 
-        findings.append({
-            "source": source["name"],
-            "title": title,
-            "url": link.strip(),
-            "date": pub_date.isoformat() if pub_date else "",
-            "excerpt": description[:500],
-            "relevance_score": relevance,
-        })
+        findings.append(
+            {
+                "source": source["name"],
+                "title": title,
+                "url": link.strip(),
+                "date": pub_date.isoformat() if pub_date else "",
+                "excerpt": description[:500],
+                "relevance_score": relevance,
+            }
+        )
 
     return findings
 
 
-def fetch_github_trending(source: Dict[str, str], cutoff: datetime, keywords: List[str]) -> List[Dict[str, Any]]:
+def fetch_github_trending(
+    source: Dict[str, str], cutoff: datetime, keywords: List[str]
+) -> List[Dict[str, Any]]:
     """Search GitHub for repositories matching a topic, created or pushed after cutoff."""
     findings: List[Dict[str, Any]] = []
     topic = source["url"]
@@ -190,9 +208,14 @@ def fetch_github_trending(source: Dict[str, str], cutoff: datetime, keywords: Li
     }
 
     try:
-        text = _http_get(url, params=params, headers={"Accept": "application/vnd.github+json"})
+        text = _http_get(
+            url, params=params, headers={"Accept": "application/vnd.github+json"}
+        )
     except urllib.error.URLError as exc:
-        print(f"Warning: Could not search GitHub for topic '{topic}': {exc}", file=sys.stderr)
+        print(
+            f"Warning: Could not search GitHub for topic '{topic}': {exc}",
+            file=sys.stderr,
+        )
         return findings
 
     data = json.loads(text)
@@ -206,14 +229,16 @@ def fetch_github_trending(source: Dict[str, str], cutoff: datetime, keywords: Li
         combined_text = f"{name} {description}"
         relevance = calculate_relevance(combined_text, keywords)
 
-        findings.append({
-            "source": source["name"],
-            "title": f"{name} ({stars} stars)",
-            "url": html_url,
-            "date": pushed_at,
-            "excerpt": description[:500],
-            "relevance_score": relevance,
-        })
+        findings.append(
+            {
+                "source": source["name"],
+                "title": f"{name} ({stars} stars)",
+                "url": html_url,
+                "date": pushed_at,
+                "excerpt": description[:500],
+                "relevance_score": relevance,
+            }
+        )
 
     return findings
 
@@ -227,7 +252,10 @@ def fetch_web(source: Dict[str, str], keywords: List[str]) -> List[Dict[str, Any
             headers={"User-Agent": "ai-governance-scanner/1.0"},
         )
     except urllib.error.URLError as exc:
-        print(f"Warning: Could not fetch web source '{source['name']}': {exc}", file=sys.stderr)
+        print(
+            f"Warning: Could not fetch web source '{source['name']}': {exc}",
+            file=sys.stderr,
+        )
         return findings
 
     text = re.sub(r"<script[^>]*>.*?</script>", "", text, flags=re.DOTALL)
@@ -237,14 +265,16 @@ def fetch_web(source: Dict[str, str], keywords: List[str]) -> List[Dict[str, Any
 
     relevance = calculate_relevance(text, keywords)
 
-    findings.append({
-        "source": source["name"],
-        "title": source["name"],
-        "url": source["url"],
-        "date": datetime.now(timezone.utc).isoformat(),
-        "excerpt": text[:500],
-        "relevance_score": relevance,
-    })
+    findings.append(
+        {
+            "source": source["name"],
+            "title": source["name"],
+            "url": source["url"],
+            "date": datetime.now(timezone.utc).isoformat(),
+            "excerpt": text[:500],
+            "relevance_score": relevance,
+        }
+    )
 
     return findings
 
@@ -271,7 +301,10 @@ def scan_sources(
         elif source_type == "web":
             all_findings.extend(fetch_web(source, keywords))
         else:
-            print(f"Warning: Unknown source type '{source_type}' for '{source['name']}'", file=sys.stderr)
+            print(
+                f"Warning: Unknown source type '{source_type}' for '{source['name']}'",
+                file=sys.stderr,
+            )
 
     all_findings.sort(key=lambda f: f.get("relevance_score", 0), reverse=True)
     return all_findings

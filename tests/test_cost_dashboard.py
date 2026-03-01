@@ -6,7 +6,6 @@ efficiency calculation, all section builders, full dashboard generation,
 CLI argument parser, and main() entry point including error paths.
 """
 
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -32,6 +31,7 @@ SAMPLE_COST_LOG = """\
 # ---------------------------------------------------------------------------
 # ascii_bar
 # ---------------------------------------------------------------------------
+
 
 class TestAsciiBar:
     def test_full_bar_when_value_equals_max(self):
@@ -68,6 +68,7 @@ class TestAsciiBar:
 # sparkline
 # ---------------------------------------------------------------------------
 
+
 class TestSparkline:
     def test_empty_values_returns_dash(self):
         assert cd.sparkline([]) == "—"
@@ -98,6 +99,7 @@ class TestSparkline:
 # trend_arrow
 # ---------------------------------------------------------------------------
 
+
 class TestTrendArrow:
     def test_single_value_returns_neutral(self):
         assert cd.trend_arrow([1.0]) == "→"
@@ -125,6 +127,7 @@ class TestTrendArrow:
 # ---------------------------------------------------------------------------
 # classify_model_tier
 # ---------------------------------------------------------------------------
+
 
 class TestClassifyModelTier:
     def test_haiku_name(self):
@@ -156,6 +159,7 @@ class TestClassifyModelTier:
 # ---------------------------------------------------------------------------
 # parse_cost_log
 # ---------------------------------------------------------------------------
+
 
 class TestParseCostLog:
     def test_missing_file_returns_empty_list(self, tmp_path):
@@ -274,6 +278,7 @@ class TestParseCostLog:
 # routing_recommendation
 # ---------------------------------------------------------------------------
 
+
 class TestRoutingRecommendation:
     def test_security_on_sonnet_recommends_opus(self):
         tier, reason = cd.routing_recommendation("sonnet", "security")
@@ -333,6 +338,7 @@ class TestRoutingRecommendation:
 # compute_routing_efficiency
 # ---------------------------------------------------------------------------
 
+
 class TestComputeRoutingEfficiency:
     def test_empty_rows_returns_zero_actual(self):
         result = cd.compute_routing_efficiency([])
@@ -360,8 +366,11 @@ class TestComputeRoutingEfficiency:
     def test_misrouted_session_detected(self):
         rows = [
             {
-                "session": 1, "cost": 0.5, "tier": "opus",
-                "session_type": "documentation", "model": "claude-opus-4",
+                "session": 1,
+                "cost": 0.5,
+                "tier": "opus",
+                "session_type": "documentation",
+                "model": "claude-opus-4",
             },
         ]
         result = cd.compute_routing_efficiency(rows)
@@ -371,8 +380,11 @@ class TestComputeRoutingEfficiency:
     def test_misrouted_has_recommended_tier(self):
         rows = [
             {
-                "session": 5, "cost": 0.5, "tier": "opus",
-                "session_type": "documentation", "model": "claude-opus-4",
+                "session": 5,
+                "cost": 0.5,
+                "tier": "opus",
+                "session_type": "documentation",
+                "model": "claude-opus-4",
             },
         ]
         result = cd.compute_routing_efficiency(rows)
@@ -398,6 +410,7 @@ class TestComputeRoutingEfficiency:
 # section_divider
 # ---------------------------------------------------------------------------
 
+
 class TestSectionDivider:
     def test_contains_title(self):
         assert "My Section" in cd.section_divider("My Section")
@@ -416,6 +429,7 @@ class TestSectionDivider:
 # ---------------------------------------------------------------------------
 # build_summary_section
 # ---------------------------------------------------------------------------
+
 
 class TestBuildSummarySection:
     def test_empty_rows_returns_no_data_message(self):
@@ -449,6 +463,7 @@ class TestBuildSummarySection:
 # ---------------------------------------------------------------------------
 # build_model_breakdown_section
 # ---------------------------------------------------------------------------
+
 
 class TestBuildModelBreakdownSection:
     def test_empty_rows_returns_no_data(self):
@@ -487,6 +502,7 @@ class TestBuildModelBreakdownSection:
 # build_session_type_section
 # ---------------------------------------------------------------------------
 
+
 class TestBuildSessionTypeSection:
     def test_empty_rows_returns_no_data(self):
         assert cd.build_session_type_section([]) == "_No data._"
@@ -514,6 +530,7 @@ class TestBuildSessionTypeSection:
 # ---------------------------------------------------------------------------
 # build_monthly_section
 # ---------------------------------------------------------------------------
+
 
 class TestBuildMonthlysection:
     def test_empty_rows_returns_no_data(self):
@@ -550,6 +567,7 @@ class TestBuildMonthlysection:
 # ---------------------------------------------------------------------------
 # build_routing_efficiency_section
 # ---------------------------------------------------------------------------
+
 
 class TestBuildRoutingEfficiencySection:
     def test_empty_rows_returns_no_data(self):
@@ -647,13 +665,16 @@ class TestBuildRoutingEfficiencySection:
 # build_recommendations_section
 # ---------------------------------------------------------------------------
 
+
 class TestBuildRecommendationsSection:
     def test_empty_rows_returns_no_data_message(self):
         result = cd.build_recommendations_section([])
         assert "No data" in result
 
     def test_opus_doc_session_generates_recommendation(self):
-        rows = [{"tier": "opus", "session_type": "documentation", "cost": 0.5, "tasks": 2}]
+        rows = [
+            {"tier": "opus", "session_type": "documentation", "cost": 0.5, "tasks": 2}
+        ]
         result = cd.build_recommendations_section(rows)
         assert "Opus → Sonnet" in result
 
@@ -700,6 +721,7 @@ class TestBuildRecommendationsSection:
 # ---------------------------------------------------------------------------
 # generate_cost_dashboard (integration)
 # ---------------------------------------------------------------------------
+
 
 class TestGenerateCostDashboard:
     def test_empty_repo_generates_dashboard(self, tmp_path):
@@ -752,6 +774,7 @@ class TestGenerateCostDashboard:
 # build_parser
 # ---------------------------------------------------------------------------
 
+
 class TestBuildParser:
     def test_parser_has_repo_path_argument(self):
         parser = cd.build_parser()
@@ -783,9 +806,12 @@ class TestBuildParser:
 # main
 # ---------------------------------------------------------------------------
 
+
 class TestMain:
     def test_stdout_mode_returns_zero(self, tmp_path):
-        with patch("sys.argv", ["cost_dashboard.py", "--repo-path", str(tmp_path), "--stdout"]):
+        with patch(
+            "sys.argv", ["cost_dashboard.py", "--repo-path", str(tmp_path), "--stdout"]
+        ):
             code = cd.main()
         assert code == 0
 
@@ -802,23 +828,32 @@ class TestMain:
         assert code == 1
 
     def test_custom_output_filename_used(self, tmp_path):
-        with patch("sys.argv", [
-            "cost_dashboard.py",
-            "--repo-path", str(tmp_path),
-            "--output", "MY_COSTS.md",
-        ]):
+        with patch(
+            "sys.argv",
+            [
+                "cost_dashboard.py",
+                "--repo-path",
+                str(tmp_path),
+                "--output",
+                "MY_COSTS.md",
+            ],
+        ):
             code = cd.main()
         assert code == 0
         assert (tmp_path / "MY_COSTS.md").is_file()
 
     def test_generate_exception_returns_one(self, tmp_path):
-        with patch("cost_dashboard.generate_cost_dashboard", side_effect=RuntimeError("fail")):
+        with patch(
+            "cost_dashboard.generate_cost_dashboard", side_effect=RuntimeError("fail")
+        ):
             with patch("sys.argv", ["cost_dashboard.py", "--repo-path", str(tmp_path)]):
                 code = cd.main()
         assert code == 1
 
     def test_stdout_mode_prints_header(self, tmp_path, capsys):
-        with patch("sys.argv", ["cost_dashboard.py", "--repo-path", str(tmp_path), "--stdout"]):
+        with patch(
+            "sys.argv", ["cost_dashboard.py", "--repo-path", str(tmp_path), "--stdout"]
+        ):
             cd.main()
         output = capsys.readouterr().out
         assert "# Cost Dashboard" in output

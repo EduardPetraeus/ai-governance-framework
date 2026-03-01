@@ -10,7 +10,6 @@ import urllib.error
 from datetime import datetime, timezone
 from unittest.mock import patch
 
-import pytest
 
 import best_practice_scanner as bps
 
@@ -19,10 +18,13 @@ import best_practice_scanner as bps
 # calculate_relevance
 # ---------------------------------------------------------------------------
 
+
 class TestCalculateRelevance:
     def test_exact_keyword_match_gives_high_score(self):
         keywords = ["AI governance", "agent safety"]
-        score = bps.calculate_relevance("AI governance and agent safety blog post", keywords)
+        score = bps.calculate_relevance(
+            "AI governance and agent safety blog post", keywords
+        )
         assert score > 0.0
 
     def test_no_match_gives_zero(self):
@@ -53,6 +55,7 @@ class TestCalculateRelevance:
 # parse_rss_date
 # ---------------------------------------------------------------------------
 
+
 class TestParseRssDate:
     def test_rfc2822_format(self):
         dt = bps.parse_rss_date("Mon, 01 Jan 2025 12:00:00 +0000")
@@ -82,6 +85,7 @@ class TestParseRssDate:
 # scan_sources — with mocked network
 # ---------------------------------------------------------------------------
 
+
 class TestScanSourcesWithMock:
     def test_empty_sources_returns_empty_list(self):
         results = bps.scan_sources([], days=7)
@@ -89,11 +93,34 @@ class TestScanSourcesWithMock:
 
     def test_findings_sorted_by_relevance_descending(self):
         findings = [
-            {"relevance_score": 0.3, "source": "A", "title": "T1", "url": "", "date": "", "excerpt": ""},
-            {"relevance_score": 0.9, "source": "B", "title": "T2", "url": "", "date": "", "excerpt": ""},
-            {"relevance_score": 0.1, "source": "C", "title": "T3", "url": "", "date": "", "excerpt": ""},
+            {
+                "relevance_score": 0.3,
+                "source": "A",
+                "title": "T1",
+                "url": "",
+                "date": "",
+                "excerpt": "",
+            },
+            {
+                "relevance_score": 0.9,
+                "source": "B",
+                "title": "T2",
+                "url": "",
+                "date": "",
+                "excerpt": "",
+            },
+            {
+                "relevance_score": 0.1,
+                "source": "C",
+                "title": "T3",
+                "url": "",
+                "date": "",
+                "excerpt": "",
+            },
         ]
-        sorted_findings = sorted(findings, key=lambda f: f.get("relevance_score", 0), reverse=True)
+        sorted_findings = sorted(
+            findings, key=lambda f: f.get("relevance_score", 0), reverse=True
+        )
         assert sorted_findings[0]["relevance_score"] == 0.9
         assert sorted_findings[-1]["relevance_score"] == 0.1
 
@@ -122,6 +149,7 @@ class TestScanSourcesWithMock:
 # ---------------------------------------------------------------------------
 # fetch_rss — XML parsing and item processing
 # ---------------------------------------------------------------------------
+
 
 class TestFetchRss:
     """Tests for the fetch_rss function covering XML parsing branches."""
@@ -307,25 +335,32 @@ class TestFetchRss:
 # fetch_github_trending — with mocked responses
 # ---------------------------------------------------------------------------
 
+
 class TestFetchGithubTrending:
     """Tests for the fetch_github_trending function covering API response processing."""
 
     @patch("best_practice_scanner._http_get")
     def test_successful_github_search_returns_repos(self, mock_http_get):
         """Test that GitHub API search results are parsed into findings."""
-        mock_http_get.return_value = json.dumps({
-            "items": [
-                {
-                    "full_name": "user/ai-governance",
-                    "description": "AI governance framework",
-                    "html_url": "https://github.com/user/ai-governance",
-                    "pushed_at": "2025-06-01T12:00:00Z",
-                    "stargazers_count": 42,
-                },
-            ]
-        })
+        mock_http_get.return_value = json.dumps(
+            {
+                "items": [
+                    {
+                        "full_name": "user/ai-governance",
+                        "description": "AI governance framework",
+                        "html_url": "https://github.com/user/ai-governance",
+                        "pushed_at": "2025-06-01T12:00:00Z",
+                        "stargazers_count": 42,
+                    },
+                ]
+            }
+        )
 
-        source = {"name": "GitHub Trending", "url": "ai-governance", "type": "github_trending"}
+        source = {
+            "name": "GitHub Trending",
+            "url": "ai-governance",
+            "type": "github_trending",
+        }
         cutoff = datetime(2025, 1, 1, tzinfo=timezone.utc)
         results = bps.fetch_github_trending(source, cutoff, bps.DEFAULT_KEYWORDS)
         assert len(results) == 1
@@ -345,17 +380,19 @@ class TestFetchGithubTrending:
     @patch("best_practice_scanner._http_get")
     def test_github_repo_with_none_description(self, mock_http_get):
         """Test that repos with None description are handled gracefully."""
-        mock_http_get.return_value = json.dumps({
-            "items": [
-                {
-                    "full_name": "user/repo",
-                    "description": None,
-                    "html_url": "https://github.com/user/repo",
-                    "pushed_at": "2025-06-01T12:00:00Z",
-                    "stargazers_count": 0,
-                },
-            ]
-        })
+        mock_http_get.return_value = json.dumps(
+            {
+                "items": [
+                    {
+                        "full_name": "user/repo",
+                        "description": None,
+                        "html_url": "https://github.com/user/repo",
+                        "pushed_at": "2025-06-01T12:00:00Z",
+                        "stargazers_count": 0,
+                    },
+                ]
+            }
+        )
 
         source = {"name": "GitHub", "url": "ai-governance", "type": "github_trending"}
         cutoff = datetime(2025, 1, 1, tzinfo=timezone.utc)
@@ -367,6 +404,7 @@ class TestFetchGithubTrending:
 # ---------------------------------------------------------------------------
 # fetch_web — with mocked responses
 # ---------------------------------------------------------------------------
+
 
 class TestFetchWeb:
     """Tests for the fetch_web function covering web page processing."""
@@ -402,6 +440,7 @@ class TestFetchWeb:
 # ---------------------------------------------------------------------------
 # scan_sources — routing to different source types
 # ---------------------------------------------------------------------------
+
 
 class TestScanSourcesRouting:
     """Tests for scan_sources routing different source types and extra keywords."""
@@ -448,6 +487,7 @@ class TestScanSourcesRouting:
 # run — output and file writing
 # ---------------------------------------------------------------------------
 
+
 class TestRunFunction:
     """Tests for the run() function covering output and file writing."""
 
@@ -455,7 +495,14 @@ class TestRunFunction:
     def test_run_prints_to_stdout(self, mock_scan, capsys):
         """Test that run() prints JSON to stdout when no output_file is given."""
         mock_scan.return_value = [
-            {"source": "Test", "title": "T", "url": "", "date": "", "excerpt": "", "relevance_score": 0.5}
+            {
+                "source": "Test",
+                "title": "T",
+                "url": "",
+                "date": "",
+                "excerpt": "",
+                "relevance_score": 0.5,
+            }
         ]
         code = bps.run(days=7)
         assert code == 0
@@ -466,7 +513,14 @@ class TestRunFunction:
     def test_run_writes_to_file(self, mock_scan, tmp_path):
         """Test that run() writes findings to a file when output_file is given."""
         mock_scan.return_value = [
-            {"source": "A", "title": "T", "url": "", "date": "", "excerpt": "", "relevance_score": 0.5}
+            {
+                "source": "A",
+                "title": "T",
+                "url": "",
+                "date": "",
+                "excerpt": "",
+                "relevance_score": 0.5,
+            }
         ]
         output = str(tmp_path / "output.json")
         code = bps.run(days=7, output_file=output)
@@ -478,7 +532,14 @@ class TestRunFunction:
     def test_run_write_error_returns_one(self, mock_scan):
         """Test that run() returns exit code 1 when file write fails."""
         mock_scan.return_value = [
-            {"source": "A", "title": "T", "url": "", "date": "", "excerpt": "", "relevance_score": 0.5}
+            {
+                "source": "A",
+                "title": "T",
+                "url": "",
+                "date": "",
+                "excerpt": "",
+                "relevance_score": 0.5,
+            }
         ]
         code = bps.run(days=7, output_file="/nonexistent/path/output.json")
         assert code == 1
@@ -491,13 +552,15 @@ class TestRunFunction:
         assert code == 0
         mock_scan.assert_called_once()
         call_kwargs = mock_scan.call_args
-        assert call_kwargs[1].get("extra_keywords") == ["custom term"] or \
-            call_kwargs[0][2] == ["custom term"]
+        assert call_kwargs[1].get("extra_keywords") == ["custom term"] or call_kwargs[
+            0
+        ][2] == ["custom term"]
 
 
 # ---------------------------------------------------------------------------
 # build_parser
 # ---------------------------------------------------------------------------
+
 
 class TestBuildParser:
     """Tests for the argument parser builder."""
@@ -518,7 +581,17 @@ class TestBuildParser:
     def test_parser_with_all_args(self):
         """Test parser with all arguments supplied."""
         parser = bps.build_parser()
-        args = parser.parse_args(["--days", "14", "--output-file", "out.json", "--keywords", "safety", "governance"])
+        args = parser.parse_args(
+            [
+                "--days",
+                "14",
+                "--output-file",
+                "out.json",
+                "--keywords",
+                "safety",
+                "governance",
+            ]
+        )
         assert args.days == 14
         assert args.output_file == "out.json"
         assert args.keywords == ["safety", "governance"]

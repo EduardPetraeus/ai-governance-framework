@@ -19,6 +19,7 @@ import framework_updater as fu
 # parse_version
 # ---------------------------------------------------------------------------
 
+
 class TestParseVersion:
     def test_version_with_v_prefix(self):
         assert fu.parse_version("v1.2.3") == (1, 2, 3)
@@ -42,10 +43,14 @@ class TestParseVersion:
 # _parse_next_link
 # ---------------------------------------------------------------------------
 
+
 class TestParseNextLink:
     def test_extracts_next_url(self):
         header = '<https://api.github.com/repos/owner/repo/releases?page=2>; rel="next", <https://api.github.com/repos/owner/repo/releases?page=3>; rel="last"'
-        assert fu._parse_next_link(header) == "https://api.github.com/repos/owner/repo/releases?page=2"
+        assert (
+            fu._parse_next_link(header)
+            == "https://api.github.com/repos/owner/repo/releases?page=2"
+        )
 
     def test_no_next_returns_none(self):
         header = '<https://api.github.com/repos/owner/repo/releases?page=1>; rel="prev"'
@@ -58,6 +63,7 @@ class TestParseNextLink:
 # ---------------------------------------------------------------------------
 # find_version_file / read_local_version
 # ---------------------------------------------------------------------------
+
 
 class TestReadLocalVersion:
     def test_missing_version_file_returns_default(self, tmp_path):
@@ -77,9 +83,14 @@ class TestReadLocalVersion:
 # get_available_updates
 # ---------------------------------------------------------------------------
 
+
 class TestGetAvailableUpdates:
     def _release(self, tag: str) -> dict:
-        return {"tag_name": tag, "body": "Notes.", "published_at": "2025-01-01T00:00:00Z"}
+        return {
+            "tag_name": tag,
+            "body": "Notes.",
+            "published_at": "2025-01-01T00:00:00Z",
+        }
 
     def test_no_updates_when_already_latest(self):
         releases = [self._release("v1.0.0"), self._release("v1.1.0")]
@@ -87,7 +98,11 @@ class TestGetAvailableUpdates:
         assert updates == []
 
     def test_returns_newer_releases(self):
-        releases = [self._release("v1.0.0"), self._release("v1.1.0"), self._release("v2.0.0")]
+        releases = [
+            self._release("v1.0.0"),
+            self._release("v1.1.0"),
+            self._release("v2.0.0"),
+        ]
         updates = fu.get_available_updates(releases, "v1.0.0")
         assert len(updates) == 2
 
@@ -100,9 +115,15 @@ class TestGetAvailableUpdates:
 # format_text / format_json
 # ---------------------------------------------------------------------------
 
+
 class TestFormatText:
     def _release(self, tag: str) -> dict:
-        return {"tag_name": tag, "body": "New features.", "published_at": "2025-06-01T00:00:00Z", "assets": []}
+        return {
+            "tag_name": tag,
+            "body": "New features.",
+            "published_at": "2025-06-01T00:00:00Z",
+            "assets": [],
+        }
 
     def test_up_to_date_message(self):
         text = fu.format_text("v1.0.0", "v1.0.0", [], check_only=False)
@@ -125,10 +146,13 @@ class TestFormatText:
 # run — exit codes with mocked network
 # ---------------------------------------------------------------------------
 
+
 class TestRun:
     @patch("framework_updater.fetch_releases")
     def test_run_returns_zero_when_up_to_date(self, mock_fetch, tmp_path):
-        mock_fetch.return_value = [{"tag_name": "v1.0.0", "body": "", "published_at": "2025-01-01"}]
+        mock_fetch.return_value = [
+            {"tag_name": "v1.0.0", "body": "", "published_at": "2025-01-01"}
+        ]
         (tmp_path / fu.VERSION_FILE).write_text("v1.0.0", encoding="utf-8")
         code = fu.run(tmp_path)
         assert code == 0
@@ -136,8 +160,18 @@ class TestRun:
     @patch("framework_updater.fetch_releases")
     def test_run_returns_zero_when_updates_available(self, mock_fetch, tmp_path):
         mock_fetch.return_value = [
-            {"tag_name": "v1.0.0", "body": "", "published_at": "2025-01-01", "assets": []},
-            {"tag_name": "v1.1.0", "body": "New stuff.", "published_at": "2025-06-01", "assets": []},
+            {
+                "tag_name": "v1.0.0",
+                "body": "",
+                "published_at": "2025-01-01",
+                "assets": [],
+            },
+            {
+                "tag_name": "v1.1.0",
+                "body": "New stuff.",
+                "published_at": "2025-06-01",
+                "assets": [],
+            },
         ]
         (tmp_path / fu.VERSION_FILE).write_text("v1.0.0", encoding="utf-8")
         code = fu.run(tmp_path)
@@ -147,6 +181,7 @@ class TestRun:
 # ---------------------------------------------------------------------------
 # fetch_releases — mocked API
 # ---------------------------------------------------------------------------
+
 
 def _make_urlopen_mock(data, link_header: str = "") -> MagicMock:
     """Helper: create a mock for urllib.request.urlopen returning data as JSON."""
@@ -164,11 +199,13 @@ class TestFetchReleases:
     @patch("framework_updater.urllib.request.urlopen")
     def test_fetches_and_sorts_valid_releases(self, mock_urlopen):
         """Test that valid releases are sorted by version ascending."""
-        mock_urlopen.return_value = _make_urlopen_mock([
-            {"tag_name": "v2.0.0", "body": "Major release"},
-            {"tag_name": "v1.0.0", "body": "Initial"},
-            {"tag_name": "v1.1.0", "body": "Minor update"},
-        ])
+        mock_urlopen.return_value = _make_urlopen_mock(
+            [
+                {"tag_name": "v2.0.0", "body": "Major release"},
+                {"tag_name": "v1.0.0", "body": "Initial"},
+                {"tag_name": "v1.1.0", "body": "Minor update"},
+            ]
+        )
 
         releases = fu.fetch_releases()
         assert len(releases) == 3
@@ -178,11 +215,13 @@ class TestFetchReleases:
     @patch("framework_updater.urllib.request.urlopen")
     def test_skips_invalid_version_tags(self, mock_urlopen):
         """Test that releases with invalid version tags are filtered out."""
-        mock_urlopen.return_value = _make_urlopen_mock([
-            {"tag_name": "v1.0.0", "body": "Valid"},
-            {"tag_name": "nightly-2025", "body": "Invalid"},
-            {"tag_name": "v2.0.0", "body": "Valid too"},
-        ])
+        mock_urlopen.return_value = _make_urlopen_mock(
+            [
+                {"tag_name": "v1.0.0", "body": "Valid"},
+                {"tag_name": "nightly-2025", "body": "Invalid"},
+                {"tag_name": "v2.0.0", "body": "Valid too"},
+            ]
+        )
 
         releases = fu.fetch_releases()
         assert len(releases) == 2
@@ -190,11 +229,13 @@ class TestFetchReleases:
     @patch("framework_updater.urllib.request.urlopen")
     def test_skips_pre_release_tags(self, mock_urlopen):
         """Test that pre-release tags (e.g. v1.2.3-beta) are skipped with a warning."""
-        mock_urlopen.return_value = _make_urlopen_mock([
-            {"tag_name": "v1.0.0", "body": "Stable"},
-            {"tag_name": "v1.1.0-beta", "body": "Pre-release"},
-            {"tag_name": "v2.0.0-rc1", "body": "Release candidate"},
-        ])
+        mock_urlopen.return_value = _make_urlopen_mock(
+            [
+                {"tag_name": "v1.0.0", "body": "Stable"},
+                {"tag_name": "v1.1.0-beta", "body": "Pre-release"},
+                {"tag_name": "v2.0.0-rc1", "body": "Release candidate"},
+            ]
+        )
 
         releases = fu.fetch_releases()
         assert len(releases) == 1
@@ -204,8 +245,12 @@ class TestFetchReleases:
     def test_pagination_follows_next_link(self, mock_urlopen):
         """Test that pagination via Link header fetches all pages."""
         page1_link = '<https://api.github.com/repos/x/y/releases?page=2>; rel="next"'
-        mock_page1 = _make_urlopen_mock([{"tag_name": "v1.0.0", "body": ""}], link_header=page1_link)
-        mock_page2 = _make_urlopen_mock([{"tag_name": "v2.0.0", "body": ""}], link_header="")
+        mock_page1 = _make_urlopen_mock(
+            [{"tag_name": "v1.0.0", "body": ""}], link_header=page1_link
+        )
+        mock_page2 = _make_urlopen_mock(
+            [{"tag_name": "v2.0.0", "body": ""}], link_header=""
+        )
         mock_urlopen.side_effect = [mock_page1, mock_page2]
 
         releases = fu.fetch_releases()
@@ -216,6 +261,7 @@ class TestFetchReleases:
 # ---------------------------------------------------------------------------
 # show_apply_diff
 # ---------------------------------------------------------------------------
+
 
 class TestShowApplyDiff:
     """Tests for the show_apply_diff function."""
@@ -248,9 +294,9 @@ class TestShowApplyDiff:
 
     def test_includes_manual_review_note(self):
         """Test that the output includes the manual review reminder."""
-        output = fu.show_apply_diff([{
-            "tag_name": "v1.0.1", "assets": [], "html_url": ""
-        }])
+        output = fu.show_apply_diff(
+            [{"tag_name": "v1.0.1", "assets": [], "html_url": ""}]
+        )
         assert "manual" in output.lower()
 
 
@@ -258,11 +304,17 @@ class TestShowApplyDiff:
 # format_text — additional branches
 # ---------------------------------------------------------------------------
 
+
 class TestFormatTextExtended:
     """Extended tests for format_text covering body truncation and check_only."""
 
     def _release(self, tag, body="Short notes.", published_at="2025-06-01T00:00:00Z"):
-        return {"tag_name": tag, "body": body, "published_at": published_at, "assets": []}
+        return {
+            "tag_name": tag,
+            "body": body,
+            "published_at": published_at,
+            "assets": [],
+        }
 
     def test_long_body_is_truncated(self):
         """Test that release notes longer than 300 chars are truncated with '...'."""
@@ -289,12 +341,20 @@ class TestFormatTextExtended:
 # format_json
 # ---------------------------------------------------------------------------
 
+
 class TestFormatJson:
     """Tests for the format_json function."""
 
     def test_output_is_valid_json(self):
         """Test that format_json returns valid JSON."""
-        updates = [{"tag_name": "v1.1.0", "published_at": "2025-06-01", "body": "Notes", "html_url": ""}]
+        updates = [
+            {
+                "tag_name": "v1.1.0",
+                "published_at": "2025-06-01",
+                "body": "Notes",
+                "html_url": "",
+            }
+        ]
         output = fu.format_json("v1.0.0", "v1.1.0", updates)
         parsed = json.loads(output)
         assert parsed["current_version"] == "v1.0.0"
@@ -303,7 +363,14 @@ class TestFormatJson:
     def test_truncates_long_release_notes(self):
         """Test that release notes in JSON are truncated to 300 chars."""
         long_notes = "B" * 500
-        updates = [{"tag_name": "v2.0.0", "published_at": "", "body": long_notes, "html_url": ""}]
+        updates = [
+            {
+                "tag_name": "v2.0.0",
+                "published_at": "",
+                "body": long_notes,
+                "html_url": "",
+            }
+        ]
         output = fu.format_json("v1.0.0", "v2.0.0", updates)
         parsed = json.loads(output)
         assert len(parsed["updates"][0]["release_notes"]) <= 300
@@ -312,6 +379,7 @@ class TestFormatJson:
 # ---------------------------------------------------------------------------
 # run — error handling and output format branches
 # ---------------------------------------------------------------------------
+
 
 class TestRunExtended:
     """Extended tests for run() covering error handling and output format branches."""
@@ -349,8 +417,20 @@ class TestRunExtended:
     def test_run_json_format_output(self, mock_fetch, tmp_path, capsys):
         """Test run() with output_format='json'."""
         mock_fetch.return_value = [
-            {"tag_name": "v1.0.0", "body": "", "published_at": "2025-01-01", "assets": [], "html_url": ""},
-            {"tag_name": "v1.1.0", "body": "Update.", "published_at": "2025-06-01", "assets": [], "html_url": ""},
+            {
+                "tag_name": "v1.0.0",
+                "body": "",
+                "published_at": "2025-01-01",
+                "assets": [],
+                "html_url": "",
+            },
+            {
+                "tag_name": "v1.1.0",
+                "body": "Update.",
+                "published_at": "2025-06-01",
+                "assets": [],
+                "html_url": "",
+            },
         ]
         (tmp_path / fu.VERSION_FILE).write_text("v1.0.0", encoding="utf-8")
         code = fu.run(tmp_path, output_format="json")
@@ -363,8 +443,20 @@ class TestRunExtended:
     def test_run_with_apply_flag(self, mock_fetch, tmp_path, capsys):
         """Test run() with apply=True shows apply diff."""
         mock_fetch.return_value = [
-            {"tag_name": "v1.0.0", "body": "", "published_at": "2025-01-01", "assets": [], "html_url": ""},
-            {"tag_name": "v1.1.0", "body": "New stuff.", "published_at": "2025-06-01", "assets": [], "html_url": "https://github.com/x/y/releases/v1.1.0"},
+            {
+                "tag_name": "v1.0.0",
+                "body": "",
+                "published_at": "2025-01-01",
+                "assets": [],
+                "html_url": "",
+            },
+            {
+                "tag_name": "v1.1.0",
+                "body": "New stuff.",
+                "published_at": "2025-06-01",
+                "assets": [],
+                "html_url": "https://github.com/x/y/releases/v1.1.0",
+            },
         ]
         (tmp_path / fu.VERSION_FILE).write_text("v1.0.0", encoding="utf-8")
         code = fu.run(tmp_path, apply=True)
@@ -383,6 +475,7 @@ class TestRunExtended:
 # ---------------------------------------------------------------------------
 # build_parser
 # ---------------------------------------------------------------------------
+
 
 class TestBuildParser:
     """Tests for the CLI argument parser builder."""
@@ -404,7 +497,9 @@ class TestBuildParser:
     def test_parser_with_all_args(self):
         """Test parser with all arguments supplied."""
         parser = fu.build_parser()
-        args = parser.parse_args(["--repo-path", "/tmp/repo", "--check-only", "--format", "json", "--apply"])
+        args = parser.parse_args(
+            ["--repo-path", "/tmp/repo", "--check-only", "--format", "json", "--apply"]
+        )
         assert args.repo_path == Path("/tmp/repo")
         assert args.check_only is True
         assert args.output_format == "json"

@@ -36,8 +36,10 @@ SNAKE_PY_DIRS = [
 # Directories that should themselves use kebab-case naming
 # v030_build_logs is a branch-scoped build-runner artifact, excluded from convention checks
 TOP_LEVEL_DIRS = [
-    d for d in REPO_ROOT.iterdir()
-    if d.is_dir() and not d.name.startswith(".")
+    d
+    for d in REPO_ROOT.iterdir()
+    if d.is_dir()
+    and not d.name.startswith(".")
     and d.name not in ("tests", "node_modules", "__pycache__", "v030_build_logs")
 ]
 
@@ -61,10 +63,14 @@ def has_module_docstring(py_file: Path) -> bool:
     except SyntaxError:
         return False
     return (
-        isinstance(tree.body[0], ast.Expr)
-        and isinstance(tree.body[0].value, ast.Constant)
-        and isinstance(tree.body[0].value.value, str)
-    ) if tree.body else False
+        (
+            isinstance(tree.body[0], ast.Expr)
+            and isinstance(tree.body[0].value, ast.Constant)
+            and isinstance(tree.body[0].value.value, str)
+        )
+        if tree.body
+        else False
+    )
 
 
 class TestMarkdownNamingKebabCase:
@@ -73,14 +79,16 @@ class TestMarkdownNamingKebabCase:
         if not directory.is_dir():
             pytest.skip(f"{directory} does not exist")
         violations = [
-            f.name for f in directory.rglob("*.md")
+            f.name
+            for f in directory.rglob("*.md")
             # README.md is conventionally uppercase; ADR files follow ADR-NNN-title convention
             if not is_kebab_case(f.name)
             and f.name != "README.md"
             and not f.name.startswith("ADR-")
         ]
-        assert violations == [], \
+        assert violations == [], (
             f"Non-kebab-case .md files in {directory.name}/: {violations}"
+        )
 
 
 class TestPythonNamingSnakeCase:
@@ -89,21 +97,21 @@ class TestPythonNamingSnakeCase:
         if not directory.is_dir():
             pytest.skip(f"{directory} does not exist")
         violations = [
-            f.name for f in directory.glob("*.py")
-            if not is_snake_case(f.name)
+            f.name for f in directory.glob("*.py") if not is_snake_case(f.name)
         ]
-        assert violations == [], \
+        assert violations == [], (
             f"Non-snake_case .py files in {directory.name}/: {violations}"
+        )
 
 
 class TestDirectoryNamingKebabCase:
     def test_top_level_directories_are_kebab_case(self):
         violations = [
-            d.name for d in TOP_LEVEL_DIRS
+            d.name
+            for d in TOP_LEVEL_DIRS
             if not re.match(r"^[a-z][a-z0-9\-]*$", d.name)
         ]
-        assert violations == [], \
-            f"Non-kebab-case top-level directories: {violations}"
+        assert violations == [], f"Non-kebab-case top-level directories: {violations}"
 
 
 class TestNoPlaceholderTextInNonTemplates:
@@ -144,11 +152,13 @@ class TestPythonFilesHaveDocstrings:
         if not directory.is_dir():
             pytest.skip(f"{directory} does not exist")
         missing = [
-            f.name for f in directory.glob("*.py")
+            f.name
+            for f in directory.glob("*.py")
             if f.name != "__init__.py" and not has_module_docstring(f)
         ]
-        assert missing == [], \
+        assert missing == [], (
             f"Python files in {directory.name}/ without module docstrings: {missing}"
+        )
 
 
 class TestAgentFilesHaveConsistentStructure:
@@ -161,13 +171,15 @@ class TestAgentFilesHaveConsistentStructure:
             content = md_file.read_text(encoding="utf-8")
             if not content.lstrip().startswith("#"):
                 missing_heading.append(md_file.name)
-        assert missing_heading == [], \
+        assert missing_heading == [], (
             f"Agent files without a heading: {missing_heading}"
+        )
 
     def test_all_agent_files_are_nonempty(self):
         agents_dir = REPO_ROOT / "agents"
         empty = [
-            f.name for f in agents_dir.glob("*.md")
+            f.name
+            for f in agents_dir.glob("*.md")
             if len(f.read_text(encoding="utf-8").strip()) < 50
         ]
         assert empty == [], f"Near-empty agent files: {empty}"
@@ -188,7 +200,8 @@ class TestPatternFilesHaveConsistentStructure:
     def test_all_pattern_files_are_nonempty(self):
         patterns_dir = REPO_ROOT / "patterns"
         empty = [
-            f.name for f in patterns_dir.glob("*.md")
+            f.name
+            for f in patterns_dir.glob("*.md")
             if len(f.read_text(encoding="utf-8").strip()) < 50
         ]
         assert empty == [], f"Near-empty pattern files: {empty}"

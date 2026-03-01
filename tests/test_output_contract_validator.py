@@ -5,7 +5,6 @@ constraints, output formats, and exit-code logic.
 """
 
 import json
-from pathlib import Path
 
 import pytest
 
@@ -39,6 +38,7 @@ def make_contract(**overrides):
 # validate_contract — valid input
 # ---------------------------------------------------------------------------
 
+
 class TestValidContract:
     def test_valid_pass_contract(self):
         errors = ocv.validate_contract(VALID_CONTRACT)
@@ -65,7 +65,9 @@ class TestValidContract:
         assert errors == []
 
     def test_requires_review_true_with_reason(self):
-        contract = make_contract(requires_review=True, requires_review_reason="Auth changes")
+        contract = make_contract(
+            requires_review=True, requires_review_reason="Auth changes"
+        )
         errors = ocv.validate_contract(contract)
         assert errors == []
 
@@ -94,11 +96,13 @@ class TestValidContract:
         assert errors == []
 
     def test_multiple_files_changed(self):
-        contract = make_contract(files_changed=[
-            {"path": "src/a.py", "operation": "created"},
-            {"path": "src/b.py", "operation": "modified"},
-            {"path": "src/c.py", "operation": "deleted"},
-        ])
+        contract = make_contract(
+            files_changed=[
+                {"path": "src/a.py", "operation": "created"},
+                {"path": "src/b.py", "operation": "modified"},
+                {"path": "src/c.py", "operation": "deleted"},
+            ]
+        )
         errors = ocv.validate_contract(contract)
         assert errors == []
 
@@ -106,6 +110,7 @@ class TestValidContract:
 # ---------------------------------------------------------------------------
 # validate_contract — status field
 # ---------------------------------------------------------------------------
+
 
 class TestStatusField:
     def test_invalid_status(self):
@@ -128,6 +133,7 @@ class TestStatusField:
 # validate_contract — required fields
 # ---------------------------------------------------------------------------
 
+
 class TestRequiredFields:
     @pytest.mark.parametrize("field", ocv.REQUIRED_FIELDS)
     def test_missing_required_field(self, field):
@@ -140,6 +146,7 @@ class TestRequiredFields:
 # ---------------------------------------------------------------------------
 # validate_contract — unknown fields
 # ---------------------------------------------------------------------------
+
 
 class TestUnknownFields:
     def test_unknown_top_level_field_rejected(self):
@@ -157,6 +164,7 @@ class TestUnknownFields:
 # ---------------------------------------------------------------------------
 # validate_contract — date field
 # ---------------------------------------------------------------------------
+
 
 class TestDateField:
     def test_invalid_date_format_rejected(self):
@@ -183,6 +191,7 @@ class TestDateField:
 # ---------------------------------------------------------------------------
 # validate_contract — session and model fields
 # ---------------------------------------------------------------------------
+
 
 class TestSessionField:
     def test_empty_session_rejected(self):
@@ -216,6 +225,7 @@ class TestModelField:
 # ---------------------------------------------------------------------------
 # validate_contract — confidence field
 # ---------------------------------------------------------------------------
+
 
 class TestConfidenceField:
     def test_confidence_above_ceiling_rejected(self):
@@ -268,9 +278,12 @@ class TestConfidenceField:
 # validate_contract — files_changed field
 # ---------------------------------------------------------------------------
 
+
 class TestFilesChangedField:
     def test_invalid_operation_rejected(self):
-        contract = make_contract(files_changed=[{"path": "src/foo.py", "operation": "updated"}])
+        contract = make_contract(
+            files_changed=[{"path": "src/foo.py", "operation": "updated"}]
+        )
         errors = ocv.validate_contract(contract)
         assert any("operation" in e for e in errors)
 
@@ -285,9 +298,11 @@ class TestFilesChangedField:
         assert any("operation" in e for e in errors)
 
     def test_unknown_key_in_file_entry_rejected(self):
-        contract = make_contract(files_changed=[
-            {"path": "src/foo.py", "operation": "created", "extra": "value"}
-        ])
+        contract = make_contract(
+            files_changed=[
+                {"path": "src/foo.py", "operation": "created", "extra": "value"}
+            ]
+        )
         errors = ocv.validate_contract(contract)
         assert any("extra" in e for e in errors)
 
@@ -308,14 +323,19 @@ class TestFilesChangedField:
 
     @pytest.mark.parametrize("op", sorted(ocv.VALID_OPERATIONS))
     def test_all_valid_operations_accepted(self, op):
-        contract = make_contract(files_changed=[{"path": "src/foo.py", "operation": op}])
+        contract = make_contract(
+            files_changed=[{"path": "src/foo.py", "operation": op}]
+        )
         errors = ocv.validate_contract(contract)
-        assert not any("operation" in e for e in errors), f"Operation {op!r} should be valid"
+        assert not any("operation" in e for e in errors), (
+            f"Operation {op!r} should be valid"
+        )
 
 
 # ---------------------------------------------------------------------------
 # validate_contract — not_verified field
 # ---------------------------------------------------------------------------
+
 
 class TestNotVerifiedField:
     def test_not_verified_not_list_rejected(self):
@@ -337,6 +357,7 @@ class TestNotVerifiedField:
 # ---------------------------------------------------------------------------
 # validate_contract — architectural_impact field
 # ---------------------------------------------------------------------------
+
 
 class TestArchitecturalImpactField:
     def test_invalid_impact_rejected(self):
@@ -361,6 +382,7 @@ class TestArchitecturalImpactField:
 # validate_contract — requires_review cross-validation
 # ---------------------------------------------------------------------------
 
+
 class TestRequiresReviewCrossValidation:
     def test_requires_review_true_without_reason_rejected(self):
         contract = make_contract(requires_review=True, requires_review_reason=None)
@@ -373,7 +395,9 @@ class TestRequiresReviewCrossValidation:
         assert any("requires_review_reason" in e for e in errors)
 
     def test_requires_review_false_with_reason_rejected(self):
-        contract = make_contract(requires_review=False, requires_review_reason="Some reason")
+        contract = make_contract(
+            requires_review=False, requires_review_reason="Some reason"
+        )
         errors = ocv.validate_contract(contract)
         assert any("requires_review_reason" in e for e in errors)
 
@@ -391,6 +415,7 @@ class TestRequiresReviewCrossValidation:
 # ---------------------------------------------------------------------------
 # validate_contract — non-dict input
 # ---------------------------------------------------------------------------
+
 
 class TestNonDictInput:
     def test_list_input_rejected(self):
@@ -417,6 +442,7 @@ class TestNonDictInput:
 # format_text_report
 # ---------------------------------------------------------------------------
 
+
 class TestFormatTextReport:
     def test_pass_result_in_output(self):
         output = ocv.format_text_report("output_contract.json", VALID_CONTRACT, [], 85)
@@ -424,18 +450,24 @@ class TestFormatTextReport:
 
     def test_fail_result_in_output(self):
         errors = ["confidence exceeds ceiling"]
-        output = ocv.format_text_report("output_contract.json", VALID_CONTRACT, errors, 85)
+        output = ocv.format_text_report(
+            "output_contract.json", VALID_CONTRACT, errors, 85
+        )
         assert "RESULT: FAIL" in output
         assert "1 error" in output
 
     def test_multiple_errors_plural(self):
         errors = ["error 1", "error 2"]
-        output = ocv.format_text_report("output_contract.json", VALID_CONTRACT, errors, 85)
+        output = ocv.format_text_report(
+            "output_contract.json", VALID_CONTRACT, errors, 85
+        )
         assert "2 errors" in output
 
     def test_single_error_singular(self):
         errors = ["one error"]
-        output = ocv.format_text_report("output_contract.json", VALID_CONTRACT, errors, 85)
+        output = ocv.format_text_report(
+            "output_contract.json", VALID_CONTRACT, errors, 85
+        )
         assert "1 error" in output
         assert "1 errors" not in output
 
@@ -467,6 +499,7 @@ class TestFormatTextReport:
 # format_json_report
 # ---------------------------------------------------------------------------
 
+
 class TestFormatJsonReport:
     def test_pass_json_report(self):
         output = ocv.format_json_report("output_contract.json", [], 85)
@@ -497,6 +530,7 @@ class TestFormatJsonReport:
 # ---------------------------------------------------------------------------
 # run — file I/O and exit codes
 # ---------------------------------------------------------------------------
+
 
 class TestRun:
     def test_valid_contract_returns_0(self, tmp_path):
@@ -567,6 +601,7 @@ class TestRun:
 # ---------------------------------------------------------------------------
 # build_parser
 # ---------------------------------------------------------------------------
+
 
 class TestBuildParser:
     def test_parser_created(self):

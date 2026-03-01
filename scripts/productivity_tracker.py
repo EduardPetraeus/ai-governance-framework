@@ -15,6 +15,7 @@ Usage:
     python productivity_tracker.py --all
     python productivity_tracker.py --days 7 --author "Jane Smith"
 """
+
 from __future__ import annotations
 
 import argparse
@@ -42,6 +43,7 @@ SEPARATOR = "=" * 64
 
 # ─── Git interaction ─────────────────────────────────────────────────────────
 
+
 def run_git(args: list) -> str:
     """Run a git command and return stdout. Returns empty string on failure."""
     try:
@@ -68,6 +70,7 @@ def verify_git_repo() -> None:
 
 
 # ─── Commit parsing ─────────────────────────────────────────────────────────
+
 
 def get_commits(
     since: str,
@@ -124,9 +127,19 @@ def get_commits(
             dt = datetime.now()
 
         # Determine if this was a direct commit to main/master
-        is_main = any(
-            b in refs for b in ("HEAD -> main", "HEAD -> master", "origin/main", "origin/master")
-        ) if refs else False
+        is_main = (
+            any(
+                b in refs
+                for b in (
+                    "HEAD -> main",
+                    "HEAD -> master",
+                    "origin/main",
+                    "origin/master",
+                )
+            )
+            if refs
+            else False
+        )
 
         # Parse shortstat on the next non-empty line
         files_changed = 0
@@ -147,18 +160,20 @@ def get_commits(
                 deletions = int(stat_match.group(3) or 0)
                 i += 1
 
-        commits.append({
-            "hash": commit_hash[:8],
-            "timestamp": dt,
-            "date": dt.date(),
-            "hour": dt.hour,
-            "message": message,
-            "files_changed": files_changed,
-            "insertions": insertions,
-            "deletions": deletions,
-            "author": author_name,
-            "is_main_commit": is_main,
-        })
+        commits.append(
+            {
+                "hash": commit_hash[:8],
+                "timestamp": dt,
+                "date": dt.date(),
+                "hour": dt.hour,
+                "message": message,
+                "files_changed": files_changed,
+                "insertions": insertions,
+                "deletions": deletions,
+                "author": author_name,
+                "is_main_commit": is_main,
+            }
+        )
 
         i += 1
 
@@ -166,6 +181,7 @@ def get_commits(
 
 
 # ─── Report sections ─────────────────────────────────────────────────────────
+
 
 def _bar(value: int, max_value: int, width: int = BAR_WIDTH) -> str:
     """Render a proportional ASCII bar."""
@@ -273,7 +289,9 @@ def section_commit_types(commits: list[dict]) -> list[str]:
     return lines
 
 
-def section_most_changed_files(since: str, until: str | None, author: str | None) -> list[str]:
+def section_most_changed_files(
+    since: str, until: str | None, author: str | None
+) -> list[str]:
     """Section 5: Top 10 files appearing in most commits."""
     lines = ["MOST-CHANGED FILES (top 10)", "-" * 44]
 
@@ -330,7 +348,9 @@ def section_per_author(commits: list[dict]) -> list[str]:
         type_summary = ", ".join(f"{t}:{n}" for t, n in type_counts.most_common(3))
 
         lines.append(f"  {author}")
-        lines.append(f"    Commits: {count:>4} ({pct:>5.1f}%)  |  Top types: {type_summary}")
+        lines.append(
+            f"    Commits: {count:>4} ({pct:>5.1f}%)  |  Top types: {type_summary}"
+        )
 
     lines.append("")
     return lines
@@ -350,7 +370,9 @@ def section_governance_score(commits: list[dict]) -> list[str]:
     total = len(commits)
 
     # --- Component 1: Conventional commits format (max 40) ---
-    conventional_count = sum(1 for c in commits if CONVENTIONAL_COMMIT_RE.match(c["message"]))
+    conventional_count = sum(
+        1 for c in commits if CONVENTIONAL_COMMIT_RE.match(c["message"])
+    )
     conventional_pct = (conventional_count / total) * 100
     score_format = round((conventional_count / total) * 40)
     detail_format = f"  Conventional commits:   {conventional_count}/{total} ({conventional_pct:.0f}%) = {score_format}/40"
@@ -358,13 +380,16 @@ def section_governance_score(commits: list[dict]) -> list[str]:
     # --- Component 2: CHANGELOG.md updates (max 20) ---
     # Check if CHANGELOG.md appears in file changes on >60% of active days
     active_dates = set(c["date"] for c in commits)
-    changelog_log = run_git([
-        "log",
-        f"--since={min(active_dates).isoformat()}",
-        "--format=%ai",
-        "--diff-filter=M",
-        "--", "CHANGELOG.md",
-    ])
+    changelog_log = run_git(
+        [
+            "log",
+            f"--since={min(active_dates).isoformat()}",
+            "--format=%ai",
+            "--diff-filter=M",
+            "--",
+            "CHANGELOG.md",
+        ]
+    )
 
     changelog_days = set()
     if changelog_log:
@@ -387,7 +412,9 @@ def section_governance_score(commits: list[dict]) -> list[str]:
     # --- Component 3: No direct main/master commits (max 15) ---
     main_commits = sum(1 for c in commits if c.get("is_main_commit", False))
     score_no_main = 15 if main_commits == 0 else max(0, 15 - main_commits)
-    detail_no_main = f"  No main branch commits: {main_commits} direct commits = {score_no_main}/15"
+    detail_no_main = (
+        f"  No main branch commits: {main_commits} direct commits = {score_no_main}/15"
+    )
 
     # --- Component 4: Session size between 5-20 (max 15) ---
     day_counts = Counter(c["date"] for c in commits)
@@ -399,20 +426,18 @@ def section_governance_score(commits: list[dict]) -> list[str]:
     else:
         # Penalize increasingly above 20, but floor at 0
         score_session = max(0, round(15 - (avg_session_size - 20)))
-    detail_session = (
-        f"  Avg session size:       {avg_session_size:.1f} commits/day = {score_session}/15"
-    )
+    detail_session = f"  Avg session size:       {avg_session_size:.1f} commits/day = {score_session}/15"
 
     # --- Component 5: Descriptive messages >20 chars (max 10) ---
     long_msgs = sum(1 for c in commits if len(c["message"]) > 20)
     long_pct = (long_msgs / total) * 100
     score_msgs = round((long_msgs / total) * 10)
-    detail_msgs = (
-        f"  Message length >20ch:   {long_msgs}/{total} ({long_pct:.0f}%) = {score_msgs}/10"
-    )
+    detail_msgs = f"  Message length >20ch:   {long_msgs}/{total} ({long_pct:.0f}%) = {score_msgs}/10"
 
     # --- Total ---
-    total_score = score_format + score_changelog + score_no_main + score_session + score_msgs
+    total_score = (
+        score_format + score_changelog + score_no_main + score_session + score_msgs
+    )
     total_score = min(100, max(0, total_score))
 
     if total_score >= 85:
@@ -440,6 +465,7 @@ def section_governance_score(commits: list[dict]) -> list[str]:
 
 
 # ─── Report assembly ─────────────────────────────────────────────────────────
+
 
 def generate_report(
     commits: list[dict],
@@ -488,6 +514,7 @@ def generate_report(
 
 
 # ─── CLI ─────────────────────────────────────────────────────────────────────
+
 
 def parse_date(value: str) -> str:
     """Validate and return a YYYY-MM-DD date string."""
