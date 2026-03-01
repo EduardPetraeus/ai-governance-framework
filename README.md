@@ -344,7 +344,7 @@ See [docs/quality-control-patterns.md](docs/quality-control-patterns.md) for the
 
 **Teams (5-20 developers)** — Multiple agents running, each following the nearest instruction instead of the shared plan. PRs land without architectural consistency checks. Start at Core Edition, add Layer 3 enforcement within a sprint. See [examples/small-team/CLAUDE.md](examples/small-team/CLAUDE.md).
 
-**Enterprise (50+ developers)** — AI adoption is happening whether governance exists or not. You need compliance audit trails, role-based agent access, and cross-repo consistency. Start at Layers 2-3, target Level 5. See [examples/enterprise/CLAUDE.md](examples/enterprise/CLAUDE.md) and [docs/enterprise-playbook.md](docs/enterprise-playbook.md).
+**Enterprise (50+ developers)** — AI adoption is happening whether governance exists or not. You need compliance audit trails, role-based agent access, and cross-repo consistency. Start at Layers 2-3, target Level 5. See [examples/enterprise/CLAUDE.md](examples/enterprise/CLAUDE.md) and [docs/enterprise-playbook.md](docs/enterprise-playbook.md). For mapping to NIST AI RMF, ISO 42001, and the EU AI Act, see [docs/compliance-mapping.md](docs/compliance-mapping.md).
 
 ## Built With This Framework
 
