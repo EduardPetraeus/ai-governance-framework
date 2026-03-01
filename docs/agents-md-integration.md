@@ -255,3 +255,4 @@ workflow already runs the relevant checks.
 - [docs/multi-ide-support.md](multi-ide-support.md) — feature comparison across all supported tools
 - [patterns/constitutional-inheritance.md](../patterns/constitutional-inheritance.md) — org → team → repo rules
 - [examples/core-edition/](../examples/core-edition/) — minimum viable governance setup
+- [docs/integration-compatibility.md](integration-compatibility.md) — migration paths from Fr-e-d, AI Governor, and taikiogihara's config templates

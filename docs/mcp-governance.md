@@ -449,4 +449,4 @@ Any feature flag system that supports environment context and real-time evaluati
 
 ---
 
-*Related: [patterns/mcp-governance.md](../patterns/mcp-governance.md) | [patterns/kill-switch.md](../patterns/kill-switch.md) | [patterns/blast-radius-control.md](../patterns/blast-radius-control.md) | [docs/security-guide.md](security-guide.md)*
+*Related: [patterns/mcp-governance.md](../patterns/mcp-governance.md) | [patterns/kill-switch.md](../patterns/kill-switch.md) | [patterns/blast-radius-control.md](../patterns/blast-radius-control.md) | [docs/security-guide.md](security-guide.md) | [docs/governance-flow.md](governance-flow.md)*
