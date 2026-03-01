@@ -36,10 +36,10 @@ Rules flow down. Data flows up. Implement bottom-up.
 
 | Decision | Record |
 |---|---|
-| Markdown as the universal format for governance artifacts | [ADR-001](docs/adr/ADR-001-markdown-as-governance-format.md) |
-| No external runtime dependencies in the core framework | [ADR-002](docs/adr/ADR-002-zero-runtime-dependencies.md) |
-| Slash commands as the agent interface standard | [ADR-003](docs/adr/ADR-003-slash-commands-interface.md) |
-| Constitutional inheritance via `inherits_from:` | [ADR-004](docs/adr/ADR-004-constitutional-inheritance.md) |
+| Constitutional inheritance supports both URL references and local file paths | [ADR-001](docs/adr/ADR-001-constitutional-inheritance-url-references.md) |
+| Core governance scripts use only Python standard library | [ADR-002](docs/adr/ADR-002-zero-external-dependencies-for-core-governance.md) |
+| Automation-bias defense pattern — configurable confidence ceiling (default 85%) | [ADR-003](docs/adr/ADR-003-85-percent-confidence-ceiling.md) |
+| Hybrid inheritance model — safety rules use higher-wins, configurable rules use specific-wins | [ADR-004](docs/adr/ADR-004-hybrid-inheritance-model.md) |
 
 ## Repository Structure
 
