@@ -1,0 +1,50 @@
+name: Governance Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  changelog-required:
+    name: CHANGELOG.md must be updated when code changes
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-governance') }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if source code changed
+        id: source-changed
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          CODE=$(git diff --name-only origin/${{ github.base_ref }}...HEAD \
+            | grep -E '\.(py|sql|ts|js|jsx|tsx|go|java|rb|rs|cs)$' || true)
+          if [ -n "$CODE" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No source code changed — governance check skipped."
+          fi
+
+      - name: Check CHANGELOG.md was updated
+        if: steps.source-changed.outputs.changed == 'true'
+        run: |
+          UPDATED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD \
+            | grep "^CHANGELOG\.md$" || true)
+
+          if [ -z "$UPDATED" ]; then
+            echo ""
+            echo "GOVERNANCE CHECK FAILED"
+            echo "Source code changed but CHANGELOG.md was not updated."
+            echo ""
+            echo "Fix: Run /end-session in Claude Code, or add a CHANGELOG.md entry manually."
+            echo "     Format: see templates/CHANGELOG.md"
+            echo ""
+            echo "Emergency bypass: Add the 'skip-governance' label to this PR."
+            echo "     Use only for genuine hotfixes."
+            exit 1
+          fi
+
+          echo "CHANGELOG.md updated — governance check passed."

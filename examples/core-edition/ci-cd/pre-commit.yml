@@ -1,0 +1,74 @@
+name: Pre-commit Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main, master]
+
+jobs:
+  governance-files:
+    name: Verify governance files are present and non-empty
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check CLAUDE.md exists and is non-empty
+        run: |
+          if [ ! -f "CLAUDE.md" ]; then
+            echo "CLAUDE.md not found."
+            echo "Copy from: examples/core-edition/CLAUDE.md"
+            exit 1
+          fi
+
+          LINES=$(wc -l < CLAUDE.md)
+          if [ "$LINES" -lt 5 ]; then
+            echo "CLAUDE.md exists but appears empty (fewer than 5 lines)."
+            echo "Add project context and rules before merging."
+            exit 1
+          fi
+
+          echo "CLAUDE.md present and non-empty ($LINES lines) — OK"
+
+      - name: Check for placeholder text in CLAUDE.md
+        run: |
+          PLACEHOLDERS=$(grep -n "\[Your project name\]\|\[Your project\]\|YOUR_PROJECT\|TODO\|PLACEHOLDER" CLAUDE.md || true)
+          if [ -n "$PLACEHOLDERS" ]; then
+            echo "WARNING: CLAUDE.md contains unfilled placeholders:"
+            echo "$PLACEHOLDERS"
+            echo "Fill in your actual project details before relying on governance."
+          fi
+
+  no-debug-artifacts:
+    name: Block debug artifacts from merging
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for debug files
+        run: |
+          git fetch origin ${{ github.base_ref || 'main' }}
+          ADDED=$(git diff --name-only --diff-filter=A origin/${{ github.base_ref || 'main' }}...HEAD 2>/dev/null || git diff --name-only --diff-filter=A HEAD~1...HEAD 2>/dev/null || true)
+
+          BLOCKED=false
+          debug_patterns=(".DS_Store" "__pycache__" "*.pyc" ".env" "*.log" "node_modules/")
+
+          for pattern in "${debug_patterns[@]}"; do
+            matches=$(echo "$ADDED" | grep -F "$pattern" || true)
+            if [ -n "$matches" ]; then
+              echo "DEBUG ARTIFACT: $matches should not be committed"
+              BLOCKED=true
+            fi
+          done
+
+          if [ "$BLOCKED" = "true" ]; then
+            echo ""
+            echo "Add these patterns to .gitignore and remove them from the commit."
+            exit 1
+          fi
+
+          echo "No debug artifacts detected — OK"
