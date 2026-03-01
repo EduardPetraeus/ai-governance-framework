@@ -88,6 +88,9 @@ The table below shows how this framework's files satisfy each item.
 
 ## Related Documentation
 
+- [docs/governance-for-leaders.md](governance-for-leaders.md) — Roles, metrics, and quarterly checklist for engineering managers and CISOs
+- [templates/risk-register.md](../templates/risk-register.md) — Structured risk register with controls mapped to known failure modes
+- [patterns/operator-playbook.md](../patterns/operator-playbook.md) — Step-by-step procedures for audits and incident response
 - [docs/compliance-guide.md](compliance-guide.md) — Regulatory landscape for AI-assisted development (EU AI Act, GDPR, SOX, HIPAA, NIS2)
 - [docs/security-guide.md](security-guide.md) — Security controls and threat model
 - [docs/enterprise-playbook.md](enterprise-playbook.md) — Enterprise adoption guide including audit trail requirements
