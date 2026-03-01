@@ -56,7 +56,8 @@ A code-generation agent is given access to an MCP server for database operations
 - [MCP governance documentation](../docs/mcp-governance.md) — defines authorization requirements and audit logging for all MCP server interactions
 - [MCP governance pattern](../patterns/mcp-governance.md) — provides the implementation pattern for controlling which tools an agent can invoke and under what conditions
 - [Kill switch](../patterns/kill-switch.md) — halts all agent activity when unauthorized side effects are detected, preventing further shadow operations
-- Agent registry in session protocol — requires all active agents and their tool access to be declared at session start
+- [Agent registry](agent-registry.md) — defines every authorized agent as a first-class identity with declared scope, permissions, tool allowlist, and owner; an unregistered agent is a violation that halts the session
+- [Agent identity pattern](../patterns/agent-identity.md) — enforcement implementation at Level 1 (CLAUDE.md declaration), Level 3 (MCP-enforced registry check), and Level 5 (automated provisioning)
 
 **Maturity level**
 Emerges at Level 3 (Enforced) when teams introduce MCP integrations and multi-agent orchestration; controlled at Level 4 (Measured) with full audit logging and tool authorization policies.
