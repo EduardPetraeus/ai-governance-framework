@@ -1,14 +1,14 @@
-"""Calculate the governance health score for a repository.
+"""Calculate the governance checklist completion score for a repository.
 
 This script scans a repository for governance files and configuration,
-then produces a score from 0 to 100 based on maturity model criteria.
-It can serve as a CI/CD health gate by returning exit code 1 when the
-score falls below a configurable threshold.
+then produces a checklist completion percentage (0-100%) based on which
+governance items are present. It can serve as a CI/CD gate by returning
+exit code 1 when the score falls below a configurable threshold.
 
 Usage:
-    python health-score-calculator.py .
-    python health-score-calculator.py /path/to/repo --threshold 40
-    python health-score-calculator.py . --format json --output-file report.json
+    python health_score_calculator.py .
+    python health_score_calculator.py /path/to/repo --threshold 40
+    python health_score_calculator.py . --format json --output-file report.json
 """
 
 from __future__ import annotations
@@ -37,6 +37,12 @@ MATURITY_LEVELS = [
     (80, 95, 4, "Measured"),
     (95, 10000, 5, "Self-optimizing"),
 ]
+
+SCORE_DISCLAIMER = (
+    "NOTE: This score measures governance checklist completion percentage, "
+    "NOT production maturity or code quality. A high score means governance "
+    "files are present — it does not validate their content or effectiveness."
+)
 
 
 def get_maturity_level(score: int) -> Tuple[int, str]:
@@ -273,29 +279,34 @@ def calculate_score(repo: Path) -> Dict[str, Any]:
         "points": 5,
     })
 
-    score = sum(c["points"] for c in checks if c["passed"])
+    raw_score = sum(c["points"] for c in checks if c["passed"])
     max_score = sum(c["points"] for c in checks)
-    level_num, level_label = get_maturity_level(score)
+    percentage = round(raw_score / max_score * 100) if max_score > 0 else 0
+    level_num, level_label = get_maturity_level(percentage)
 
     return {
         "repository": str(repo),
         "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-        "score": score,
+        "score": percentage,
+        "raw_score": raw_score,
         "max_score": max_score,
         "level": level_num,
         "level_label": level_label,
         "checks": checks,
+        "disclaimer": SCORE_DISCLAIMER,
     }
 
 
 def format_text(report: Dict[str, Any]) -> str:
-    """Format the health score report as human-readable text."""
+    """Format the checklist completion report as human-readable text."""
     lines = [
-        "Governance Health Score",
-        "=======================",
+        "Governance Checklist Completion",
+        "===============================",
         f"Repository: {report['repository']}",
         f"Date: {report['date']}",
-        f"Score: {report['score']}/{report['max_score']}",
+        f"Score: {report['score']}% ({report['raw_score']}/{report['max_score']} points)",
+        "",
+        report["disclaimer"],
         "",
         "What's present:",
     ]
@@ -312,15 +323,15 @@ def format_text(report: Dict[str, Any]) -> str:
             lines.append(f"  \u274c {check['name']}: +{check['points']} points if implemented")
 
     lines.append("")
-    lines.append(f"Overall level: Level {report['level']} ({report['level_label']})")
+    lines.append(f"Checklist completion level: Level {report['level']} ({report['level_label']})")
     lines.append("")
-    lines.append("Level thresholds:")
-    lines.append("  0-19:   Level 0 (Ad-hoc)")
-    lines.append("  20-39:  Level 1 (Foundation)")
-    lines.append("  40-59:  Level 2 (Structured)")
-    lines.append("  60-79:  Level 3 (Enforced)")
-    lines.append("  80-94:  Level 4 (Measured)")
-    lines.append("  95+:    Level 5 (Self-optimizing)")
+    lines.append("Level thresholds (checklist completion %):")
+    lines.append("  0-19%:  Level 0 (Ad-hoc)")
+    lines.append("  20-39%: Level 1 (Foundation)")
+    lines.append("  40-59%: Level 2 (Structured)")
+    lines.append("  60-79%: Level 3 (Enforced)")
+    lines.append("  80-94%: Level 4 (Measured)")
+    lines.append("  95%+:   Level 5 (Self-optimizing)")
     lines.append("")
     lines.append("To improve your score, see: docs/maturity-model.md")
 
@@ -364,8 +375,8 @@ def run(
 
     if threshold > 0 and report["score"] < threshold:
         print(
-            f"\nGovernance health gate FAILED: score {report['score']} "
-            f"is below threshold {threshold}.",
+            f"\nGovernance checklist gate FAILED: {report['score']}% "
+            f"is below threshold {threshold}%.",
             file=sys.stderr,
         )
         return 1
@@ -376,8 +387,8 @@ def run(
 def build_parser() -> argparse.ArgumentParser:
     """Build and return the argument parser."""
     parser = argparse.ArgumentParser(
-        description="Calculate the governance health score for a repository.",
-        epilog="Use --threshold to enforce a minimum score in CI/CD pipelines.",
+        description="Calculate the governance checklist completion score for a repository.",
+        epilog="Use --threshold to enforce a minimum completion percentage in CI/CD pipelines.",
     )
     parser.add_argument(
         "repo_path",
@@ -390,7 +401,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--threshold",
         type=int,
         default=0,
-        help="Exit with code 1 if score is below this value (default: 0, no threshold)",
+        help="Exit with code 1 if completion %% is below this value (default: 0, no threshold)",
     )
     parser.add_argument(
         "--format",

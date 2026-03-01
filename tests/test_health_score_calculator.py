@@ -1,7 +1,8 @@
 """Tests for automation/health_score_calculator.py.
 
 Covers: maturity level mapping, individual scoring components,
-score calculation, output formats, and exit-code threshold logic.
+checklist completion percentage calculation, output formats,
+disclaimer inclusion, and exit-code threshold logic.
 """
 
 import json
@@ -199,17 +200,18 @@ class TestCheckGitignoreHasEnv:
 # ---------------------------------------------------------------------------
 
 class TestCalculateScore:
-    def test_empty_repo_score_is_zero(self, empty_repo):
+    def test_empty_repo_score_is_zero_percent(self, empty_repo):
         report = hsc.calculate_score(empty_repo)
         assert report["score"] == 0
 
-    def test_full_repo_score_above_eighty(self, full_repo):
+    def test_full_repo_score_is_100_percent(self, full_repo):
         report = hsc.calculate_score(full_repo)
-        assert report["score"] >= 80
+        assert report["score"] == 100
 
     def test_report_contains_required_keys(self, empty_repo):
         report = hsc.calculate_score(empty_repo)
-        for key in ("score", "max_score", "level", "level_label", "checks", "date"):
+        for key in ("score", "raw_score", "max_score", "level", "level_label",
+                     "checks", "date", "disclaimer"):
             assert key in report
 
     def test_max_score_equals_sum_of_check_points(self, empty_repo):
@@ -217,13 +219,19 @@ class TestCalculateScore:
         expected = sum(c["points"] for c in report["checks"])
         assert report["max_score"] == expected
 
-    def test_minimal_repo_earns_claude_points(self, minimal_repo):
+    def test_minimal_repo_earns_claude_points_as_percentage(self, minimal_repo):
         report = hsc.calculate_score(minimal_repo)
-        assert report["score"] >= 10
+        assert report["score"] == round(10 / 110 * 100)
+        assert report["raw_score"] == 10
 
     def test_checks_list_is_nonempty(self, empty_repo):
         report = hsc.calculate_score(empty_repo)
         assert len(report["checks"]) > 0
+
+    def test_score_is_percentage_of_raw_over_max(self, full_repo):
+        report = hsc.calculate_score(full_repo)
+        expected = round(report["raw_score"] / report["max_score"] * 100)
+        assert report["score"] == expected
 
 
 # ---------------------------------------------------------------------------
@@ -241,13 +249,33 @@ class TestOutputFormats:
         parsed = json.loads(hsc.format_json(report))
         assert isinstance(parsed["checks"], list)
 
+    def test_json_output_contains_disclaimer(self, empty_repo):
+        report = hsc.calculate_score(empty_repo)
+        parsed = json.loads(hsc.format_json(report))
+        assert "disclaimer" in parsed
+        assert "checklist completion" in parsed["disclaimer"].lower()
+
     def test_text_output_contains_score_label(self, empty_repo):
         report = hsc.calculate_score(empty_repo)
         assert "Score:" in hsc.format_text(report)
 
+    def test_text_output_contains_percentage(self, empty_repo):
+        report = hsc.calculate_score(empty_repo)
+        assert "%" in hsc.format_text(report)
+
     def test_text_output_contains_level(self, empty_repo):
         report = hsc.calculate_score(empty_repo)
         assert "Level" in hsc.format_text(report)
+
+    def test_text_output_contains_disclaimer(self, empty_repo):
+        report = hsc.calculate_score(empty_repo)
+        text = hsc.format_text(report)
+        assert hsc.SCORE_DISCLAIMER in text
+
+    def test_text_header_says_checklist_completion(self, empty_repo):
+        report = hsc.calculate_score(empty_repo)
+        text = hsc.format_text(report)
+        assert "Governance Checklist Completion" in text
 
 
 # ---------------------------------------------------------------------------
@@ -296,7 +324,7 @@ class TestV030Additions:
         assert checklist_check["passed"] is True
         assert checklist_check["points"] == 5
 
-    def test_max_score_is_110_with_all_checks(self, empty_repo):
+    def test_max_score_is_110_raw_points(self, empty_repo):
         report = hsc.calculate_score(empty_repo)
         assert report["max_score"] == 110
 
