@@ -28,6 +28,19 @@ Open Claude Code, type `/plan-session`. The agent reads your project state and c
 
 See [examples/core-edition/](examples/core-edition/) for the full 10-minute walkthrough.
 
+**Optional addon — cross-tool governance bridge:**
+
+```bash
+# 5. Add AGENTS.md to extend governance to Copilot, Cursor, Windsurf, and Aider
+cp templates/AGENTS.md ./AGENTS.md
+# Fill in project, stack, and commands sections
+git add AGENTS.md && git commit -m "chore: add AGENTS.md portable governance bridge"
+```
+
+AGENTS.md is an emerging cross-tool standard (60,000+ projects, Linux Foundation). Pair it
+with CLAUDE.md to govern all AI tools on the project with a single rule set.
+See [docs/agents-md-integration.md](docs/agents-md-integration.md) for the three coexistence options.
+
 **Full framework — interactive wizard:**
 
 ```bash
@@ -219,11 +232,12 @@ ai-governance-framework/
 | [patterns/friction-budget.md](patterns/friction-budget.md) | Measure and limit governance overhead per session |
 | [patterns/constitutional-inheritance.md](patterns/constitutional-inheritance.md) | Cascade org-level rules down to team and repo |
 
-### Templates (15)
+### Templates (16)
 
 | File | Description |
 |---|---|
 | [templates/CLAUDE.md](templates/CLAUDE.md) | Main agent constitution template (copy to repo root) |
+| [templates/AGENTS.md](templates/AGENTS.md) | Portable governance bridge (AGENTS.md standard) for Copilot, Cursor, Windsurf, and Aider |
 | [templates/CLAUDE.org.md](templates/CLAUDE.org.md) | Organization-level constitution (inherits to all team/repo constitutions) |
 | [templates/CLAUDE.team.md](templates/CLAUDE.team.md) | Team-level constitution (inherits from org, inherited by repos) |
 | [templates/PROJECT_PLAN.md](templates/PROJECT_PLAN.md) | Sprint goals, phases, task backlog |

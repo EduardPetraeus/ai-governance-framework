@@ -4,6 +4,11 @@ The AI Governance Framework works with any AI coding tool. The governance layer 
 
 This document covers: what each IDE can enforce, setup instructions, and the honest gaps.
 
+**Cross-tool governance bridge:** `templates/AGENTS.md` provides a portable instruction set
+(the AGENTS.md emerging standard) that works alongside the IDE-specific files below.
+Pair it with `CLAUDE.md` to give every tool on the project a shared baseline.
+See [agents-md-integration.md](agents-md-integration.md) for setup and coexistence options.
+
 ## Feature comparison matrix
 
 | Feature | Claude Code | Cursor | Windsurf | Copilot | Aider |
