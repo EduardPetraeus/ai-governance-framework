@@ -7,7 +7,7 @@ description: |
   Run drift_detector.py to identify exact missing sections, then update
   both repos' CLAUDE.md files to align with the governance template.
 
-status: ready
+status: done
 priority: medium
 agent: docs
 review: agent-review
@@ -27,8 +27,8 @@ estimate: s
 
 actual_tokens: null
 actual_duration_minutes: null
-completed: null
+completed: 2026-03-01
 
 created: 2026-03-01
 updated: 2026-03-01
-notes: "Found during 2026-03-01 verification run."
+notes: "Fixed 2026-03-01: HealthReporting +2 sections, indie-products +4 headers renamed. Both ALIGNED."
