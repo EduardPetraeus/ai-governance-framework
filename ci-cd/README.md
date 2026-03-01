@@ -6,14 +6,16 @@ Automated governance enforcement that catches convention violations, security is
 
 ## Platform support
 
-| Platform | Directory | Workflows available |
-|----------|-----------|-------------------|
-| GitHub Actions | `ci-cd/github-actions/` | governance-check, ai-pr-review, release |
-| GitLab CI | `ci-cd/gitlab/` | governance-check, ai-mr-review, tests |
-| CircleCI | `ci-cd/circleci/` | governance, ai-pr-review, tests |
-| Bitbucket Pipelines | `ci-cd/bitbucket/` | governance-check, ai-pr-review, tests |
-| Azure DevOps | `ci-cd/azure-devops/` | governance, ai-review, tests (3-stage pipeline) |
-| Pre-commit hooks | `ci-cd/pre-commit/` | Local enforcement before CI |
+Start with GitHub Actions + pre-commit hooks. Other platforms are reference implementations.
+
+| Platform | Status | Directory | Workflows available |
+|----------|--------|-----------|-------------------|
+| GitHub Actions | **Actively maintained** | `ci-cd/github-actions/` | governance-check, ai-pr-review, release |
+| Pre-commit hooks | **Actively maintained** | `ci-cd/pre-commit/` | Local enforcement before CI |
+| GitLab CI | Community contributed | `ci-cd/gitlab/` | governance-check, ai-mr-review, tests |
+| CircleCI | Community contributed | `ci-cd/circleci/` | governance, ai-pr-review, tests |
+| Bitbucket Pipelines | Community contributed | `ci-cd/bitbucket/` | governance-check, ai-pr-review, tests |
+| Azure DevOps | Community contributed | `ci-cd/azure-devops/` | governance, ai-review, tests (3-stage pipeline) |
 
 ---
 

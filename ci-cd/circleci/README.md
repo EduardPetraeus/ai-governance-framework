@@ -1,3 +1,9 @@
+> **Community Contributed — Not Actively Maintained**
+>
+> These workflows were contributed as reference implementations. They are not
+> actively tested or maintained by the core project. GitHub Actions is the
+> primary supported CI/CD platform. Community PRs to update these are welcome.
+
 # CircleCI Integration
 
 CircleCI equivalents for all GitHub Actions governance workflows. These pipelines enforce the same governance rules — CHANGELOG updates, AI PR review, test coverage — on CircleCI.

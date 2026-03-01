@@ -1,3 +1,9 @@
+> **Community Contributed — Not Actively Maintained**
+>
+> These workflows were contributed as reference implementations. They are not
+> actively tested or maintained by the core project. GitHub Actions is the
+> primary supported CI/CD platform. Community PRs to update these are welcome.
+
 # Azure DevOps Integration
 
 Azure DevOps Pipelines equivalents for all governance workflows. These pipelines enforce the same rules — CHANGELOG updates, AI PR review, test coverage — on Azure DevOps repositories.
