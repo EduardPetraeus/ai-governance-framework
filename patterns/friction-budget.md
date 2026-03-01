@@ -170,9 +170,64 @@ Implementation:
 
 This is the correct design: default invisible, escalate only on exception.
 
+## Confidence Ceiling Interaction
+
+The confidence ceiling (see [ADR-003](../docs/adr/ADR-003-85-percent-confidence-ceiling.md) and [patterns/automation-bias-defense.md](automation-bias-defense.md)) directly affects how much friction AI validation consumes from the budget.
+
+### Effective Friction Formula
+
+```
+effective_friction = base_friction + (1 - ceiling) × review_overhead
+```
+
+Where:
+- `base_friction` — friction from governance mechanisms excluding validation review
+- `ceiling` — the configured confidence ceiling (expressed as a decimal: 0.85, 0.80, etc.)
+- `review_overhead` — time in seconds a developer spends on human review per validation output
+
+**Example:** Base friction = 120 seconds. Review overhead = 300 seconds per validation. Ceiling = 0.85.
+
+```
+effective_friction = 120 + (1 - 0.85) × 300 = 120 + 45 = 165 seconds
+```
+
+If the team lowers the ceiling to 0.80 (more scrutiny required):
+
+```
+effective_friction = 120 + (1 - 0.80) × 300 = 120 + 60 = 180 seconds
+```
+
+If the team raises the ceiling to 0.90 (less scrutiny required):
+
+```
+effective_friction = 120 + (1 - 0.90) × 300 = 120 + 30 = 150 seconds
+```
+
+### Calibration Rule
+
+**Teams must calibrate the ceiling and the friction budget together.** The ceiling is not a free variable — every change to it moves effective friction.
+
+Before changing the confidence ceiling:
+1. Calculate current effective friction
+2. Calculate effective friction at the proposed ceiling
+3. Verify the result is within budget (< 5 minutes total visible overhead)
+4. If the ceiling change pushes the budget over limit, reduce another mechanism first
+5. Document the calibration in `CHANGELOG.md`
+
+**Ceiling and budget trade-offs by domain:**
+
+| Domain | Ceiling | Review overhead | Budget impact |
+|--------|---------|----------------|---------------|
+| Safety-critical | 80% | High — more scrutiny required | Consume more budget; may require removing other Class 2/3 mechanisms |
+| Standard | 85% (default) | Moderate | Balanced default; works within standard budget |
+| Low-risk | 90–95% | Low — less scrutiny needed | Frees budget for additional governance mechanisms |
+
+This means a team that lowers the ceiling for safety reasons must acknowledge the corresponding friction cost and either accept a tighter budget or remove an equivalent mechanism elsewhere. A team that raises the ceiling to reduce friction must document the rationale and verify the governance retrospective approves it.
+
 ## Related Patterns
 
 - [docs/governance-fatigue.md](../docs/governance-fatigue.md) — the principle behind this pattern
 - [patterns/blast-radius-control.md](blast-radius-control.md) — specific blast radius limits
 - [patterns/progressive-trust.md](progressive-trust.md) — adapting friction to experience level
+- [patterns/automation-bias-defense.md](automation-bias-defense.md) — confidence ceiling configuration
 - [docs/maturity-model.md](../docs/maturity-model.md) — friction scales with maturity level

@@ -67,7 +67,7 @@ Most AI governance approaches are static rule documents. This framework is a liv
 - **Anti-fragile**: Production incidents automatically tighten the rules that allowed them
 - **Friction-conscious**: Governance overhead is measured and budgeted — if it's too heavy, we fix it
 - **Enterprise-native**: Constitutional inheritance (org → team → repo) with enforced compliance
-- **Honest about limits**: Explicit automation bias defense — AI validation has a confidence ceiling of 85%
+- **Honest about limits**: Explicit automation bias defense — AI validation has a configurable confidence ceiling (default: 85%)
 
 ## Quick Start
 
@@ -139,8 +139,8 @@ Each layer builds on the one below. Implement bottom-up.
 | Constitutional inheritance | Yes (org → team → repo) | No | No | No | No |
 | CI/CD enforcement | 5 platforms | No | Partial | No | GitHub only |
 | Multi-IDE support | 4 IDEs | No | No | No | No |
-| Automation bias defense | Yes (85% ceiling) | No | No | No | No |
-| Confidence ceiling | 85% (hardcoded) | None | None | None | None |
+| Automation bias defense | Yes (configurable ceiling, default: 85%) | No | No | No | No |
+| Confidence ceiling | Configurable (default: 85%) | None | None | None | None |
 | Test suite | 273 tests | None | None | None | None |
 | Zero core dependencies | Yes | No | No | No | No |
 | Maturity model | 6 levels (0-5) | None | None | None | None |
@@ -225,7 +225,7 @@ ai-governance-framework/
 | [patterns/blast-radius-control.md](patterns/blast-radius-control.md) | Limit how much damage one session can cause (max 15 files/session) |
 | [patterns/context-boundaries.md](patterns/context-boundaries.md) | Define what agents should and should not see |
 | [patterns/human-in-the-loop.md](patterns/human-in-the-loop.md) | Specify exactly when human judgment is required |
-| [patterns/automation-bias-defense.md](patterns/automation-bias-defense.md) | Cap AI confidence at 85%, surface what was not verified |
+| [patterns/automation-bias-defense.md](patterns/automation-bias-defense.md) | Cap AI confidence at configurable ceiling (default: 85%), surface what was not verified |
 | [patterns/kill-switch.md](patterns/kill-switch.md) | Emergency halt procedure for any agent at any maturity level |
 | [patterns/session-replay.md](patterns/session-replay.md) | Reconstruct what an agent did and why from session artifacts |
 | [patterns/knowledge-decay.md](patterns/knowledge-decay.md) | Detect and refresh stale context before it misleads agents |
@@ -330,7 +330,7 @@ Eight patterns for verifying AI output:
 | [Blast radius control](patterns/blast-radius-control.md) | Limit how much damage one session can do. Maximum 15 files, 200 lines per file by default. |
 | [Context boundaries](patterns/context-boundaries.md) | Agents given access to everything use everything. Define what they should and should not see. |
 | [Human-in-the-loop](patterns/human-in-the-loop.md) | Specify exactly when human judgment is required. Everything else proceeds without approval. |
-| [Automation bias defense](patterns/automation-bias-defense.md) | More AI validation layers can reduce human scrutiny. Cap AI confidence at 85% and surface what was not verified. |
+| [Automation bias defense](patterns/automation-bias-defense.md) | More AI validation layers can reduce human scrutiny. Cap AI confidence at configurable ceiling (default: 85%) and surface what was not verified. |
 
 See [docs/quality-control-patterns.md](docs/quality-control-patterns.md) for the complete guide.
 

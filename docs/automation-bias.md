@@ -150,13 +150,14 @@ This is uncomfortable. That discomfort is useful data.
 
 ### Defense 6: Confidence Ceiling
 
-No matter how many agents approve, the overall confidence is capped at 85%. The remaining
-15% is always "needs human verification." The system explicitly communicates:
+No matter how many agents approve, the overall confidence is capped at the configured ceiling
+(default: 85%). The remaining percentage is always "needs human verification." The system
+explicitly communicates:
 
 ```
 AI validation complete.
 Agents reviewed: security (✅), code quality (✅), architecture (✅)
-Overall confidence: 82% (capped at 85% — AI validation is never 100%)
+Overall confidence: 82% (capped at configured ceiling, default 85% — AI validation is never 100%)
 
 ⚠️ The following areas require human judgment:
 - [specific areas not verified]
@@ -167,8 +168,9 @@ You are the final check.
 
 This ceiling is not humility theater. It is accurate. AI systems have known failure modes,
 known categories they miss, and fundamental limits on verifying semantic correctness.
-Representing them as capable of 100% validation would be false. 85% is not conservative — it
-reflects the actual coverage of current AI governance tooling when correctly implemented.
+Representing them as capable of 100% validation would be false. The default 85% ceiling is
+not conservative — it reflects the actual coverage of current AI governance tooling when
+correctly implemented. The ceiling is configurable (80–95%); see ADR-003 for domain guidance.
 
 ---
 
@@ -196,7 +198,7 @@ Add to CLAUDE.md at Level 4+:
 ```markdown
 ## automation_bias_defense
 
-AI validation confidence ceiling: 85%
+AI validation confidence ceiling: configurable (default: 85%)
 Never represent AI validation as complete verification.
 
 After every review or quality gate output, include:

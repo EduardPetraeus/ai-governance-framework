@@ -113,7 +113,7 @@ A pull request changes the discount calculation in an e-commerce checkout flow. 
 - [Automation bias defense](../patterns/automation-bias-defense.md) — requires AI reviewers to explicitly label which aspects they did NOT verify, surfacing gaps for human attention
 - [Automation bias documentation](../docs/automation-bias.md) — explains the psychological mechanism and provides team training material for recognizing bias
 - [Dual-model validation](../patterns/dual-model-validation.md) — uses a second model to challenge the first model's conclusions, reducing false confidence in automated approvals
-- 85% confidence ceiling — AI reviewers never report confidence above 85%, preventing the "all green" signal that triggers human disengagement
+- Configurable confidence ceiling (default: 85%) — AI reviewers never report confidence above the ceiling, preventing the "all green" signal that triggers human disengagement
 
 **Maturity level**
 Emerges at Level 3 (Enforced) when validation layers multiply and automated approval becomes routine; controlled at Level 4 (Measured) with explicit NOT VERIFIED labeling and confidence ceilings.
