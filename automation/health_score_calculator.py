@@ -66,7 +66,10 @@ def check_claude_sections(repo: Path) -> List[str]:
     claude_path = repo / "CLAUDE.md"
     if not claude_path.is_file():
         return []
-    content = claude_path.read_text(encoding="utf-8").lower()
+    try:
+        content = claude_path.read_text(encoding="utf-8").lower()
+    except (OSError, UnicodeDecodeError):
+        return []
     found = []
     for section in REQUIRED_CLAUDE_SECTIONS:
         pattern = rf"(^|\n)#+\s*{re.escape(section)}|^\s*{re.escape(section)}\s*$|(##\s+{re.escape(section)})"
@@ -80,7 +83,10 @@ def count_changelog_entries(repo: Path) -> int:
     changelog_path = repo / "CHANGELOG.md"
     if not changelog_path.is_file():
         return 0
-    content = changelog_path.read_text(encoding="utf-8")
+    try:
+        content = changelog_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return 0
     entries = re.findall(r"^#{2,3}\s+.+", content, re.MULTILINE)
     return len(entries)
 
@@ -107,7 +113,10 @@ def check_gitignore_has_env(repo: Path) -> bool:
     gitignore_path = repo / ".gitignore"
     if not gitignore_path.is_file():
         return False
-    content = gitignore_path.read_text(encoding="utf-8")
+    try:
+        content = gitignore_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return False
     for line in content.splitlines():
         stripped = line.strip()
         if stripped == ".env" or stripped == ".env*" or stripped == ".env/":

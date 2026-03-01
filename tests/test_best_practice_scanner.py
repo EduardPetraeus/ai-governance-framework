@@ -2,11 +2,13 @@
 
 Tests pure functions (calculate_relevance, parse_rss_date, scan_sources)
 without making real network calls. Network-dependent functions are tested
-with mocked responses.
+with mocked _http_get responses.
 """
 
+import json
+import urllib.error
 from datetime import datetime, timezone
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -91,24 +93,21 @@ class TestScanSourcesWithMock:
             {"relevance_score": 0.9, "source": "B", "title": "T2", "url": "", "date": "", "excerpt": ""},
             {"relevance_score": 0.1, "source": "C", "title": "T3", "url": "", "date": "", "excerpt": ""},
         ]
-        # Simulate what scan_sources does: sort by relevance descending
         sorted_findings = sorted(findings, key=lambda f: f.get("relevance_score", 0), reverse=True)
         assert sorted_findings[0]["relevance_score"] == 0.9
         assert sorted_findings[-1]["relevance_score"] == 0.1
 
-    @patch("best_practice_scanner.requests.get")
-    def test_rss_source_fetch_failure_returns_empty(self, mock_get):
-        import requests as real_requests
-        mock_get.side_effect = real_requests.RequestException("Network error")
+    @patch("best_practice_scanner._http_get")
+    def test_rss_source_fetch_failure_returns_empty(self, mock_http_get):
+        mock_http_get.side_effect = urllib.error.URLError("Network error")
         source = {"name": "Test RSS", "url": "https://example.com/feed", "type": "rss"}
         cutoff = datetime(2025, 1, 1, tzinfo=timezone.utc)
         results = bps.fetch_rss(source, cutoff, bps.DEFAULT_KEYWORDS)
         assert results == []
 
-    @patch("best_practice_scanner.requests.get")
-    def test_github_trending_fetch_failure_returns_empty(self, mock_get):
-        import requests as real_requests
-        mock_get.side_effect = real_requests.RequestException("Network error")
+    @patch("best_practice_scanner._http_get")
+    def test_github_trending_fetch_failure_returns_empty(self, mock_http_get):
+        mock_http_get.side_effect = urllib.error.URLError("Network error")
         source = {"name": "GitHub", "url": "ai-governance", "type": "github_trending"}
         cutoff = datetime(2025, 1, 1, tzinfo=timezone.utc)
         results = bps.fetch_github_trending(source, cutoff, bps.DEFAULT_KEYWORDS)
@@ -127,8 +126,8 @@ class TestScanSourcesWithMock:
 class TestFetchRss:
     """Tests for the fetch_rss function covering XML parsing branches."""
 
-    @patch("best_practice_scanner.requests.get")
-    def test_successful_rss_parse_returns_findings(self, mock_get):
+    @patch("best_practice_scanner._http_get")
+    def test_successful_rss_parse_returns_findings(self, mock_http_get):
         """Test that a valid RSS XML response is parsed into a findings list.
 
         Note: ElementTree's Element.__bool__ returns False for childless elements,
@@ -146,10 +145,7 @@ class TestFetchRss:
             "</item>"
             "</channel></rss>"
         )
-        mock_response = MagicMock()
-        mock_response.text = rss_xml
-        mock_response.raise_for_status = MagicMock()
-        mock_get.return_value = mock_response
+        mock_http_get.return_value = rss_xml
 
         source = {"name": "Test Feed", "url": "https://example.com/feed", "type": "rss"}
         cutoff = datetime(2020, 1, 1, tzinfo=timezone.utc)
@@ -159,8 +155,8 @@ class TestFetchRss:
         assert "AI governance" in results[0]["title"]
         assert results[0]["date"] != ""
 
-    @patch("best_practice_scanner.requests.get")
-    def test_rss_item_before_cutoff_is_skipped(self, mock_get):
+    @patch("best_practice_scanner._http_get")
+    def test_rss_item_before_cutoff_is_skipped(self, mock_http_get):
         """Test that RSS items with pubDate before the cutoff are excluded.
 
         Uses a <sub/> child to make the pubDate element truthy for Element.__bool__.
@@ -175,44 +171,37 @@ class TestFetchRss:
             "</item>"
             "</channel></rss>"
         )
-        mock_response = MagicMock()
-        mock_response.text = rss_xml
-        mock_response.raise_for_status = MagicMock()
-        mock_get.return_value = mock_response
+        mock_http_get.return_value = rss_xml
 
         source = {"name": "Test Feed", "url": "https://example.com/feed", "type": "rss"}
         cutoff = datetime(2025, 1, 1, tzinfo=timezone.utc)
         results = bps.fetch_rss(source, cutoff, bps.DEFAULT_KEYWORDS)
         assert results == []
 
-    @patch("best_practice_scanner.requests.get")
-    def test_rss_invalid_xml_returns_empty(self, mock_get):
+    @patch("best_practice_scanner._http_get")
+    def test_rss_invalid_xml_returns_empty(self, mock_http_get):
         """Test that invalid XML gracefully returns empty list."""
-        mock_response = MagicMock()
-        mock_response.text = "not valid xml <><><>"
-        mock_response.raise_for_status = MagicMock()
-        mock_get.return_value = mock_response
+        mock_http_get.return_value = "not valid xml <><><>"
 
         source = {"name": "Bad Feed", "url": "https://example.com/bad", "type": "rss"}
         cutoff = datetime(2020, 1, 1, tzinfo=timezone.utc)
         results = bps.fetch_rss(source, cutoff, bps.DEFAULT_KEYWORDS)
         assert results == []
 
-    @patch("best_practice_scanner.requests.get")
-    def test_rss_http_error_returns_empty(self, mock_get):
-        """Test that HTTP errors from raise_for_status return empty list."""
-        import requests as real_requests
-        mock_response = MagicMock()
-        mock_response.raise_for_status.side_effect = real_requests.HTTPError("404")
-        mock_get.return_value = mock_response
+    @patch("best_practice_scanner._http_get")
+    def test_rss_http_error_returns_empty(self, mock_http_get):
+        """Test that HTTP errors from urlopen return empty list."""
+        mock_http_get.side_effect = urllib.error.HTTPError(
+            "https://example.com/err", 404, "Not Found", {}, None
+        )
 
         source = {"name": "Error Feed", "url": "https://example.com/err", "type": "rss"}
         cutoff = datetime(2020, 1, 1, tzinfo=timezone.utc)
         results = bps.fetch_rss(source, cutoff, bps.DEFAULT_KEYWORDS)
         assert results == []
 
-    @patch("best_practice_scanner.requests.get")
-    def test_atom_feed_is_parsed(self, mock_get):
+    @patch("best_practice_scanner._http_get")
+    def test_atom_feed_is_parsed(self, mock_http_get):
         """Test that Atom format feeds are also parsed correctly.
 
         Uses child elements to make Elements truthy (ElementTree gotcha).
@@ -227,10 +216,7 @@ class TestFetchRss:
             "</entry>"
             "</feed>"
         )
-        mock_response = MagicMock()
-        mock_response.text = atom_xml
-        mock_response.raise_for_status = MagicMock()
-        mock_get.return_value = mock_response
+        mock_http_get.return_value = atom_xml
 
         source = {"name": "Atom Feed", "url": "https://example.com/atom", "type": "rss"}
         cutoff = datetime(2020, 1, 1, tzinfo=timezone.utc)
@@ -238,8 +224,8 @@ class TestFetchRss:
         assert len(results) == 1
         assert results[0]["url"] == "https://example.com/atom-article"
 
-    @patch("best_practice_scanner.requests.get")
-    def test_rss_item_without_date_is_included(self, mock_get):
+    @patch("best_practice_scanner._http_get")
+    def test_rss_item_without_date_is_included(self, mock_http_get):
         """Test that items without a parsable date element are still included."""
         rss_xml = (
             "<rss><channel>"
@@ -250,10 +236,7 @@ class TestFetchRss:
             "</item>"
             "</channel></rss>"
         )
-        mock_response = MagicMock()
-        mock_response.text = rss_xml
-        mock_response.raise_for_status = MagicMock()
-        mock_get.return_value = mock_response
+        mock_http_get.return_value = rss_xml
 
         source = {"name": "Test", "url": "https://example.com/feed", "type": "rss"}
         cutoff = datetime(2020, 1, 1, tzinfo=timezone.utc)
@@ -261,8 +244,8 @@ class TestFetchRss:
         assert len(results) == 1
         assert results[0]["date"] == ""
 
-    @patch("best_practice_scanner.requests.get")
-    def test_rss_item_with_link_href_attribute(self, mock_get):
+    @patch("best_practice_scanner._http_get")
+    def test_rss_item_with_link_href_attribute(self, mock_http_get):
         """Test that link elements with href attribute are correctly extracted."""
         rss_xml = (
             "<rss><channel>"
@@ -273,10 +256,7 @@ class TestFetchRss:
             "</item>"
             "</channel></rss>"
         )
-        mock_response = MagicMock()
-        mock_response.text = rss_xml
-        mock_response.raise_for_status = MagicMock()
-        mock_get.return_value = mock_response
+        mock_http_get.return_value = rss_xml
 
         source = {"name": "Test", "url": "https://example.com/feed", "type": "rss"}
         cutoff = datetime(2020, 1, 1, tzinfo=timezone.utc)
@@ -284,8 +264,8 @@ class TestFetchRss:
         assert len(results) == 1
         assert results[0]["url"] == "https://example.com/href-link"
 
-    @patch("best_practice_scanner.requests.get")
-    def test_rss_item_no_link_element(self, mock_get):
+    @patch("best_practice_scanner._http_get")
+    def test_rss_item_no_link_element(self, mock_http_get):
         """Test that items without a link element get empty URL."""
         rss_xml = (
             "<rss><channel>"
@@ -295,10 +275,7 @@ class TestFetchRss:
             "</item>"
             "</channel></rss>"
         )
-        mock_response = MagicMock()
-        mock_response.text = rss_xml
-        mock_response.raise_for_status = MagicMock()
-        mock_get.return_value = mock_response
+        mock_http_get.return_value = rss_xml
 
         source = {"name": "Test", "url": "https://example.com/feed", "type": "rss"}
         cutoff = datetime(2020, 1, 1, tzinfo=timezone.utc)
@@ -306,8 +283,8 @@ class TestFetchRss:
         assert len(results) == 1
         assert results[0]["url"] == ""
 
-    @patch("best_practice_scanner.requests.get")
-    def test_rss_item_no_title_element(self, mock_get):
+    @patch("best_practice_scanner._http_get")
+    def test_rss_item_no_title_element(self, mock_http_get):
         """Test that items without title get 'Untitled'."""
         rss_xml = (
             "<rss><channel>"
@@ -317,10 +294,7 @@ class TestFetchRss:
             "</item>"
             "</channel></rss>"
         )
-        mock_response = MagicMock()
-        mock_response.text = rss_xml
-        mock_response.raise_for_status = MagicMock()
-        mock_get.return_value = mock_response
+        mock_http_get.return_value = rss_xml
 
         source = {"name": "Test", "url": "https://example.com/feed", "type": "rss"}
         cutoff = datetime(2020, 1, 1, tzinfo=timezone.utc)
@@ -336,11 +310,10 @@ class TestFetchRss:
 class TestFetchGithubTrending:
     """Tests for the fetch_github_trending function covering API response processing."""
 
-    @patch("best_practice_scanner.requests.get")
-    def test_successful_github_search_returns_repos(self, mock_get):
+    @patch("best_practice_scanner._http_get")
+    def test_successful_github_search_returns_repos(self, mock_http_get):
         """Test that GitHub API search results are parsed into findings."""
-        mock_response = MagicMock()
-        mock_response.json.return_value = {
+        mock_http_get.return_value = json.dumps({
             "items": [
                 {
                     "full_name": "user/ai-governance",
@@ -350,9 +323,7 @@ class TestFetchGithubTrending:
                     "stargazers_count": 42,
                 },
             ]
-        }
-        mock_response.raise_for_status = MagicMock()
-        mock_get.return_value = mock_response
+        })
 
         source = {"name": "GitHub Trending", "url": "ai-governance", "type": "github_trending"}
         cutoff = datetime(2025, 1, 1, tzinfo=timezone.utc)
@@ -361,24 +332,20 @@ class TestFetchGithubTrending:
         assert "42 stars" in results[0]["title"]
         assert results[0]["url"] == "https://github.com/user/ai-governance"
 
-    @patch("best_practice_scanner.requests.get")
-    def test_github_empty_items_returns_empty(self, mock_get):
+    @patch("best_practice_scanner._http_get")
+    def test_github_empty_items_returns_empty(self, mock_http_get):
         """Test that empty GitHub search results return empty list."""
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"items": []}
-        mock_response.raise_for_status = MagicMock()
-        mock_get.return_value = mock_response
+        mock_http_get.return_value = json.dumps({"items": []})
 
         source = {"name": "GitHub", "url": "ai-governance", "type": "github_trending"}
         cutoff = datetime(2025, 1, 1, tzinfo=timezone.utc)
         results = bps.fetch_github_trending(source, cutoff, bps.DEFAULT_KEYWORDS)
         assert results == []
 
-    @patch("best_practice_scanner.requests.get")
-    def test_github_repo_with_none_description(self, mock_get):
+    @patch("best_practice_scanner._http_get")
+    def test_github_repo_with_none_description(self, mock_http_get):
         """Test that repos with None description are handled gracefully."""
-        mock_response = MagicMock()
-        mock_response.json.return_value = {
+        mock_http_get.return_value = json.dumps({
             "items": [
                 {
                     "full_name": "user/repo",
@@ -388,9 +355,7 @@ class TestFetchGithubTrending:
                     "stargazers_count": 0,
                 },
             ]
-        }
-        mock_response.raise_for_status = MagicMock()
-        mock_get.return_value = mock_response
+        })
 
         source = {"name": "GitHub", "url": "ai-governance", "type": "github_trending"}
         cutoff = datetime(2025, 1, 1, tzinfo=timezone.utc)
@@ -406,8 +371,8 @@ class TestFetchGithubTrending:
 class TestFetchWeb:
     """Tests for the fetch_web function covering web page processing."""
 
-    @patch("best_practice_scanner.requests.get")
-    def test_successful_web_fetch_returns_finding(self, mock_get):
+    @patch("best_practice_scanner._http_get")
+    def test_successful_web_fetch_returns_finding(self, mock_http_get):
         """Test that a web page is fetched and text is extracted."""
         html = (
             "<html><head><title>AI Governance</title></head>"
@@ -416,23 +381,18 @@ class TestFetchWeb:
             "<style>body { color: red; }</style>"
             "<p>Agent safety discussion.</p></body></html>"
         )
-        mock_response = MagicMock()
-        mock_response.text = html
-        mock_response.raise_for_status = MagicMock()
-        mock_get.return_value = mock_response
+        mock_http_get.return_value = html
 
         source = {"name": "Web Page", "url": "https://example.com/page", "type": "web"}
         results = bps.fetch_web(source, bps.DEFAULT_KEYWORDS)
         assert len(results) == 1
         assert results[0]["source"] == "Web Page"
-        # Script and style tags should be stripped
         assert "var x = 1" not in results[0]["excerpt"]
 
-    @patch("best_practice_scanner.requests.get")
-    def test_web_fetch_failure_returns_empty(self, mock_get):
+    @patch("best_practice_scanner._http_get")
+    def test_web_fetch_failure_returns_empty(self, mock_http_get):
         """Test that web fetch errors return empty list."""
-        import requests as real_requests
-        mock_get.side_effect = real_requests.RequestException("Connection refused")
+        mock_http_get.side_effect = urllib.error.URLError("Connection refused")
 
         source = {"name": "Bad Page", "url": "https://example.com/fail", "type": "web"}
         results = bps.fetch_web(source, bps.DEFAULT_KEYWORDS)
@@ -479,7 +439,6 @@ class TestScanSourcesRouting:
         mock_fetch_web.return_value = []
         sources = [{"name": "Web", "url": "https://example.com", "type": "web"}]
         bps.scan_sources(sources, days=7, extra_keywords=["custom keyword"])
-        # Check that the keywords argument includes extended list
         call_kwargs = mock_fetch_web.call_args
         keywords_arg = call_kwargs[0][1]  # second positional arg
         assert "custom keyword" in keywords_arg

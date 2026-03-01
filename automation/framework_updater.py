@@ -4,6 +4,8 @@ This script queries the GitHub API for releases of the ai-governance-framework
 repository, compares them against the locally installed version, and presents
 a structured summary of available updates. It never applies changes automatically.
 
+Uses only the standard library (urllib) — no third-party dependencies.
+
 Usage:
     python framework-updater.py --repo-path .
     python framework-updater.py --check-only
@@ -15,19 +17,12 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import socket
 import sys
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-
-try:
-    import requests
-except ImportError:
-    print(
-        "Error: the 'requests' library is required.\n"
-        "Install it with: pip install requests",
-        file=sys.stderr,
-    )
-    sys.exit(1)
 
 GITHUB_OWNER = "clauseduardpetraeus"
 GITHUB_REPO = "ai-governance-framework"
@@ -46,6 +41,14 @@ def parse_version(version_string: str) -> Tuple[int, int, int]:
     if not match:
         raise ValueError(f"Invalid semantic version: {version_string!r}")
     return int(match.group(1)), int(match.group(2)), int(match.group(3))
+
+
+def _parse_next_link(link_header: str) -> Optional[str]:
+    """Extract the 'next' page URL from a GitHub Link response header."""
+    if not link_header:
+        return None
+    match = re.search(r'<([^>]+)>;\s*rel="next"', link_header)
+    return match.group(1) if match else None
 
 
 def find_version_file(repo_path: Path) -> Optional[Path]:
@@ -67,26 +70,50 @@ def read_local_version(repo_path: Path) -> str:
     version_path = find_version_file(repo_path)
     if version_path is None:
         return DEFAULT_VERSION
-    text = version_path.read_text().strip()
+    try:
+        text = version_path.read_text().strip()
+    except (OSError, UnicodeDecodeError) as exc:
+        print(f"Warning: Could not read {version_path}: {exc}", file=sys.stderr)
+        return DEFAULT_VERSION
     if not text:
         return DEFAULT_VERSION
     return text
 
 
 def fetch_releases(owner: str = GITHUB_OWNER, repo: str = GITHUB_REPO) -> List[Dict]:
-    """Fetch all releases from the GitHub API, sorted by semantic version ascending."""
-    url = f"{GITHUB_API_BASE}/repos/{owner}/{repo}/releases"
-    response = requests.get(url, timeout=15, headers={"Accept": "application/vnd.github+json"})
-    response.raise_for_status()
-    releases = response.json()
+    """Fetch all releases from the GitHub API with pagination, sorted by semantic version.
+
+    Pre-releases (e.g. v1.2.3-beta) are logged and skipped.
+    Pagination via Link header is followed automatically.
+    """
+    url: Optional[str] = (
+        f"{GITHUB_API_BASE}/repos/{owner}/{repo}/releases?per_page=100"
+    )
+    headers = {"Accept": "application/vnd.github+json"}
+    all_releases: List[Dict] = []
+
+    while url:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=15) as response:
+            page_data = json.loads(response.read().decode("utf-8"))
+            all_releases.extend(page_data)
+            link_header = response.headers.get("Link", "")
+            url = _parse_next_link(link_header)
+
     valid: List[Dict] = []
-    for release in releases:
+    for release in all_releases:
         tag = release.get("tag_name", "")
+        cleaned = tag.lstrip("v")
+        # Skip pre-releases (e.g. v1.2.3-beta, v2.0.0-rc1)
+        if re.match(r"^\d+\.\d+\.\d+-", cleaned):
+            print(f"Warning: Skipping pre-release tag: {tag}", file=sys.stderr)
+            continue
         try:
             parse_version(tag)
             valid.append(release)
         except ValueError:
             continue
+
     valid.sort(key=lambda r: parse_version(r["tag_name"]))
     return valid
 
@@ -182,14 +209,15 @@ def run(repo_path: Path, check_only: bool = False, output_format: str = "text", 
 
     try:
         releases = fetch_releases()
-    except requests.ConnectionError:
-        print("Error: Could not connect to GitHub API. Check your network connection.", file=sys.stderr)
-        return 1
-    except requests.Timeout:
-        print("Error: GitHub API request timed out. Try again later.", file=sys.stderr)
-        return 1
-    except requests.HTTPError as exc:
+    except urllib.error.HTTPError as exc:
         print(f"Error: GitHub API returned an error: {exc}", file=sys.stderr)
+        return 1
+    except (urllib.error.URLError, OSError, socket.timeout) as exc:
+        reason = str(exc)
+        if isinstance(exc, socket.timeout) or "timed out" in reason.lower():
+            print("Error: GitHub API request timed out. Try again later.", file=sys.stderr)
+        else:
+            print("Error: Could not connect to GitHub API. Check your network connection.", file=sys.stderr)
         return 1
 
     updates = get_available_updates(releases, current_version)
