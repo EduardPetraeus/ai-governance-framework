@@ -1,0 +1,16 @@
+# mutmut configuration for mutation testing
+# Copy to your project root as mutmut-config.toml or add to pyproject.toml
+#
+# Usage:
+#   mutmut run              — run all mutation tests
+#   mutmut results          — view summary
+#   mutmut html             — generate HTML report
+#   mutmut show <id>        — inspect a specific surviving mutant
+#
+# See docs/mutation-testing-guide.md for full setup and CI/CD integration.
+
+[tool.mutmut]
+paths_to_mutate = "src/"
+tests_dir = "tests/"
+runner = "python -m pytest -x --tb=short"
+dict_synonyms = "Struct, NamedStruct"
