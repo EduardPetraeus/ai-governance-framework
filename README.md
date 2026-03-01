@@ -2,7 +2,43 @@
 
 # AI Governance Framework
 
-_A 7-layer governance system that gives AI coding agents the context, constraints, and continuous oversight needed to build the right thing at 15x speed — not just any thing fast._
+_Make AI a reliable engineer in your repo — not just a fast one._
+
+## Quick Start
+
+**Core Edition — 10 minutes, no infrastructure required:**
+
+```bash
+# 1. Copy the constitution to your repo root
+cp examples/core-edition/CLAUDE.md ./CLAUDE.md
+
+# 2. Fill in 3 lines (project name, type, stack), then commit
+git add CLAUDE.md && git commit -m "chore: add AI governance constitution"
+
+# 3. Install session commands
+mkdir -p .claude/commands
+cp examples/core-edition/commands/*.md .claude/commands/
+
+# 4. Add CI checks
+mkdir -p .github/workflows
+cp examples/core-edition/ci-cd/*.yml .github/workflows/
+```
+
+Open Claude Code, type `/plan-session`. The agent reads your project state and confirms scope before writing a line of code. When done, `/end-session` commits the state log.
+
+See [examples/core-edition/](examples/core-edition/) for the full 10-minute walkthrough.
+
+**Full framework — interactive wizard:**
+
+```bash
+npx ai-governance-init
+```
+
+Asks about your project, team size, CI platform, and IDE — scaffolds the right files. Requires Node.js 14+.
+
+See [docs/getting-started.md](docs/getting-started.md) for both paths with step-by-step instructions.
+
+---
 
 ## Why This Exists
 
@@ -117,7 +153,8 @@ ai-governance-framework/
 ├── docs/              # Framework documentation organized by topic
 │   ├── adr/           # Architecture Decision Records
 │   └── case-studies/  # Real-world implementation case studies
-├── examples/          # Production-ready configurations for 3 team sizes
+├── examples/          # Production-ready configurations for 4 use cases
+│   ├── core-edition/  # Minimum viable governance — start here (10 min)
 │   ├── solo-developer/
 │   ├── small-team/
 │   └── enterprise/
@@ -284,11 +321,15 @@ See [docs/quality-control-patterns.md](docs/quality-control-patterns.md) for the
 
 ## Who Is This For
 
-**Solo developers** — You ship fast but lose track of what you have built. You need continuity across sessions without manually re-explaining your project every time. Start at Level 1. One afternoon. Immediate results. See [examples/solo-developer/CLAUDE.md](examples/solo-developer/CLAUDE.md).
+**You ship with AI but lose control of what it builds.** The agent forgets context between sessions, expands scope without asking, commits things you did not request, and sometimes introduces bugs that look correct until production. You want that fixed without a week of governance infrastructure.
 
-**Teams (5-20 developers)** — Multiple agents are running, each following the nearest instruction instead of the shared plan. PRs land without architectural consistency checks. You want governed AI development without a complex platform. Start at Layers 1-2, add Layer 3 enforcement within a sprint. See [examples/small-team/CLAUDE.md](examples/small-team/CLAUDE.md).
+**Core Edition** (10 minutes) — Solo developers and teams up to 10 who want an agent that reads project state before coding, confirms scope, and leaves a written record. No CI platform required beyond GitHub Actions. See [examples/core-edition/](examples/core-edition/).
 
-**Enterprise (50+ developers)** — AI adoption is happening whether governance exists or not. You need compliance audit trails, role-based agent access, and cross-repo consistency. You want a framework that integrates with existing processes, CI platforms, and IDEs. Start at Layers 2-3, target Level 5. See [examples/enterprise/CLAUDE.md](examples/enterprise/CLAUDE.md) and [docs/enterprise-playbook.md](docs/enterprise-playbook.md).
+**Solo developers** — You need continuity across sessions without manually re-explaining your project every time. Core Edition is your starting point. See [examples/solo-developer/CLAUDE.md](examples/solo-developer/CLAUDE.md) for a project-specific example.
+
+**Teams (5-20 developers)** — Multiple agents running, each following the nearest instruction instead of the shared plan. PRs land without architectural consistency checks. Start at Core Edition, add Layer 3 enforcement within a sprint. See [examples/small-team/CLAUDE.md](examples/small-team/CLAUDE.md).
+
+**Enterprise (50+ developers)** — AI adoption is happening whether governance exists or not. You need compliance audit trails, role-based agent access, and cross-repo consistency. Start at Layers 2-3, target Level 5. See [examples/enterprise/CLAUDE.md](examples/enterprise/CLAUDE.md) and [docs/enterprise-playbook.md](docs/enterprise-playbook.md).
 
 ## Built With This Framework
 
