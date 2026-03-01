@@ -1,3 +1,6 @@
+> **Community Edition** — This is an alternative configuration example. For the
+> recommended starting point, see the [Core Edition](../core-edition/README.md).
+
 # Enterprise Configuration
 
 The full governance constitution for organizations with 20+ developers, compliance requirements, or both. This configuration adds everything that cannot be left to convention when agents run in dozens of concurrent sessions across multiple teams.

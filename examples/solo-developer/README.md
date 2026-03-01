@@ -1,3 +1,6 @@
+> **Community Edition** — This is an alternative configuration example. For the
+> recommended starting point, see the [Core Edition](../core-edition/README.md).
+
 # Solo Developer Configuration
 
 The minimal governance setup for a single developer. 10 minutes to set up. Near-zero ongoing overhead. Solves the three problems that hurt solo developers most.

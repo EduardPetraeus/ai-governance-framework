@@ -1,46 +1,59 @@
 # Example Configurations
 
-Three production-ready configurations for governing AI agents at different scales. Each is a complete, working setup. Pick the one that matches your situation today and customize it.
+## Start here: Core Edition
 
-## The Three Personas
+The **[Core Edition](core-edition/)** is the recommended starting point for all users. 10 minutes to set up, no infrastructure required, works for solo developers and teams up to 10.
+
+```bash
+cp examples/core-edition/CLAUDE.md ./CLAUDE.md
+mkdir -p .claude/commands && cp examples/core-edition/commands/*.md .claude/commands/
+mkdir -p .github/workflows && cp examples/core-edition/ci-cd/*.yml .github/workflows/
+```
+
+If you only use one thing from this repository, use the Core Edition.
+
+---
+
+## Community editions — alternative configurations
+
+The following are alternative configurations contributed as examples for specific team sizes and compliance contexts. They are not actively maintained as separate editions. Use the Core Edition and extend it to your needs.
 
 ### Solo Developer
-One person. Personal project, side project, or early-stage product. No team coordination needed. The governance goal is not process for its own sake — it is preserving context between sessions and preventing the mistakes that happen when no one is reviewing your work.
+> **Community Edition** — This is an alternative configuration example. For the
+> recommended starting point, see the [Core Edition](core-edition/README.md).
 
-**Use case:** You are building a SaaS product alone. You work on it three evenings a week. Each session, the AI agent needs to know what you built last time, what decisions you made, and what the plan is — without you re-explaining it every time.
+One person. Personal project, side project, or early-stage product. No team coordination needed. The governance goal is preserving context between sessions and preventing the mistakes that happen when no one is reviewing your work.
 
 ### Small Team (3-5 developers)
-A product team or startup where everyone knows each other. You can talk through decisions, but you need consistency because multiple people and multiple AI agents are modifying the same codebase concurrently. The governance goal is preventing agents from stepping on each other and enforcing shared conventions automatically.
+> **Community Edition** — This is an alternative configuration example. For the
+> recommended starting point, see the [Core Edition](core-edition/README.md).
 
-**Use case:** Your team of four shares a monorepo. Two developers run AI sessions simultaneously. Without governance, one agent refactors a module while another adds a feature to it. The PR conflicts are the symptom. The root cause is that agents had no shared awareness of what is in progress.
+A product team or startup where everyone knows each other. You need consistency because multiple people and multiple AI agents are modifying the same codebase concurrently.
 
 ### Enterprise (20+ developers)
-Multiple teams, compliance requirements, and managers who need visibility. The governance goal is that any agent in any session across any team follows the same rules, and violations are caught by automation rather than by humans discovering problems after the fact.
+> **Community Edition** — This is an alternative configuration example. For the
+> recommended starting point, see the [Core Edition](core-edition/README.md).
 
-**Use case:** Your engineering organization has 30 developers across four teams. You are subject to GDPR and are evaluating EU AI Act implications. When an auditor asks "how do you govern AI-assisted development?", you need a concrete answer with documentation, not a verbal description.
+Multiple teams, compliance requirements, and managers who need visibility. The governance goal is that any agent in any session across any team follows the same rules.
 
 ---
 
 ## Feature Comparison
 
-| Feature | Solo | Small Team | Enterprise |
+| Feature | Recommended | | |
 |---|---|---|---|
-| Session protocol | Start + end only | Start + mid-session checkpoints + end | Full protocol + audit trail logging |
-| Model routing | Not included | 6 task types | 14 task types + auto-review triggers |
-| Governance sync (drift detection) | Not included | Sprint scope checking | Sprint + architecture + ADR checking |
-| Mandatory task reporting | Not included | After every task, non-disableable | Box-drawing status block, non-disableable |
-| PR workflow | Not included | Feature branches, 1 reviewer | Feature branches, 2 reviewers for governance files |
-| Security maturity level | Level 1 (never-commit list) | Level 2 (+ scan triggers) | Level 3 (+ incident response + data classification) |
-| Compliance section | Not included | Not included | EU AI Act + GDPR + audit trail |
-| Audit trail | CHANGELOG.md only | CHANGELOG.md + DECISIONS.md | Full session logging + cost tracking |
-| Change control | Not included | PR review for CLAUDE.md | ADR + PR + two reviewers for CLAUDE.md |
-| Definition of done | Basic verification | Basic verification | Mandatory 8-item checklist with consequences |
+| | **Core Edition** | Solo | Small Team | Enterprise |
+| Session protocol | Start + end | Start + end only | + mid-session checkpoints | + audit trail logging |
+| Model routing | Not included | Not included | 6 task types | 14 task types |
+| CI/CD enforcement | GitHub Actions | Not included | Included | Full pipeline |
+| Security | Level 1 | Level 1 | Level 2 | Level 3 |
+| Compliance | Not included | Not included | Not included | EU AI Act + GDPR |
 
 ---
 
 ## Start Here
 
-**Even if you are on a team, start with the solo configuration.** Set it up in 10 minutes, run two or three sessions with it, and confirm that the session protocol feels natural. Then upgrade one section at a time.
+**Start with Core Edition regardless of team size.** Set it up in 10 minutes, run two or three sessions with it, and confirm that the session protocol feels natural. Then extend one section at a time using the community editions as reference.
 
 The reason: the solo configuration contains the foundation that every other level builds on. If the session start/end protocol does not work for your project, adding governance sync and model routing on top will not fix it — it will amplify the friction.
 

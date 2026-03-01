@@ -1,3 +1,6 @@
+> **Community Edition** — This is an alternative configuration example. For the
+> recommended starting point, see the [Core Edition](../core-edition/README.md).
+
 # Small Team Configuration
 
 For 3-5 developers sharing a codebase. Everything from the solo configuration, plus the governance mechanisms that prevent the specific failure modes that emerge when multiple people and multiple AI agents work on the same code concurrently.
