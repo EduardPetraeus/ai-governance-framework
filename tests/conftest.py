@@ -3,12 +3,12 @@
 import sys
 from pathlib import Path
 
+import pytest
+
 # Make automation/ and scripts/ importable without installing the package.
 REPO_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(REPO_ROOT / "automation"))
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
-
-import pytest
 
 
 @pytest.fixture
@@ -103,7 +103,9 @@ def full_repo(tmp_path: Path) -> Path:
         "# health score calculator placeholder\n",
         encoding="utf-8",
     )
-    (tmp_path / ".gitignore").write_text(".env\n*.pyc\n__pycache__/\n", encoding="utf-8")
+    (tmp_path / ".gitignore").write_text(
+        ".env\n*.pyc\n__pycache__/\n", encoding="utf-8"
+    )
     # v0.3.0 additions
     (tmp_path / "AGENTS.md").write_text(
         "# AGENTS\n\nPortable governance bridge.\n",

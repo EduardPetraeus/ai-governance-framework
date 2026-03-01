@@ -7,7 +7,6 @@ parser, and main() entry point including error paths.
 """
 
 from datetime import datetime, timezone
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -59,6 +58,7 @@ SAMPLE_PROJECT_PLAN = """\
 # ascii_bar
 # ---------------------------------------------------------------------------
 
+
 class TestAsciiBar:
     def test_full_bar(self):
         result = gd.ascii_bar(10, 10, width=10)
@@ -89,6 +89,7 @@ class TestAsciiBar:
 # sparkline
 # ---------------------------------------------------------------------------
 
+
 class TestSparkline:
     def test_empty_returns_dash(self):
         assert gd.sparkline([]) == "—"
@@ -116,6 +117,7 @@ class TestSparkline:
 # trend_arrow
 # ---------------------------------------------------------------------------
 
+
 class TestTrendArrow:
     def test_single_value_returns_neutral(self):
         assert gd.trend_arrow([1.0]) == "→"
@@ -136,6 +138,7 @@ class TestTrendArrow:
 # ---------------------------------------------------------------------------
 # parse_changelog
 # ---------------------------------------------------------------------------
+
 
 class TestParseChangelog:
     def test_missing_file_returns_empty_list(self, tmp_path):
@@ -191,6 +194,7 @@ class TestParseChangelog:
 # parse_cost_log (governance_dashboard version)
 # ---------------------------------------------------------------------------
 
+
 class TestParseCostLog:
     def test_missing_file_returns_empty(self, tmp_path):
         assert gd.parse_cost_log(tmp_path) == []
@@ -234,6 +238,7 @@ class TestParseCostLog:
 # ---------------------------------------------------------------------------
 # parse_memory
 # ---------------------------------------------------------------------------
+
 
 class TestParseMemory:
     def test_missing_file_returns_not_exists(self, tmp_path):
@@ -297,6 +302,7 @@ class TestParseMemory:
 # ---------------------------------------------------------------------------
 # parse_project_plan
 # ---------------------------------------------------------------------------
+
 
 class TestParseProjectPlan:
     def test_missing_file_returns_not_exists(self, tmp_path):
@@ -362,6 +368,7 @@ class TestParseProjectPlan:
 # count_adrs
 # ---------------------------------------------------------------------------
 
+
 class TestCountAdrs:
     def test_no_adr_dir_returns_zero(self, tmp_path):
         result = gd.count_adrs(tmp_path)
@@ -412,6 +419,7 @@ class TestCountAdrs:
 # section_divider
 # ---------------------------------------------------------------------------
 
+
 class TestSectionDivider:
     def test_contains_title(self):
         assert "My Title" in gd.section_divider("My Title")
@@ -429,6 +437,7 @@ class TestSectionDivider:
 # ---------------------------------------------------------------------------
 # build_health_score_section
 # ---------------------------------------------------------------------------
+
 
 class TestBuildHealthScoreSection:
     def _make_report(self, score=50, max_score=100, level=2, label="Structured"):
@@ -474,6 +483,7 @@ class TestBuildHealthScoreSection:
 # build_velocity_section
 # ---------------------------------------------------------------------------
 
+
 class TestBuildVelocitySection:
     def test_empty_sessions_returns_no_data_message(self):
         result = gd.build_velocity_section([])
@@ -518,6 +528,7 @@ class TestBuildVelocitySection:
 # build_cost_section
 # ---------------------------------------------------------------------------
 
+
 class TestBuildCostSection:
     def test_empty_returns_no_data_message(self):
         result = gd.build_cost_section([])
@@ -556,6 +567,7 @@ class TestBuildCostSection:
 # ---------------------------------------------------------------------------
 # build_knowledge_section
 # ---------------------------------------------------------------------------
+
 
 class TestBuildKnowledgeSection:
     def test_no_memory_returns_not_found(self):
@@ -634,13 +646,16 @@ class TestBuildKnowledgeSection:
 # build_adr_section
 # ---------------------------------------------------------------------------
 
+
 class TestBuildAdrSection:
     def test_no_adrs_returns_not_found_message(self):
         result = gd.build_adr_section({"count": 0, "files": []})
         assert "No ADRs found" in result
 
     def test_adr_count_appears(self):
-        result = gd.build_adr_section({"count": 3, "files": ["ADR-001.md", "ADR-002.md", "ADR-003.md"]})
+        result = gd.build_adr_section(
+            {"count": 3, "files": ["ADR-001.md", "ADR-002.md", "ADR-003.md"]}
+        )
         assert "3" in result
 
     def test_file_names_appear(self):
@@ -648,13 +663,16 @@ class TestBuildAdrSection:
         assert "ADR-001-first.md" in result
 
     def test_table_header_present(self):
-        result = gd.build_adr_section({"count": 2, "files": ["ADR-001.md", "ADR-002.md"]})
+        result = gd.build_adr_section(
+            {"count": 2, "files": ["ADR-001.md", "ADR-002.md"]}
+        )
         assert "ADR File" in result
 
 
 # ---------------------------------------------------------------------------
 # build_sprint_section
 # ---------------------------------------------------------------------------
+
 
 class TestBuildSprintSection:
     def test_no_plan_returns_not_active(self):
@@ -742,6 +760,7 @@ class TestBuildSprintSection:
 # build_maturity_section
 # ---------------------------------------------------------------------------
 
+
 class TestBuildMaturitySection:
     def _make_report(self, score=30, level=1, label="Foundation"):
         return {
@@ -798,6 +817,7 @@ class TestBuildMaturitySection:
 # generate_dashboard (integration)
 # ---------------------------------------------------------------------------
 
+
 class TestGenerateDashboard:
     def test_empty_repo_generates_dashboard(self, tmp_path):
         result = gd.generate_dashboard(tmp_path)
@@ -847,6 +867,7 @@ class TestGenerateDashboard:
 # build_parser
 # ---------------------------------------------------------------------------
 
+
 class TestBuildParser:
     def test_repo_path_default_is_dot(self):
         parser = gd.build_parser()
@@ -883,14 +904,20 @@ class TestBuildParser:
 # main
 # ---------------------------------------------------------------------------
 
+
 class TestMain:
     def test_stdout_mode_returns_zero(self, tmp_path):
-        with patch("sys.argv", ["governance_dashboard.py", "--repo-path", str(tmp_path), "--stdout"]):
+        with patch(
+            "sys.argv",
+            ["governance_dashboard.py", "--repo-path", str(tmp_path), "--stdout"],
+        ):
             code = gd.main()
         assert code == 0
 
     def test_writes_file_and_returns_zero(self, tmp_path):
-        with patch("sys.argv", ["governance_dashboard.py", "--repo-path", str(tmp_path)]):
+        with patch(
+            "sys.argv", ["governance_dashboard.py", "--repo-path", str(tmp_path)]
+        ):
             code = gd.main()
         assert code == 0
         assert (tmp_path / "DASHBOARD.md").is_file()
@@ -902,23 +929,35 @@ class TestMain:
         assert code == 1
 
     def test_custom_output_file_created(self, tmp_path):
-        with patch("sys.argv", [
-            "governance_dashboard.py",
-            "--repo-path", str(tmp_path),
-            "--output", "MY_DASH.md",
-        ]):
+        with patch(
+            "sys.argv",
+            [
+                "governance_dashboard.py",
+                "--repo-path",
+                str(tmp_path),
+                "--output",
+                "MY_DASH.md",
+            ],
+        ):
             code = gd.main()
         assert code == 0
         assert (tmp_path / "MY_DASH.md").is_file()
 
     def test_generate_exception_returns_one(self, tmp_path):
-        with patch("governance_dashboard.generate_dashboard", side_effect=RuntimeError("fail")):
-            with patch("sys.argv", ["governance_dashboard.py", "--repo-path", str(tmp_path)]):
+        with patch(
+            "governance_dashboard.generate_dashboard", side_effect=RuntimeError("fail")
+        ):
+            with patch(
+                "sys.argv", ["governance_dashboard.py", "--repo-path", str(tmp_path)]
+            ):
                 code = gd.main()
         assert code == 1
 
     def test_stdout_mode_prints_dashboard_header(self, tmp_path, capsys):
-        with patch("sys.argv", ["governance_dashboard.py", "--repo-path", str(tmp_path), "--stdout"]):
+        with patch(
+            "sys.argv",
+            ["governance_dashboard.py", "--repo-path", str(tmp_path), "--stdout"],
+        ):
             gd.main()
         output = capsys.readouterr().out
         assert "# Governance Dashboard" in output

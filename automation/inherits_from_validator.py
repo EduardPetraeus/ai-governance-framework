@@ -366,7 +366,9 @@ def validate(
                 1 for v in all_violations if v["type"] == "missing_required_section"
             ),
             "prohibited_permissions": sum(
-                1 for v in all_violations if v["type"] == "prohibited_permission_granted"
+                1
+                for v in all_violations
+                if v["type"] == "prohibited_permission_granted"
             ),
             "lowered_thresholds": sum(
                 1 for v in all_violations if v["type"] == "threshold_lowered"

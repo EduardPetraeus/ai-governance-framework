@@ -4,8 +4,6 @@ Tests the business logic expressed in .github/workflows/governance-check.yml
 and the scripts it invokes — without executing GitHub Actions itself.
 """
 
-import json
-import re
 from pathlib import Path
 
 import pytest
@@ -40,7 +38,9 @@ class TestGovernanceCheckWorkflowContent:
         assert "pull_request" in self._content
 
     def test_workflow_references_python_script_or_action(self):
-        has_script = "health" in self._content.lower() or "check" in self._content.lower()
+        has_script = (
+            "health" in self._content.lower() or "check" in self._content.lower()
+        )
         assert has_script
 
 
@@ -49,7 +49,9 @@ class TestHealthGateLogic:
 
     def test_score_just_below_threshold_fails_gate(self, tmp_path):
         # Build a repo that scores exactly 10 (only CLAUDE.md)
-        (tmp_path / "CLAUDE.md").write_text("# CLAUDE.md\n\nProject.\n", encoding="utf-8")
+        (tmp_path / "CLAUDE.md").write_text(
+            "# CLAUDE.md\n\nProject.\n", encoding="utf-8"
+        )
         report = hsc.calculate_score(tmp_path)
         # With threshold=20 this should fail
         fails = report["score"] < 20

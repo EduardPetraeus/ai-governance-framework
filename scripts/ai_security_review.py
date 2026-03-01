@@ -126,7 +126,7 @@ PATTERNS: List[Tuple[str, str, str, str]] = [
     (
         "MEDIUM",
         "sensitive_env_assignment",
-        r'(?i)(ANTHROPIC|OPENAI|AWS|AZURE|GCP|DATABASE|DB|SECRET|TOKEN)'
+        r"(?i)(ANTHROPIC|OPENAI|AWS|AZURE|GCP|DATABASE|DB|SECRET|TOKEN)"
         r"[_A-Z]*\s*=\s*[\"'][^\"']{8,}[\"']",
         "Direct assignment to a sensitive environment variable",
     ),

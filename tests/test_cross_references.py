@@ -160,7 +160,8 @@ class TestNoLinksAreAnchorOnly:
     def test_docs_links_are_not_all_fragment_only(self):
         docs_dir = REPO_ROOT / "docs"
         relative_count = sum(
-            1 for md_file in docs_dir.rglob("*.md")
+            1
+            for md_file in docs_dir.rglob("*.md")
             for _, _, target in collect_relative_links(md_file)
         )
         # docs/ should have real relative links (not just anchors)

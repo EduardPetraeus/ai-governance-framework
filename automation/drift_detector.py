@@ -19,7 +19,7 @@ import json
 import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 
 REQUIRED_SECTIONS = [
@@ -121,13 +121,15 @@ def calculate_drift(
         upper_bound = 1.0 + threshold
 
         if ratio < lower_bound or ratio > upper_bound:
-            drifted.append({
-                "section": section_name,
-                "template_length": template_len,
-                "target_length": target_len,
-                "ratio": round(ratio, 2),
-                "direction": "shorter" if ratio < 1.0 else "longer",
-            })
+            drifted.append(
+                {
+                    "section": section_name,
+                    "template_length": template_len,
+                    "target_length": target_len,
+                    "ratio": round(ratio, 2),
+                    "direction": "shorter" if ratio < 1.0 else "longer",
+                }
+            )
 
     return drifted
 

@@ -23,7 +23,7 @@ import sys
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 # ---------------------------------------------------------------------------
 # ASCII chart helpers (self-contained — no shared module dependency)
@@ -300,7 +300,6 @@ def build_session_type_section(rows: List[Dict[str, Any]]) -> str:
         by_type[r["session_type"]]["tasks"] += r["tasks"]
         by_type[r["session_type"]]["cost"] += r["cost"]
 
-    total_cost = sum(r["cost"] for r in rows)
     max_cost = max(d["cost"] for d in by_type.values()) if by_type else 1.0
 
     lines = [
@@ -380,18 +379,24 @@ def build_routing_efficiency_section(
         interpretation = "Model routing is near-optimal."
     elif ratio <= 1.20:
         status = "⚠️ Acceptable"
-        interpretation = "Minor routing inefficiencies detected. Review misrouted sessions."
+        interpretation = (
+            "Minor routing inefficiencies detected. Review misrouted sessions."
+        )
     elif ratio <= 1.40:
         status = "❌ Suboptimal"
-        interpretation = "Significant cost savings available through better model routing."
+        interpretation = (
+            "Significant cost savings available through better model routing."
+        )
     else:
         status = "🔴 Poor"
-        interpretation = "Major routing issues. Opus used for tasks suitable for Haiku/Sonnet."
+        interpretation = (
+            "Major routing issues. Opus used for tasks suitable for Haiku/Sonnet."
+        )
 
     lines = [
         f"**Routing efficiency:** {status}  ({ratio:.2f}x — 1.0x = perfect)",
         f"_Interpretation: {interpretation}_\n",
-        f"| Metric | Value |",
+        "| Metric | Value |",
         "|--------|-------|",
         f"| Actual spend | ${actual:.3f} |",
         f"| Estimated optimal spend | ${optimal:.3f} |",

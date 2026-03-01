@@ -8,7 +8,6 @@ disclaimer inclusion, and exit-code threshold logic.
 import json
 from pathlib import Path
 
-import pytest
 
 import health_score_calculator as hsc
 
@@ -16,6 +15,7 @@ import health_score_calculator as hsc
 # ---------------------------------------------------------------------------
 # get_maturity_level
 # ---------------------------------------------------------------------------
+
 
 class TestGetMaturityLevel:
     def test_score_0_is_adhoc(self):
@@ -66,6 +66,7 @@ class TestGetMaturityLevel:
 # check_file_exists
 # ---------------------------------------------------------------------------
 
+
 class TestCheckFileExists:
     def test_existing_file_returns_true(self, tmp_path):
         (tmp_path / "CLAUDE.md").write_text("content", encoding="utf-8")
@@ -78,6 +79,7 @@ class TestCheckFileExists:
 # ---------------------------------------------------------------------------
 # check_dir_has_files
 # ---------------------------------------------------------------------------
+
 
 class TestCheckDirHasFiles:
     def test_dir_with_file_returns_true(self, tmp_path):
@@ -97,6 +99,7 @@ class TestCheckDirHasFiles:
 # ---------------------------------------------------------------------------
 # check_claude_sections
 # ---------------------------------------------------------------------------
+
 
 class TestCheckClaudeSections:
     def test_all_required_sections_found(self, tmp_path):
@@ -127,6 +130,7 @@ class TestCheckClaudeSections:
 # count_changelog_entries
 # ---------------------------------------------------------------------------
 
+
 class TestCountChangelogEntries:
     def test_three_h2_entries(self, tmp_path):
         (tmp_path / "CHANGELOG.md").write_text(
@@ -148,6 +152,7 @@ class TestCountChangelogEntries:
 # ---------------------------------------------------------------------------
 # check_ai_review_workflow
 # ---------------------------------------------------------------------------
+
 
 class TestCheckAiReviewWorkflow:
     def test_workflow_referencing_anthropic_passes(self, tmp_path):
@@ -178,6 +183,7 @@ class TestCheckAiReviewWorkflow:
 # check_gitignore_has_env
 # ---------------------------------------------------------------------------
 
+
 class TestCheckGitignoreHasEnv:
     def test_gitignore_with_dotenv_passes(self, tmp_path):
         (tmp_path / ".gitignore").write_text(".env\n*.pyc\n", encoding="utf-8")
@@ -199,6 +205,7 @@ class TestCheckGitignoreHasEnv:
 # calculate_score (integration)
 # ---------------------------------------------------------------------------
 
+
 class TestCalculateScore:
     def test_empty_repo_score_is_zero_percent(self, empty_repo):
         report = hsc.calculate_score(empty_repo)
@@ -210,8 +217,16 @@ class TestCalculateScore:
 
     def test_report_contains_required_keys(self, empty_repo):
         report = hsc.calculate_score(empty_repo)
-        for key in ("score", "raw_score", "max_score", "level", "level_label",
-                     "checks", "date", "disclaimer"):
+        for key in (
+            "score",
+            "raw_score",
+            "max_score",
+            "level",
+            "level_label",
+            "checks",
+            "date",
+            "disclaimer",
+        ):
             assert key in report
 
     def test_max_score_equals_sum_of_check_points(self, empty_repo):
@@ -237,6 +252,7 @@ class TestCalculateScore:
 # ---------------------------------------------------------------------------
 # format_json / format_text
 # ---------------------------------------------------------------------------
+
 
 class TestOutputFormats:
     def test_json_output_is_parseable(self, empty_repo):
@@ -282,9 +298,12 @@ class TestOutputFormats:
 # v0.3.0 additions: AGENTS.md + self-validation checklist
 # ---------------------------------------------------------------------------
 
+
 class TestV030Additions:
     def test_agents_md_check_passes_when_present(self, tmp_path):
-        (tmp_path / "AGENTS.md").write_text("# AGENTS\n\nCross-tool bridge.\n", encoding="utf-8")
+        (tmp_path / "AGENTS.md").write_text(
+            "# AGENTS\n\nCross-tool bridge.\n", encoding="utf-8"
+        )
         assert hsc.check_agents_md(tmp_path) is True
 
     def test_agents_md_check_fails_when_absent(self, tmp_path):
@@ -305,9 +324,7 @@ class TestV030Additions:
     def test_calculate_score_includes_agents_md_check(self, tmp_path):
         (tmp_path / "AGENTS.md").write_text("# AGENTS\n", encoding="utf-8")
         report = hsc.calculate_score(tmp_path)
-        agents_check = next(
-            c for c in report["checks"] if "AGENTS.md" in c["name"]
-        )
+        agents_check = next(c for c in report["checks"] if "AGENTS.md" in c["name"])
         assert agents_check["passed"] is True
         assert agents_check["points"] == 5
 
@@ -332,6 +349,7 @@ class TestV030Additions:
 # ---------------------------------------------------------------------------
 # run (exit codes and file output)
 # ---------------------------------------------------------------------------
+
 
 class TestRun:
     def test_run_returns_zero_by_default(self, empty_repo):

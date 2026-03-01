@@ -24,7 +24,7 @@ import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
 # ---------------------------------------------------------------------------
 # Imports from sibling automation script
@@ -286,9 +286,7 @@ def count_adrs(repo: Path) -> Dict[str, Any]:
     files = [
         f.name
         for f in adr_dir.iterdir()
-        if f.is_file()
-        and f.suffix == ".md"
-        and not f.name.startswith("ADR-000")
+        if f.is_file() and f.suffix == ".md" and not f.name.startswith("ADR-000")
     ]
     return {"count": len(files), "files": sorted(files)}
 
@@ -449,7 +447,11 @@ def build_adr_section(adr_data: Dict[str, Any]) -> str:
             "to reach Level 2."
         )
 
-    lines = [f"**ADRs recorded:** {count}\n", "| ADR File | Status |", "|----------|--------|"]
+    lines = [
+        f"**ADRs recorded:** {count}\n",
+        "| ADR File | Status |",
+        "|----------|--------|",
+    ]
     for f in files:
         # Try to extract status from filename or content (simplified)
         lines.append(f"| `{f}` | — |")
@@ -499,15 +501,15 @@ def build_maturity_section(report: Dict[str, Any]) -> str:
     level_descriptions = {
         0: "No governance. CLAUDE.md does not exist or contains no required sections.",
         1: "Foundation: CLAUDE.md, PROJECT_PLAN.md, CHANGELOG.md in place. "
-           "Sessions are governed.",
+        "Sessions are governed.",
         2: "Structured: ADRs, MEMORY.md, ARCHITECTURE.md, CI/CD present. "
-           "Decisions are recorded.",
+        "Decisions are recorded.",
         3: "Enforced: Pre-commit hooks, AI review workflow, governance gate active. "
-           "Compliance is automatic.",
+        "Compliance is automatic.",
         4: "Measured: Quality metrics tracked. Drift detection active. "
-           "Model routing optimized.",
+        "Model routing optimized.",
         5: "Self-optimizing: Org-level governance, research pipeline, "
-           "compliance audit trail complete.",
+        "compliance audit trail complete.",
     }
 
     next_level = level + 1 if level < 5 else None
@@ -516,7 +518,7 @@ def build_maturity_section(report: Dict[str, Any]) -> str:
 
     lines = [
         f"**Current level:** Level {level} — {label}",
-        f"**Evidence:** Score {score}/{max_score} ({score/max_score*100:.0f}%)\n",
+        f"**Evidence:** Score {score}/{max_score} ({score / max_score * 100:.0f}%)\n",
         f"_{level_descriptions.get(level, '')}_\n",
     ]
 

@@ -21,7 +21,7 @@ import json
 import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, List
 
 DEFAULT_CONFIDENCE_CEILING = 85
 
@@ -98,7 +98,11 @@ def validate_contract(
             if not isinstance(entry, dict):
                 errors.append(f"files_changed[{i}] must be an object")
                 continue
-            if "path" not in entry or not isinstance(entry["path"], str) or not entry["path"].strip():
+            if (
+                "path" not in entry
+                or not isinstance(entry["path"], str)
+                or not entry["path"].strip()
+            ):
                 errors.append(f"files_changed[{i}].path must be a non-empty string")
             if "operation" not in entry:
                 errors.append(f"files_changed[{i}].operation is required")
@@ -188,7 +192,9 @@ def format_text_report(
         arch_impact = data.get("architectural_impact", "(missing)")
         requires_review = data.get("requires_review", "(missing)")
 
-        fc_count = len(files_changed) if isinstance(files_changed, list) else "(invalid)"
+        fc_count = (
+            len(files_changed) if isinstance(files_changed, list) else "(invalid)"
+        )
         nv_count = len(not_verified) if isinstance(not_verified, list) else "(invalid)"
 
         conf_note = ""
@@ -216,7 +222,9 @@ def format_text_report(
         for err in errors:
             lines.append(f"  FAIL: {err}")
         lines.append("")
-        lines.append(f"RESULT: FAIL ({len(errors)} error{'s' if len(errors) != 1 else ''})")
+        lines.append(
+            f"RESULT: FAIL ({len(errors)} error{'s' if len(errors) != 1 else ''})"
+        )
     else:
         lines.append("RESULT: PASS")
 

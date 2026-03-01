@@ -5,11 +5,9 @@ violation checks (missing sections, prohibited permissions, threshold lowering),
 and the top-level validate() function.
 """
 
-import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 import inherits_from_validator as ifv
 
@@ -17,6 +15,7 @@ import inherits_from_validator as ifv
 # ---------------------------------------------------------------------------
 # extract_inherits_from
 # ---------------------------------------------------------------------------
+
 
 class TestExtractInheritsFrom:
     def test_scalar_syntax(self):
@@ -44,6 +43,7 @@ class TestExtractInheritsFrom:
 # extract_sections
 # ---------------------------------------------------------------------------
 
+
 class TestExtractSections:
     def test_single_section(self):
         content = "## security_protocol\n\nNo secrets.\n"
@@ -51,10 +51,7 @@ class TestExtractSections:
         assert "security_protocol" in sections
 
     def test_multiple_sections(self):
-        content = (
-            "## project_context\n\nA project.\n\n"
-            "## conventions\n\nSnake case.\n"
-        )
+        content = "## project_context\n\nA project.\n\n## conventions\n\nSnake case.\n"
         sections = ifv.extract_sections(content)
         assert "project_context" in sections
         assert "conventions" in sections
@@ -71,6 +68,7 @@ class TestExtractSections:
 # ---------------------------------------------------------------------------
 # extract_thresholds
 # ---------------------------------------------------------------------------
+
 
 class TestExtractThresholds:
     def test_blast_radius_extracted(self):
@@ -93,11 +91,11 @@ class TestExtractThresholds:
 # check_required_sections
 # ---------------------------------------------------------------------------
 
+
 class TestCheckRequiredSections:
     def test_no_violation_when_sections_present(self):
         parent = ifv.extract_sections(
-            "## security_protocol\n\nNo secrets.\n\n"
-            "## conventions\n\nSnake case.\n"
+            "## security_protocol\n\nNo secrets.\n\n## conventions\n\nSnake case.\n"
         )
         local = ifv.extract_sections(
             "## security_protocol\n\nExtended security.\n\n"
@@ -117,6 +115,7 @@ class TestCheckRequiredSections:
 # ---------------------------------------------------------------------------
 # check_threshold_lowering
 # ---------------------------------------------------------------------------
+
 
 class TestCheckThresholdLowering:
     def test_no_violation_when_threshold_unchanged(self):
@@ -142,6 +141,7 @@ class TestCheckThresholdLowering:
 # validate — top-level function
 # ---------------------------------------------------------------------------
 
+
 class TestValidate:
     def test_missing_file_returns_invalid(self, tmp_path):
         result = ifv.validate(tmp_path / "NONEXISTENT.md")
@@ -159,8 +159,7 @@ class TestValidate:
     def test_valid_inheritance_produces_no_violations(self, tmp_path):
         parent = tmp_path / "parent.md"
         parent.write_text(
-            "## security_protocol\n\nNo secrets.\n\n"
-            "## conventions\n\nSnake case.\n",
+            "## security_protocol\n\nNo secrets.\n\n## conventions\n\nSnake case.\n",
             encoding="utf-8",
         )
         child = tmp_path / "CLAUDE.md"
@@ -175,21 +174,22 @@ class TestValidate:
 
     def test_missing_parent_section_creates_violation(self, tmp_path):
         parent = tmp_path / "parent.md"
-        parent.write_text(
-            "## security_protocol\n\nNo secrets.\n", encoding="utf-8"
-        )
+        parent.write_text("## security_protocol\n\nNo secrets.\n", encoding="utf-8")
         child = tmp_path / "CLAUDE.md"
         child.write_text(
-            f"inherits_from: {parent.name}\n\n"
-            "## project_context\n\nOnly context.\n",
+            f"inherits_from: {parent.name}\n\n## project_context\n\nOnly context.\n",
             encoding="utf-8",
         )
         result = ifv.validate(child)
-        missing = [v for v in result["violations"] if v["type"] == "missing_required_section"]
+        missing = [
+            v for v in result["violations"] if v["type"] == "missing_required_section"
+        ]
         assert len(missing) >= 1
 
     def test_report_summary_keys_present(self, tmp_path):
-        (tmp_path / "CLAUDE.md").write_text("## project_context\n\nText.\n", encoding="utf-8")
+        (tmp_path / "CLAUDE.md").write_text(
+            "## project_context\n\nText.\n", encoding="utf-8"
+        )
         result = ifv.validate(tmp_path / "CLAUDE.md")
         # File without inherits_from has no summary key — that is valid behaviour.
         # Files with parents do have summary.
@@ -197,9 +197,7 @@ class TestValidate:
 
     def test_extra_parent_argument_is_used(self, tmp_path):
         parent = tmp_path / "org.md"
-        parent.write_text(
-            "## security_protocol\n\nNo secrets.\n", encoding="utf-8"
-        )
+        parent.write_text("## security_protocol\n\nNo secrets.\n", encoding="utf-8")
         child = tmp_path / "CLAUDE.md"
         child.write_text(
             "## security_protocol\n\nExtended security.\n", encoding="utf-8"
@@ -222,6 +220,7 @@ class TestValidate:
 # ---------------------------------------------------------------------------
 # fetch_constitution — URL and local path branches
 # ---------------------------------------------------------------------------
+
 
 class TestFetchConstitution:
     """Tests for fetch_constitution covering URL and local path branches."""
@@ -272,6 +271,7 @@ class TestFetchConstitution:
 # extract_thresholds — error handling
 # ---------------------------------------------------------------------------
 
+
 class TestExtractThresholdsExtended:
     """Extended tests for extract_thresholds covering error paths."""
 
@@ -307,6 +307,7 @@ class TestExtractThresholdsExtended:
 # ---------------------------------------------------------------------------
 # check_prohibited_permissions
 # ---------------------------------------------------------------------------
+
 
 class TestCheckProhibitedPermissions:
     """Tests for check_prohibited_permissions covering violation detection."""
@@ -354,6 +355,7 @@ class TestCheckProhibitedPermissions:
 # ---------------------------------------------------------------------------
 # format_text
 # ---------------------------------------------------------------------------
+
 
 class TestFormatText:
     """Tests for the format_text function covering all branches."""
@@ -439,6 +441,7 @@ class TestFormatText:
 # validate — extended coverage
 # ---------------------------------------------------------------------------
 
+
 class TestValidateExtended:
     """Extended tests for validate() covering URL parents and all violation types."""
 
@@ -489,6 +492,7 @@ class TestValidateExtended:
 # build_parser
 # ---------------------------------------------------------------------------
 
+
 class TestBuildParser:
     """Tests for the CLI argument parser builder."""
 
@@ -509,13 +513,19 @@ class TestBuildParser:
     def test_parser_with_all_args(self):
         """Test parser with all optional arguments."""
         parser = ifv.build_parser()
-        args = parser.parse_args([
-            "CLAUDE.md",
-            "--parent", "parent1.md",
-            "--parent", "parent2.md",
-            "--threshold", "warn",
-            "--format", "json",
-        ])
+        args = parser.parse_args(
+            [
+                "CLAUDE.md",
+                "--parent",
+                "parent1.md",
+                "--parent",
+                "parent2.md",
+                "--threshold",
+                "warn",
+                "--format",
+                "json",
+            ]
+        )
         assert args.claude_md == Path("CLAUDE.md")
         assert args.extra_parents == ["parent1.md", "parent2.md"]
         assert args.threshold == "warn"
