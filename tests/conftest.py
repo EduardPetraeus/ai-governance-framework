@@ -104,6 +104,17 @@ def full_repo(tmp_path: Path) -> Path:
         encoding="utf-8",
     )
     (tmp_path / ".gitignore").write_text(".env\n*.pyc\n__pycache__/\n", encoding="utf-8")
+    # v0.3.0 additions
+    (tmp_path / "AGENTS.md").write_text(
+        "# AGENTS\n\nPortable governance bridge.\n",
+        encoding="utf-8",
+    )
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir(exist_ok=True)
+    (docs_dir / "self-validation-checklist.md").write_text(
+        "# Self-Validation Checklist\n\n## 1. Constitution Health\n\nChecks here.\n",
+        encoding="utf-8",
+    )
     return tmp_path
 
 

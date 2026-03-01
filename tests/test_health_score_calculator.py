@@ -55,6 +55,11 @@ class TestGetMaturityLevel:
         level, label = hsc.get_maturity_level(100)
         assert level == 5
 
+    def test_score_110_is_self_optimizing(self):
+        level, label = hsc.get_maturity_level(110)
+        assert level == 5
+        assert label == "Self-optimizing"
+
 
 # ---------------------------------------------------------------------------
 # check_file_exists
@@ -243,6 +248,57 @@ class TestOutputFormats:
     def test_text_output_contains_level(self, empty_repo):
         report = hsc.calculate_score(empty_repo)
         assert "Level" in hsc.format_text(report)
+
+
+# ---------------------------------------------------------------------------
+# v0.3.0 additions: AGENTS.md + self-validation checklist
+# ---------------------------------------------------------------------------
+
+class TestV030Additions:
+    def test_agents_md_check_passes_when_present(self, tmp_path):
+        (tmp_path / "AGENTS.md").write_text("# AGENTS\n\nCross-tool bridge.\n", encoding="utf-8")
+        assert hsc.check_agents_md(tmp_path) is True
+
+    def test_agents_md_check_fails_when_absent(self, tmp_path):
+        assert hsc.check_agents_md(tmp_path) is False
+
+    def test_self_validation_checklist_passes_when_present(self, tmp_path):
+        docs_dir = tmp_path / "docs"
+        docs_dir.mkdir()
+        (docs_dir / "self-validation-checklist.md").write_text(
+            "# Self-Validation Checklist\n\n## 1. Constitution Health\n",
+            encoding="utf-8",
+        )
+        assert hsc.check_self_validation_checklist(tmp_path) is True
+
+    def test_self_validation_checklist_fails_when_absent(self, tmp_path):
+        assert hsc.check_self_validation_checklist(tmp_path) is False
+
+    def test_calculate_score_includes_agents_md_check(self, tmp_path):
+        (tmp_path / "AGENTS.md").write_text("# AGENTS\n", encoding="utf-8")
+        report = hsc.calculate_score(tmp_path)
+        agents_check = next(
+            c for c in report["checks"] if "AGENTS.md" in c["name"]
+        )
+        assert agents_check["passed"] is True
+        assert agents_check["points"] == 5
+
+    def test_calculate_score_includes_checklist_check(self, tmp_path):
+        docs_dir = tmp_path / "docs"
+        docs_dir.mkdir()
+        (docs_dir / "self-validation-checklist.md").write_text(
+            "# Self-Validation Checklist\n", encoding="utf-8"
+        )
+        report = hsc.calculate_score(tmp_path)
+        checklist_check = next(
+            c for c in report["checks"] if "self-validation" in c["name"].lower()
+        )
+        assert checklist_check["passed"] is True
+        assert checklist_check["points"] == 5
+
+    def test_max_score_is_110_with_all_checks(self, empty_repo):
+        report = hsc.calculate_score(empty_repo)
+        assert report["max_score"] == 110
 
 
 # ---------------------------------------------------------------------------
