@@ -108,7 +108,11 @@ def parse_changelog_sessions(changelog_path: Path) -> List[SessionInfo]:
     if not changelog_path.is_file():
         return []
 
-    content = changelog_path.read_text(encoding="utf-8")
+    try:
+        content = changelog_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        print(f"Warning: Could not read {changelog_path}: {exc}", file=sys.stderr)
+        return []
     sessions: List[SessionInfo] = []
 
     # Split on session headers.
@@ -205,7 +209,11 @@ def parse_existing_log_sessions(cost_log_path: Path) -> set[str]:
     if not cost_log_path.is_file():
         return set()
 
-    content = cost_log_path.read_text(encoding="utf-8")
+    try:
+        content = cost_log_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        print(f"Warning: Could not read {cost_log_path}: {exc}", file=sys.stderr)
+        return set()
     # Match session rows in the table: | 003 | ...
     # Normalize to zfill(3) to match parse_changelog_sessions() format.
     return set(m.zfill(3) for m in re.findall(r"^\|\s*(\d+)\s*\|", content, re.MULTILINE))
@@ -240,7 +248,11 @@ def append_to_cost_log(cost_log_path: Path, rows: List[str]) -> None:
         )
         return
 
-    content = cost_log_path.read_text(encoding="utf-8")
+    try:
+        content = cost_log_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        print(f"Warning: Could not read {cost_log_path}: {exc}", file=sys.stderr)
+        return
 
     # Find the table header row and insert new rows after the header separator.
     # The table header is: | Session | Date | Model | ...

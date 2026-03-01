@@ -114,7 +114,11 @@ def parse_decisions_md(path: Path) -> List[Decision]:
     if not path.is_file():
         return []
 
-    content = path.read_text(encoding="utf-8")
+    try:
+        content = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        print(f"Warning: Could not read {path}: {exc}", file=sys.stderr)
+        return []
     decisions: List[Decision] = []
 
     matches = list(DECISIONS_MD_PATTERN.finditer(content))
@@ -143,7 +147,11 @@ def parse_changelog_decisions(path: Path) -> List[Decision]:
     if not path.is_file():
         return []
 
-    content = path.read_text(encoding="utf-8")
+    try:
+        content = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        print(f"Warning: Could not read {path}: {exc}", file=sys.stderr)
+        return []
     decisions: List[Decision] = []
 
     # Find each session block.
@@ -210,7 +218,11 @@ def load_adrs(adr_dir: Path) -> List[Adr]:
         number = match.group(1) if match else "???"
 
         # Extract the title from the first H1 or H2 heading.
-        content = adr_path.read_text(encoding="utf-8")
+        try:
+            content = adr_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as exc:
+            print(f"Warning: Could not read {adr_path}: {exc}", file=sys.stderr)
+            continue
         title_match = re.search(r"^#{1,2}\s+ADR[^:]*:\s*(.+)$", content, re.MULTILINE)
         if not title_match:
             title_match = re.search(r"^#{1,2}\s+(.+)$", content, re.MULTILINE)

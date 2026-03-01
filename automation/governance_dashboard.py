@@ -30,7 +30,7 @@ from typing import Any, Dict, List, Optional, Tuple
 # Imports from sibling automation script
 # ---------------------------------------------------------------------------
 
-_AUTOMATION_DIR = Path(__file__).parent
+_AUTOMATION_DIR = Path(__file__).resolve().parent
 if str(_AUTOMATION_DIR) not in sys.path:
     sys.path.insert(0, str(_AUTOMATION_DIR))
 
@@ -98,7 +98,11 @@ def parse_changelog(repo: Path) -> List[Dict[str, Any]]:
     path = repo / "CHANGELOG.md"
     if not path.is_file():
         return []
-    content = path.read_text(encoding="utf-8")
+    try:
+        content = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        print(f"Warning: Could not read {path}: {exc}", file=sys.stderr)
+        return []
 
     sessions = []
     headers = list(SESSION_HEADER_RE.finditer(content))
@@ -144,7 +148,11 @@ def parse_cost_log(repo: Path) -> List[Dict[str, Any]]:
     path = repo / "COST_LOG.md"
     if not path.is_file():
         return []
-    content = path.read_text(encoding="utf-8")
+    try:
+        content = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        print(f"Warning: Could not read {path}: {exc}", file=sys.stderr)
+        return []
 
     rows = []
     for m in COST_TABLE_ROW_RE.finditer(content):
@@ -178,7 +186,11 @@ def parse_memory(repo: Path) -> Dict[str, Any]:
     if not path.is_file():
         return {"exists": False}
 
-    content = path.read_text(encoding="utf-8")
+    try:
+        content = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        print(f"Warning: Could not read {path}: {exc}", file=sys.stderr)
+        return {"exists": False}
     last_updated = None
     m = MEMORY_UPDATED_RE.search(content)
     if m:
@@ -225,7 +237,11 @@ def parse_project_plan(repo: Path) -> Dict[str, Any]:
     if not path.is_file():
         return {"exists": False}
 
-    content = path.read_text(encoding="utf-8")
+    try:
+        content = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        print(f"Warning: Could not read {path}: {exc}", file=sys.stderr)
+        return {"exists": False}
 
     current_phase_m = CURRENT_PHASE_RE.search(content)
     current_phase = int(current_phase_m.group(1)) if current_phase_m else None

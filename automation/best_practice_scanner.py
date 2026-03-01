@@ -4,6 +4,8 @@ This script fetches RSS feeds, GitHub trending repositories, and web pages,
 then filters results by governance-related keywords. Output is a JSON array
 of findings suitable for downstream analysis by a research agent.
 
+Uses only the standard library (urllib) — no third-party dependencies.
+
 Usage:
     python best-practice-scanner.py --days 7
     python best-practice-scanner.py --days 14 --output-file insights.json
@@ -16,19 +18,12 @@ import argparse
 import json
 import re
 import sys
+import urllib.error
+import urllib.parse
+import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
-
-try:
-    import requests
-except ImportError:
-    print(
-        "Error: the 'requests' library is required.\n"
-        "Install it with: pip install requests",
-        file=sys.stderr,
-    )
-    sys.exit(1)
 
 GITHUB_API_BASE = "https://api.github.com"
 
@@ -65,6 +60,23 @@ DEFAULT_KEYWORDS: List[str] = [
 ]
 
 
+def _http_get(
+    url: str,
+    params: Optional[Dict[str, Any]] = None,
+    headers: Optional[Dict[str, str]] = None,
+    timeout: int = 15,
+) -> str:
+    """Perform an HTTP GET using urllib. Returns response body as text.
+
+    Raises urllib.error.URLError (or its subclass HTTPError) on failure.
+    """
+    if params:
+        url = url + "?" + urllib.parse.urlencode(params)
+    req = urllib.request.Request(url, headers=headers or {})
+    with urllib.request.urlopen(req, timeout=timeout) as response:
+        return response.read().decode("utf-8")
+
+
 def calculate_relevance(text: str, keywords: List[str]) -> float:
     """Calculate a relevance score (0.0-1.0) based on keyword matches in text."""
     if not text or not keywords:
@@ -99,14 +111,13 @@ def fetch_rss(source: Dict[str, str], cutoff: datetime, keywords: List[str]) -> 
     """Fetch and parse an RSS/Atom feed, returning items published after cutoff."""
     findings: List[Dict[str, Any]] = []
     try:
-        response = requests.get(source["url"], timeout=15, headers={"User-Agent": "ai-governance-scanner/1.0"})
-        response.raise_for_status()
-    except requests.RequestException as exc:
+        text = _http_get(source["url"], headers={"User-Agent": "ai-governance-scanner/1.0"})
+    except urllib.error.URLError as exc:
         print(f"Warning: Could not fetch RSS source '{source['name']}': {exc}", file=sys.stderr)
         return findings
 
     try:
-        root = ET.fromstring(response.text)
+        root = ET.fromstring(text)
     except ET.ParseError as exc:
         print(f"Warning: Could not parse RSS from '{source['name']}': {exc}", file=sys.stderr)
         return findings
@@ -179,13 +190,12 @@ def fetch_github_trending(source: Dict[str, str], cutoff: datetime, keywords: Li
     }
 
     try:
-        response = requests.get(url, params=params, timeout=15, headers={"Accept": "application/vnd.github+json"})
-        response.raise_for_status()
-    except requests.RequestException as exc:
+        text = _http_get(url, params=params, headers={"Accept": "application/vnd.github+json"})
+    except urllib.error.URLError as exc:
         print(f"Warning: Could not search GitHub for topic '{topic}': {exc}", file=sys.stderr)
         return findings
 
-    data = response.json()
+    data = json.loads(text)
     for repo in data.get("items", []):
         name = repo.get("full_name", "")
         description = repo.get("description", "") or ""
@@ -212,17 +222,15 @@ def fetch_web(source: Dict[str, str], keywords: List[str]) -> List[Dict[str, Any
     """Fetch a web page and extract a simplified text excerpt."""
     findings: List[Dict[str, Any]] = []
     try:
-        response = requests.get(
+        text = _http_get(
             source["url"],
-            timeout=15,
             headers={"User-Agent": "ai-governance-scanner/1.0"},
         )
-        response.raise_for_status()
-    except requests.RequestException as exc:
+    except urllib.error.URLError as exc:
         print(f"Warning: Could not fetch web source '{source['name']}': {exc}", file=sys.stderr)
         return findings
 
-    text = re.sub(r"<script[^>]*>.*?</script>", "", response.text, flags=re.DOTALL)
+    text = re.sub(r"<script[^>]*>.*?</script>", "", text, flags=re.DOTALL)
     text = re.sub(r"<style[^>]*>.*?</style>", "", text, flags=re.DOTALL)
     text = re.sub(r"<[^>]+>", " ", text)
     text = re.sub(r"\s+", " ", text).strip()

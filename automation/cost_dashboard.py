@@ -93,7 +93,11 @@ def parse_cost_log(repo: Path) -> List[Dict[str, Any]]:
     path = repo / "COST_LOG.md"
     if not path.is_file():
         return []
-    content = path.read_text(encoding="utf-8")
+    try:
+        content = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        print(f"Warning: Could not read {path}: {exc}", file=sys.stderr)
+        return []
 
     rows = []
     for m in COST_TABLE_ROW_RE.finditer(content):
@@ -137,7 +141,7 @@ def parse_cost_log(repo: Path) -> List[Dict[str, Any]]:
 # ---------------------------------------------------------------------------
 
 # Cost references (approximate USD per 1M tokens — used for efficiency scoring)
-TIER_REFERENCE_COST_PER_SESSION = {
+TIER_COST_PER_MILLION_TOKENS = {
     "haiku": 0.005,
     "sonnet": 0.025,
     "opus": 0.15,
@@ -172,8 +176,8 @@ def compute_routing_efficiency(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     for r in rows:
         recommended, reason = routing_recommendation(r["tier"], r["session_type"])
         # Estimate optimal cost using tier reference ratios
-        actual_ref = TIER_REFERENCE_COST_PER_SESSION.get(r["tier"], 0.025)
-        optimal_ref = TIER_REFERENCE_COST_PER_SESSION.get(recommended, 0.025)
+        actual_ref = TIER_COST_PER_MILLION_TOKENS.get(r["tier"], 0.025)
+        optimal_ref = TIER_COST_PER_MILLION_TOKENS.get(recommended, 0.025)
         ratio = optimal_ref / actual_ref if actual_ref > 0 else 1.0
         estimated_optimal = r["cost"] * ratio
         optimal_total += estimated_optimal

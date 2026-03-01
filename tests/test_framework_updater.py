@@ -1,10 +1,12 @@
 """Tests for automation/framework_updater.py.
 
 Tests pure functions without network calls. GitHub API interactions
-are tested with mocked responses.
+are tested with mocked urllib responses.
 """
 
 import json
+import socket
+import urllib.error
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -34,6 +36,23 @@ class TestParseVersion:
     def test_partial_version_raises(self):
         with pytest.raises(ValueError):
             fu.parse_version("1.0")
+
+
+# ---------------------------------------------------------------------------
+# _parse_next_link
+# ---------------------------------------------------------------------------
+
+class TestParseNextLink:
+    def test_extracts_next_url(self):
+        header = '<https://api.github.com/repos/owner/repo/releases?page=2>; rel="next", <https://api.github.com/repos/owner/repo/releases?page=3>; rel="last"'
+        assert fu._parse_next_link(header) == "https://api.github.com/repos/owner/repo/releases?page=2"
+
+    def test_no_next_returns_none(self):
+        header = '<https://api.github.com/repos/owner/repo/releases?page=1>; rel="prev"'
+        assert fu._parse_next_link(header) is None
+
+    def test_empty_header_returns_none(self):
+        assert fu._parse_next_link("") is None
 
 
 # ---------------------------------------------------------------------------
@@ -95,7 +114,6 @@ class TestFormatText:
         assert "v1.1.0" in text
 
     def test_json_format_is_parseable(self):
-        import json
         updates = [self._release("v1.1.0")]
         output = fu.format_json("v1.0.0", "v1.1.0", updates)
         parsed = json.loads(output)
@@ -130,40 +148,69 @@ class TestRun:
 # fetch_releases — mocked API
 # ---------------------------------------------------------------------------
 
+def _make_urlopen_mock(data, link_header: str = "") -> MagicMock:
+    """Helper: create a mock for urllib.request.urlopen returning data as JSON."""
+    mock_response = MagicMock()
+    mock_response.__enter__ = MagicMock(return_value=mock_response)
+    mock_response.__exit__ = MagicMock(return_value=False)
+    mock_response.read.return_value = json.dumps(data).encode("utf-8")
+    mock_response.headers.get.return_value = link_header
+    return mock_response
+
+
 class TestFetchReleases:
     """Tests for the fetch_releases function with mocked HTTP requests."""
 
-    @patch("framework_updater.requests.get")
-    def test_fetches_and_sorts_valid_releases(self, mock_get):
+    @patch("framework_updater.urllib.request.urlopen")
+    def test_fetches_and_sorts_valid_releases(self, mock_urlopen):
         """Test that valid releases are sorted by version ascending."""
-        mock_response = MagicMock()
-        mock_response.json.return_value = [
+        mock_urlopen.return_value = _make_urlopen_mock([
             {"tag_name": "v2.0.0", "body": "Major release"},
             {"tag_name": "v1.0.0", "body": "Initial"},
             {"tag_name": "v1.1.0", "body": "Minor update"},
-        ]
-        mock_response.raise_for_status = MagicMock()
-        mock_get.return_value = mock_response
+        ])
 
         releases = fu.fetch_releases()
         assert len(releases) == 3
         assert releases[0]["tag_name"] == "v1.0.0"
         assert releases[-1]["tag_name"] == "v2.0.0"
 
-    @patch("framework_updater.requests.get")
-    def test_skips_invalid_version_tags(self, mock_get):
+    @patch("framework_updater.urllib.request.urlopen")
+    def test_skips_invalid_version_tags(self, mock_urlopen):
         """Test that releases with invalid version tags are filtered out."""
-        mock_response = MagicMock()
-        mock_response.json.return_value = [
+        mock_urlopen.return_value = _make_urlopen_mock([
             {"tag_name": "v1.0.0", "body": "Valid"},
             {"tag_name": "nightly-2025", "body": "Invalid"},
             {"tag_name": "v2.0.0", "body": "Valid too"},
-        ]
-        mock_response.raise_for_status = MagicMock()
-        mock_get.return_value = mock_response
+        ])
 
         releases = fu.fetch_releases()
         assert len(releases) == 2
+
+    @patch("framework_updater.urllib.request.urlopen")
+    def test_skips_pre_release_tags(self, mock_urlopen):
+        """Test that pre-release tags (e.g. v1.2.3-beta) are skipped with a warning."""
+        mock_urlopen.return_value = _make_urlopen_mock([
+            {"tag_name": "v1.0.0", "body": "Stable"},
+            {"tag_name": "v1.1.0-beta", "body": "Pre-release"},
+            {"tag_name": "v2.0.0-rc1", "body": "Release candidate"},
+        ])
+
+        releases = fu.fetch_releases()
+        assert len(releases) == 1
+        assert releases[0]["tag_name"] == "v1.0.0"
+
+    @patch("framework_updater.urllib.request.urlopen")
+    def test_pagination_follows_next_link(self, mock_urlopen):
+        """Test that pagination via Link header fetches all pages."""
+        page1_link = '<https://api.github.com/repos/x/y/releases?page=2>; rel="next"'
+        mock_page1 = _make_urlopen_mock([{"tag_name": "v1.0.0", "body": ""}], link_header=page1_link)
+        mock_page2 = _make_urlopen_mock([{"tag_name": "v2.0.0", "body": ""}], link_header="")
+        mock_urlopen.side_effect = [mock_page1, mock_page2]
+
+        releases = fu.fetch_releases()
+        assert len(releases) == 2
+        assert mock_urlopen.call_count == 2
 
 
 # ---------------------------------------------------------------------------
@@ -271,9 +318,8 @@ class TestRunExtended:
 
     @patch("framework_updater.fetch_releases")
     def test_run_connection_error(self, mock_fetch, tmp_path, capsys):
-        """Test that ConnectionError returns exit code 1."""
-        import requests
-        mock_fetch.side_effect = requests.ConnectionError("Network unreachable")
+        """Test that URLError returns exit code 1."""
+        mock_fetch.side_effect = urllib.error.URLError("Network unreachable")
         code = fu.run(tmp_path)
         assert code == 1
         captured = capsys.readouterr()
@@ -281,9 +327,8 @@ class TestRunExtended:
 
     @patch("framework_updater.fetch_releases")
     def test_run_timeout_error(self, mock_fetch, tmp_path, capsys):
-        """Test that Timeout returns exit code 1."""
-        import requests
-        mock_fetch.side_effect = requests.Timeout("Request timed out")
+        """Test that socket.timeout returns exit code 1."""
+        mock_fetch.side_effect = socket.timeout("Request timed out")
         code = fu.run(tmp_path)
         assert code == 1
         captured = capsys.readouterr()
@@ -292,8 +337,9 @@ class TestRunExtended:
     @patch("framework_updater.fetch_releases")
     def test_run_http_error(self, mock_fetch, tmp_path, capsys):
         """Test that HTTPError returns exit code 1."""
-        import requests
-        mock_fetch.side_effect = requests.HTTPError("403 Forbidden")
+        mock_fetch.side_effect = urllib.error.HTTPError(
+            None, 403, "Forbidden", {}, None
+        )
         code = fu.run(tmp_path)
         assert code == 1
         captured = capsys.readouterr()

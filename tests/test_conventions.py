@@ -34,10 +34,11 @@ SNAKE_PY_DIRS = [
 ]
 
 # Directories that should themselves use kebab-case naming
+# v030_build_logs is a branch-scoped build-runner artifact, excluded from convention checks
 TOP_LEVEL_DIRS = [
     d for d in REPO_ROOT.iterdir()
     if d.is_dir() and not d.name.startswith(".")
-    and d.name not in ("tests", "node_modules", "__pycache__")
+    and d.name not in ("tests", "node_modules", "__pycache__", "v030_build_logs")
 ]
 
 

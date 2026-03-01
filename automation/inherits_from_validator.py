@@ -21,9 +21,12 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import json
 import re
 import sys
+import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -71,9 +74,43 @@ THRESHOLD_PATTERNS: List[Tuple[str, str]] = [
 ]
 
 
+_PRIVATE_IP_NETWORKS = [
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("169.254.0.0/16"),
+    ipaddress.ip_network("::1/128"),
+    ipaddress.ip_network("fc00::/7"),
+]
+
+
+def _is_private_url(url: str) -> bool:
+    """Return True if the URL uses a private/reserved IP literal or localhost."""
+    try:
+        parsed = urllib.parse.urlparse(url)
+        hostname = (parsed.hostname or "").lower()
+        if hostname in ("localhost", ""):
+            return True
+        # Only check literal IP addresses — no DNS resolution to avoid network I/O.
+        ip = ipaddress.ip_address(hostname)
+        return any(ip in net for net in _PRIVATE_IP_NETWORKS)
+    except ValueError:
+        # Not an IP literal — domain name, allow it.
+        return False
+    except Exception:
+        return False
+
+
 def fetch_constitution(source: str, base_dir: Path) -> Optional[str]:
     """Fetch a constitution from a URL or local path. Returns None on failure."""
     if source.startswith(("http://", "https://")):
+        if _is_private_url(source):
+            print(
+                f"Warning: Blocked fetch to private/internal host: {source}",
+                file=sys.stderr,
+            )
+            return None
         try:
             with urllib.request.urlopen(source, timeout=15) as response:
                 return response.read().decode("utf-8")
@@ -81,10 +118,24 @@ def fetch_constitution(source: str, base_dir: Path) -> Optional[str]:
             print(f"Warning: could not fetch {source}: {exc}", file=sys.stderr)
             return None
 
-    # Local path: try relative to base_dir first, then absolute.
+    # Local path: resolve symlinks and verify path stays within repo root.
+    repo_root = base_dir.resolve()
     for candidate in (base_dir / source, Path(source)):
         if candidate.is_file():
-            return candidate.read_text(encoding="utf-8")
+            try:
+                resolved = candidate.resolve()
+                resolved.relative_to(repo_root)  # raises ValueError if outside
+            except ValueError:
+                print(
+                    f"Warning: Path traversal blocked: {source} resolves outside repo root",
+                    file=sys.stderr,
+                )
+                return None
+            try:
+                return resolved.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError) as exc:
+                print(f"Warning: Could not read {candidate}: {exc}", file=sys.stderr)
+                return None
 
     print(f"Warning: local path not found: {source}", file=sys.stderr)
     return None
@@ -110,9 +161,9 @@ def extract_inherits_from(content: str) -> List[str]:
         if value:
             sources.append(value)
 
-    # List: inherits_from:\n  - item\n  - item
+    # List: inherits_from:\n  - item\n  - item (allows flexible indentation/whitespace)
     list_block = re.search(
-        r"^inherits_from\s*:\s*\n((?:[ \t]+-[ \t]+.+\n?)+)", content, re.MULTILINE
+        r"^inherits_from\s*:\s*\n((?:\s*-\s+.+\n?)+)", content, re.MULTILINE
     )
     if list_block:
         for line in list_block.group(1).splitlines():
@@ -249,7 +300,14 @@ def validate(
             "violations": [],
         }
 
-    local_content = local_path.read_text(encoding="utf-8")
+    try:
+        local_content = local_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        return {
+            "valid": False,
+            "error": f"Could not read {local_path}: {exc}",
+            "violations": [],
+        }
     local_sections = extract_sections(local_content)
     base_dir = local_path.parent
 
