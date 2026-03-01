@@ -115,7 +115,7 @@ See [docs/getting-started.md](docs/getting-started.md) for the full walkthrough,
 │  Audit trails, decision logs, cost tracking, metrics    │
 ├─────────────────────────────────────────────────────────┤
 │  Layer 3: ENFORCEMENT — Automated gates                 │
-│  CI/CD checks, AI PR review, security scanning          │
+│  CI/CD checks, MCP access control, AI PR review         │
 ├─────────────────────────────────────────────────────────┤
 │  Layer 2: ORCHESTRATION — Session & sprint              │
 │  Session protocol, sprint planning, scope management    │
@@ -171,7 +171,7 @@ ai-governance-framework/
 │   ├── solo-developer/
 │   ├── small-team/
 │   └── enterprise/
-├── patterns/          # 13 governance patterns with implementation guides
+├── patterns/          # 14 governance patterns with implementation guides
 ├── scripts/           # Utility scripts: security review, productivity tracking, git hooks
 ├── templates/         # All governance file templates (15 files)
 ├── tests/             # 273 tests across 13 files
@@ -214,7 +214,7 @@ ai-governance-framework/
 | [commands/upgrade.md](commands/upgrade.md) | Check for framework updates and apply non-breaking changes |
 | [commands/validate.md](commands/validate.md) | Verify that all governance files are complete and cross-references resolve |
 
-### Patterns (13)
+### Patterns (14)
 
 | File | Description |
 |---|---|
@@ -231,6 +231,7 @@ ai-governance-framework/
 | [patterns/knowledge-decay.md](patterns/knowledge-decay.md) | Detect and refresh stale context before it misleads agents |
 | [patterns/friction-budget.md](patterns/friction-budget.md) | Measure and limit governance overhead per session |
 | [patterns/constitutional-inheritance.md](patterns/constitutional-inheritance.md) | Cascade org-level rules down to team and repo |
+| [patterns/mcp-governance.md](patterns/mcp-governance.md) | Govern MCP tool access: least-privilege, kill switch, audit logging, rate limits |
 
 ### Templates (16)
 

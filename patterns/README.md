@@ -25,7 +25,7 @@ Each pattern primarily serves one or more layers of the [governance architecture
 |:-----:|------|----------|
 | 1 | Constitution | [Output Contracts](output-contracts.md), [Confidence Scoring](../docs/quality-control-patterns.md#pattern-6-confidence-scoring) |
 | 2 | Orchestration | [Progressive Trust](progressive-trust.md), [Blast Radius Control](blast-radius-control.md), [Human-in-the-Loop](human-in-the-loop.md) |
-| 3 | Enforcement | [Dual-Model Validation](dual-model-validation.md), [Semantic Verification](semantic-verification.md), [Regression Detection](../docs/quality-control-patterns.md#pattern-7-regression-detection) |
+| 3 | Enforcement | [Dual-Model Validation](dual-model-validation.md), [Semantic Verification](semantic-verification.md), [MCP Governance](mcp-governance.md), [Regression Detection](../docs/quality-control-patterns.md#pattern-7-regression-detection) |
 | 4 | Observability | [Confidence Scoring](../docs/quality-control-patterns.md#pattern-6-confidence-scoring), [Regression Detection](../docs/quality-control-patterns.md#pattern-7-regression-detection) |
 | 5 | Knowledge | [Context Boundaries](context-boundaries.md) |
 | 6 | Team Governance | [Human-in-the-Loop](human-in-the-loop.md), [Context Boundaries](context-boundaries.md) |
@@ -48,6 +48,7 @@ Each pattern primarily serves one or more layers of the [governance architecture
 | [Knowledge Decay](knowledge-decay.md) | Manage the lifecycle of cross-session memory so stale knowledge does not degrade agent output quality. |
 | [Friction Budget](friction-budget.md) | Measure and cap governance overhead so process friction does not outweigh the protection it provides. |
 | [Constitutional Inheritance](constitutional-inheritance.md) | Cascade governance rules from organization to team to repo level with explicit override controls. |
+| [MCP Governance](mcp-governance.md) | Govern MCP tool access with least-privilege allowlists, kill switch triggers, audit logging, environment segregation, and rate limits. |
 
 ## Further Reading
 
