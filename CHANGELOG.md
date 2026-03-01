@@ -4,6 +4,26 @@ Session-level history for the AI Governance Framework. Newest first.
 
 ---
 
+## Session 014 — TASK-001: Governance Gate CI Validation — 2026-03-01
+
+### What changed
+- **Created** `.github/workflows/governance-gate.yml` — adapted from `templates/ci-cd/github-actions-governance-gate.yml`
+  - Changed `requirements.txt` to `requirements-dev.txt` for this repo
+  - 4 jobs: lint, test, security-scan, governance-check
+- **Updated** `backlog/TASK-001.yaml` — status: ready -> done, completed: 2026-03-01
+- **Created** `STATUS.md` — documents what was done and validated
+
+### Validation
+- Drift detector: ALIGNED
+- Content quality checker: all_pass (40 files, 0 grade F)
+- Test suite: 864 passed
+
+### Design decision
+Self-governing principle: the governance framework validates itself using its own CI template.
+Originally planned for HealthReporting, pivoted to validate in this repo.
+
+---
+
 ## v0.3.0 — Release — 2026-03-01
 
 **Final verification: 859 tests passing, 94% coverage, 0 broken links.**
