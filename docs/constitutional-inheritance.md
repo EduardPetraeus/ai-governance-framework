@@ -41,29 +41,103 @@ Each level specializes the level above it. Specialization is additive, never sub
 
 ## Rule Resolution
 
-When rules appear at multiple levels, resolution is deterministic:
+The framework uses a **hybrid inheritance model** with two distinct resolution rules.
+Rule category determines which rule applies — not the level of the rule alone.
+See [ADR-004](adr/ADR-004-hybrid-inheritance-model.md) for the full decision record.
 
-**Higher level always wins on conflicts.** If org says "never commit secrets," team cannot
-create a rule that permits committing test credentials. Org wins.
+---
 
-**Lower levels extend, not override.** If org says "use snake_case for all identifiers,"
-team can add "and prefix module-level constants with the module name." The base rule is
-intact; the team has made it more specific.
+### Safety Rules — Higher Wins
 
-**Examples:**
+Safety rules prevent harm that cannot be corrected after the fact. Higher level always wins.
 
-| Org rule | Team extension | Repo extension | Valid? |
-|----------|---------------|----------------|--------|
-| Never commit secrets | No exceptions for test credentials | No exceptions for stub data | ✅ |
-| Use snake_case | snake_case + module prefix for constants | snake_case + domain prefix for entities | ✅ |
-| All PRs require human review | PRs in hotfix/* require security review too | PRs touching src/payments/ require Lead review | ✅ |
-| Opus for security review | Opus for security AND domain-specific review | Opus for security AND architecture AND data model | ✅ |
-| Never commit secrets | Permit hardcoded test tokens | — | ❌ Weakens org rule |
-| PRs require human review | Hotfixes can skip review | — | ❌ Removes requirement |
-| snake_case naming | camelCase for API response fields | — | ❌ Contradicts org rule |
+A rule is a safety rule if it governs:
+- The `never_commit` list and all items on it
+- Security review model requirements
+- Kill switch / mandatory stop conditions
+- Pre-commit hook requirements
+- PR human review requirements
+- Constitutional change process (PR-only)
+- Compliance, audit trail, and data classification requirements
+- PII handling and credential rotation
 
-The test: does the lower-level rule reduce the coverage or strength of a higher-level rule?
-If yes, the rule is invalid. Return it to the higher level for a proper exception process.
+No lower level can narrow, weaken, or remove a safety rule. If org says "never commit
+secrets," no team or repo rule can create an exception — not even for test credentials.
+
+---
+
+### Configurable Rules — Specific Wins
+
+Configurable rules optimize workflow, express preferences, or capture accurate technical
+context. More specific (lower-level) rules take precedence over higher-level defaults.
+
+A rule is configurable if it governs:
+- Model routing (except security review model floor)
+- Coding style and naming convention extensions
+- Session length and protocol customizations
+- Agent selection beyond org-mandated minimum
+- Workflow step additions and sequencing
+- Test coverage thresholds (org sets floor; teams/repos may raise)
+- Technology stack declarations
+- Domain-specific rules
+
+This aligns with Claude Code's runtime behavior: a repo CLAUDE.md that declares a specific
+tech stack overrides the org's generic default — that is the intended behavior.
+
+---
+
+### External Legal Override
+
+Binding legal or regulatory obligations override all internal constitutional rules regardless
+of level. GDPR, HIPAA, financial sector regulations, and contractual obligations with legal
+effect are not subject to internal governance hierarchy. Removing documentation of a legal
+obligation from the org constitution does not remove the obligation.
+
+Organizations document binding obligations in `org_compliance` with a source field:
+
+```markdown
+data_residency:
+  requirement: EU data must not leave EU infrastructure
+  source: "GDPR Article 44 — binding"
+  override_level: legal
+```
+
+---
+
+### Precedence Stack
+
+From highest to lowest authority:
+
+```
+1. Legal / Regulatory    — external, binding — overrides all internal rules
+2. Org Safety            — non-negotiable safety rules at org level
+3. Team Safety           — safety rules added at team level
+4. Org Config            — configurable defaults from org level
+5. Team Config           — configurable rules from team level (overrides org config)
+6. Repo Config           — configurable rules from repo level (overrides team config)
+```
+
+---
+
+### Examples
+
+| Rule | Category | Org | Team | Repo | Resolution |
+|------|----------|-----|------|------|------------|
+| Never commit secrets | Safety | prohibited | no exceptions for tests | no exceptions for stubs | ✅ Higher wins |
+| PR human review | Safety | required | also required for hotfixes | also required for payment PRs | ✅ Higher wins |
+| Security review model | Safety | opus | — | sonnet ← | ❌ Repo cannot downgrade |
+| Code generation model | Configurable | sonnet (default) | — | haiku (repo uses lightweight tasks) | ✅ Repo wins |
+| snake_case naming | Safety (baseline) | snake_case | snake_case + module prefix | snake_case + domain prefix | ✅ Extensions valid |
+| snake_case naming | Safety (baseline) | snake_case | — | camelCase ← | ❌ Contradicts org rule |
+| Test coverage minimum | Configurable (floor) | 60% minimum | 70% minimum | 80% minimum | ✅ All raise floor |
+| Test coverage minimum | Configurable (floor) | 60% minimum | 40% ← | — | ❌ Team cannot lower floor |
+| Data residency | Legal | GDPR Article 44 | EU-only routing | — | ✅ Legal overrides all |
+
+The test for safety rules: does the lower-level rule reduce the coverage or strength of a
+higher-level rule? If yes, the rule is invalid. Return it to the higher level.
+
+The test for configurable rules: does the lower-level rule contradict the higher-level rule,
+or does it simply make it more specific to the project's context? Specificity is valid.
 
 ---
 
@@ -187,4 +261,6 @@ each-project/
 - [templates/CLAUDE.org.md](../templates/CLAUDE.org.md) — organization-level constitution template
 - [templates/CLAUDE.team.md](../templates/CLAUDE.team.md) — team-level constitution template
 - [patterns/constitutional-inheritance.md](../patterns/constitutional-inheritance.md) — implementation pattern
+- [patterns/break-glass.md](../patterns/break-glass.md) — temporary override for governance emergencies
+- [docs/adr/ADR-004-hybrid-inheritance-model.md](adr/ADR-004-hybrid-inheritance-model.md) — decision record for hybrid model
 - [docs/architecture.md](architecture.md) — Layer 1 (Constitution) in the 7-layer stack
